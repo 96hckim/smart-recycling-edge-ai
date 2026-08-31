@@ -1,0 +1,1 @@
+# smart-recycling-edge-ai
