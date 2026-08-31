@@ -1,0 +1,60 @@
+# ==========================================
+# 1. AI Models & Large Media (필수 차단)
+# ==========================================
+*.engine
+*.onnx
+*.pt
+*.pth
+*.tflite
+*.weights
+*.mp4
+*.avi
+*.mkv
+runs/
+datasets/
+
+# ==========================================
+# 2. Python & Jetson OS
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.log
+.DS_Store
+*.swp
+
+# ==========================================
+# 3. Qt & Desktop UI
+# ==========================================
+build/
+dist/
+*.user
+*.user.*
+.qmake.stash
+
+# ==========================================
+# 4. STM32 / Embedded IDE (CubeIDE, Keil)
+# ==========================================
+Debug/
+Release/
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.axf
+.mxproject
+.metadata/
+
+# ==========================================
+# 5. Android Studio
+# ==========================================
+.gradle/
+build/
+local.properties
+.idea/
+*.apk
+*.aab
