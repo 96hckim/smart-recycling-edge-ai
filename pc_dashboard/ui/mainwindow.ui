@@ -34,6 +34,7 @@ QLabel#lblTitle {
     letter-spacing: 0.5px;
     background: transparent;
 }
+/* 상단 AI 비전 연결 상태 뱃지 (기본: 온라인 초록) */
 QLabel#lblConnStatus {
     background-color: #0F172A;
     border: 2px solid #10B981;
@@ -42,6 +43,12 @@ QLabel#lblConnStatus {
     color: #10B981;
     font-weight: 900;
     font-size: 16px;
+}
+
+/* 오프라인 상태 (빨간색) */
+QLabel#lblConnStatus[online="false"] {
+    border-color: #EF4444;
+    color: #EF4444;
 }
 
 /* 하단 수거함 적재 상태 공통 바 (높이 96px) */

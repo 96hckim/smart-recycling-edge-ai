@@ -29,6 +29,7 @@ CONFIG(release, debug|release) {
 # 소스 파일 목록
 SOURCES += \
     main.cpp \
+    network/json_parser.cpp \
     ui/idle_page.cpp \
     ui/mainwindow.cpp \
     network/jetson_client.cpp \

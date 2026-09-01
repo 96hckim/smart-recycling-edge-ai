@@ -40,20 +40,20 @@ void ResultPage::showResult(const SessionSummary& summary)
     m_targetPoints = summary.totalPoints;
     m_targetCarbon = summary.totalCarbonG;
 
-    // 1. 4종 품목 카드 데이터 바인딩
+    // 1. Config::getPoint() 유틸리티 함수로 품목별 단가 매핑
     updateCard(ui->boxReceiptCan, ui->lblRCanTitle, ui->lblRCanCount, ui->lblRCanPoints,
-        summary.canCount, Config::POINT_CAN);
+        summary.canCount, Config::getPoint(RecycleCategory::CAN));
 
     updateCard(ui->boxReceiptPet, ui->lblRPetTitle, ui->lblRPetCount, ui->lblRPetPoints,
-        summary.petCount, Config::POINT_PET);
+        summary.petCount, Config::getPoint(RecycleCategory::PET));
 
     updateCard(ui->boxReceiptPaper, ui->lblRPaperTitle, ui->lblRPaperCount, ui->lblRPaperPoints,
-        summary.paperCount, Config::POINT_PAPER);
+        summary.paperCount, Config::getPoint(RecycleCategory::PAPER));
 
     updateCard(ui->boxReceiptGeneral, ui->lblRGeneralTitle, ui->lblRGeneralCount, ui->lblRGeneralPoints,
-        summary.generalCount, Config::POINT_GENERAL);
+        summary.generalCount, Config::getPoint(RecycleCategory::GENERAL));
 
-    // 2. 사용자 상태 안내 뱃지 설정
+    // 2. 사용자 상태 안내 뱃지 갱신
     ui->lblUserNotice->setProperty("member", summary.isMember);
     if (summary.isMember) {
         const QString name = summary.userName.isEmpty() ? "회원" : summary.userName;
@@ -64,7 +64,7 @@ void ResultPage::showResult(const SessionSummary& summary)
     ui->lblUserNotice->style()->unpolish(ui->lblUserNotice);
     ui->lblUserNotice->style()->polish(ui->lblUserNotice);
 
-    // 3. 지표 롤링 카운팅 애니메이션 가동
+    // 3. 지표 롤링 카운팅 애니메이션 구동
     m_pointsAnim->stop();
     m_carbonAnim->stop();
 
@@ -80,7 +80,7 @@ void ResultPage::showResult(const SessionSummary& summary)
     m_carbonAnim->setEndValue(m_targetCarbon);
     m_carbonAnim->start();
 
-    // 4. 타이머 및 확인 버튼 활성화
+    // 4. 타이머 가동
     m_remainingSec = Config::RESULT_DISPLAY_TIMEOUT_SEC;
     ui->btnConfirm->setEnabled(true);
     ui->btnConfirm->setText(QString("확인 (%1초 후 처음으로 이동)").arg(m_remainingSec));

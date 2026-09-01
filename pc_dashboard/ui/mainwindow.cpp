@@ -3,6 +3,7 @@
 #include "recycle_page.h"
 #include "result_page.h"
 #include "ui_mainwindow.h"
+#include <QStyle>
 #include <algorithm>
 
 MainWindow::MainWindow(QWidget* parent)
@@ -56,23 +57,21 @@ void MainWindow::initPages()
 
 void MainWindow::updateBinLevels(int can, int pet, int paper, int general)
 {
-    ui->progressBarCan->setValue(std::clamp(can, 0, 100));
-    ui->progressBarPet->setValue(std::clamp(pet, 0, 100));
-    ui->progressBarPaper->setValue(std::clamp(paper, 0, 100));
-    ui->progressBarGeneral->setValue(std::clamp(general, 0, 100));
+    ui->progressBarCan->setValue(std::clamp(can, 0, Config::MAX_BIN_CAPACITY));
+    ui->progressBarPet->setValue(std::clamp(pet, 0, Config::MAX_BIN_CAPACITY));
+    ui->progressBarPaper->setValue(std::clamp(paper, 0, Config::MAX_BIN_CAPACITY));
+    ui->progressBarGeneral->setValue(std::clamp(general, 0, Config::MAX_BIN_CAPACITY));
 }
 
 void MainWindow::updateConnectionStatus(bool connected)
 {
-    if (connected) {
-        ui->lblConnStatus->setText("● AI VISION ONLINE");
-        ui->lblConnStatus->setStyleSheet("background-color: #0F172A; border: 1.5px solid #10B981; "
-                                         "border-radius: 12px; padding: 5px 14px; color: #10B981; font-weight: bold; font-size: 12px;");
-    } else {
-        ui->lblConnStatus->setText("○ AI VISION OFFLINE");
-        ui->lblConnStatus->setStyleSheet("background-color: #0F172A; border: 1.5px solid #EF4444; "
-                                         "border-radius: 12px; padding: 5px 14px; color: #EF4444; font-weight: bold; font-size: 12px;");
-    }
+    // 텍스트 설정
+    ui->lblConnStatus->setText(connected ? "● AI VISION ONLINE" : "○ AI VISION OFFLINE");
+
+    // 동적 프로퍼티(online) 트리거로 QSS 색상 자동 반영 (인라인 폰트 크기 덮어쓰기 방지)
+    ui->lblConnStatus->setProperty("online", connected);
+    ui->lblConnStatus->style()->unpolish(ui->lblConnStatus);
+    ui->lblConnStatus->style()->polish(ui->lblConnStatus);
 }
 
 void MainWindow::updateTelemetry(double fps, double inferMs, double latencyMs)
@@ -86,7 +85,7 @@ void MainWindow::updateTelemetry(double fps, double inferMs, double latencyMs)
 
 void MainWindow::onMemberStartRequested(const QString& userId)
 {
-    m_currentSession = SessionSummary();
+    m_currentSession.reset();
     m_currentSession.isMember = true;
     m_currentSession.userName = userId;
 
@@ -96,7 +95,7 @@ void MainWindow::onMemberStartRequested(const QString& userId)
 
 void MainWindow::onGuestStartRequested()
 {
-    m_currentSession = SessionSummary();
+    m_currentSession.reset();
     m_currentSession.isMember = false;
 
     m_recyclePage->startSession(false);
@@ -105,13 +104,9 @@ void MainWindow::onGuestStartRequested()
 
 void MainWindow::onRecycleFinished()
 {
-    // 정산 데이터 빌드 (추후 KioskController 세션 데이터와 직접 연동)
-    m_currentSession.canCount = 1;
-    m_currentSession.petCount = 2;
-    m_currentSession.paperCount = 0;
-    m_currentSession.generalCount = 0;
-    m_currentSession.totalPoints = (m_currentSession.isMember) ? (1 * Config::POINT_CAN + 2 * Config::POINT_PET) : 0;
-    m_currentSession.totalCarbonG = (1 * Config::CARBON_CAN_G + 2 * Config::CARBON_PET_G);
+    // SessionSummary 내부의 addItem() 호출 시 포인트 및 탄소 절감량 자동 계산
+    m_currentSession.addItem(RecycleCategory::CAN, 1);
+    m_currentSession.addItem(RecycleCategory::PET, 2);
 
     m_resultPage->showResult(m_currentSession);
     ui->stackedWidgetMain->setCurrentWidget(m_resultPage);
@@ -119,7 +114,7 @@ void MainWindow::onRecycleFinished()
 
 void MainWindow::onReturnToIdle()
 {
-    m_currentSession = SessionSummary();
+    m_currentSession.reset();
     m_recyclePage->resetState();
     ui->stackedWidgetMain->setCurrentWidget(m_idlePage);
 }

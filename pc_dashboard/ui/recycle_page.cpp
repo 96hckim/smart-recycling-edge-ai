@@ -44,7 +44,8 @@ void RecyclePage::updateFrame(const QPixmap& pixmap)
 
 void RecyclePage::updateDetectionState(const QString& className, double confidence, int debounceCount)
 {
-    if (className.isEmpty()) {
+    // 유효 신뢰도 미달이거나 물품 미인식 시 대기 상태 전환
+    if (className.isEmpty() || confidence < Config::MIN_CONFIDENCE_THRESHOLD) {
         ui->lblDetectClass->setText("물품 인식 대기 중...");
         ui->lblDetectConfidence->setText("신뢰도: - %");
         ui->progressBarDebounce->setValue(0);
@@ -52,38 +53,40 @@ void RecyclePage::updateDetectionState(const QString& className, double confiden
         return;
     }
 
+    // Config 파서로 품목 식별
+    const RecycleCategory cat = Config::parseCategory(className);
     const QString upperClass = className.toUpper();
+
     ui->lblDetectClass->setText(QString("🔍 %1 감지됨").arg(upperClass));
     ui->lblDetectConfidence->setText(QString("신뢰도: %1%").arg(QString::number(confidence * 100.0, 'f', 1)));
     ui->progressBarDebounce->setValue(debounceCount);
 
     if (debounceCount >= Config::STABLE_FRAME_THRESHOLD) {
-        if (upperClass.contains("GENERAL") || upperClass.contains("일반")) {
+        if (cat == RecycleCategory::GENERAL) {
             setGuideBanner("⚠️ 일반쓰레기 감지 (포인트 미지급)", "#F1F5F9", "#94A3B8", "rgba(148, 163, 184, 0.2)");
-        } else {
+        } else if (cat != RecycleCategory::UNKNOWN) {
             setGuideBanner(QString("✅ %1 인식 확정! 투입구에 넣어주세요").arg(upperClass),
                 "#10B981", "#10B981", "rgba(16, 185, 129, 0.15)");
         }
     }
 }
 
-void RecyclePage::updateSessionSummary(int canCount, int petCount, int paperCount, int generalCount,
-    int totalPoints, double totalCarbon)
+void RecyclePage::updateSessionSummary(const SessionSummary& summary)
 {
-    ui->lblCanCount->setText(QString::number(canCount));
-    ui->lblPetCount->setText(QString::number(petCount));
-    ui->lblPaperCount->setText(QString::number(paperCount));
-    ui->lblGeneralCount->setText(QString::number(generalCount));
+    ui->lblCanCount->setText(QString::number(summary.canCount));
+    ui->lblPetCount->setText(QString::number(summary.petCount));
+    ui->lblPaperCount->setText(QString::number(summary.paperCount));
+    ui->lblGeneralCount->setText(QString::number(summary.generalCount));
 
-    if (m_isMember) {
-        ui->lblTotalPoints->setText(QString("+ %1 P").arg(totalPoints));
+    if (summary.isMember) {
+        ui->lblTotalPoints->setText(QString("+ %1 P").arg(summary.totalPoints));
         ui->lblTotalPoints->setStyleSheet("font-size: 42px; font-weight: 900; color: #38BDF8; background: transparent;");
     } else {
         ui->lblTotalPoints->setText("0 P (비회원)");
         ui->lblTotalPoints->setStyleSheet("font-size: 34px; font-weight: 800; color: #64748B; background: transparent;");
     }
 
-    ui->lblTotalCarbon->setText(QString("🌱 절감 탄소량: %1g CO2").arg(QString::number(totalCarbon, 'f', 1)));
+    ui->lblTotalCarbon->setText(QString("🌱 절감 탄소량: %1g CO2").arg(QString::number(summary.totalCarbonG, 'f', 1)));
 }
 
 void RecyclePage::resetState()
