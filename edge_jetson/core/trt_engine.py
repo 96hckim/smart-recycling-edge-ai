@@ -1,132 +1,93 @@
 """
-TensorRT 8.x / 10.x CudaStream 비동기 엔진 래퍼 (안전한 자원 해제)
+core/trt_engine.py
+
+TensorRT 10.x 전용 Zero-Allocation 비동기 GPU 추론 엔진
 """
 
-import os
 from contextlib import suppress
 from pathlib import Path
 
 import numpy as np
-import pycuda.autoinit  # noqa
+import pycuda.autoinit  # noqa: F401
 import pycuda.driver as cuda
 import tensorrt as trt
 
 
 class TensorRTEngine:
-    """
-    TensorRT 직렬화 엔진(.engine) 로드 및 Pinned Memory 기반 추론 래퍼
-    """
+    """TensorRT 10 V3 Execution Context 기반 고속 비동기 추론 클래스"""
 
-    def __init__(self, engine_path: str | Path):
-        self.engine_path = str(engine_path)
-        if not os.path.exists(self.engine_path):
-            raise FileNotFoundError(
-                f"[TRT] 엔진 파일을 찾을 수 없습니다: {self.engine_path}"
-            )
+    def __init__(self, engine_path: Path | str):
+        self.engine_path = Path(engine_path)
+        if not self.engine_path.exists():
+            raise FileNotFoundError(f"[TRT ERROR] 엔진 파일 없음: {self.engine_path}")
 
         self.logger = trt.Logger(trt.Logger.WARNING)
-        print(f"[TRT] 엔진 로딩 중: {self.engine_path}")
+        self.runtime = trt.Runtime(self.logger)
 
-        with open(self.engine_path, "rb") as f, trt.Runtime(self.logger) as runtime:
-            self.engine = runtime.deserialize_cuda_engine(f.read())
+        # 1. 엔진 역직렬화 및 실행 컨텍스트 생성
+        with open(self.engine_path, "rb") as f:
+            self.engine = self.runtime.deserialize_cuda_engine(f.read())
 
         if self.engine is None:
-            raise RuntimeError("[TRT] 엔진 역직렬화 실패")
+            raise RuntimeError("[TRT ERROR] 엔진 역직렬화 실패")
 
         self.context = self.engine.create_execution_context()
         self.stream = cuda.Stream()
 
+        # 2. Host/Device Pinned Buffer 사전 할당 및 텐서 주소 1회 바인딩
         self._allocate_buffers()
         print(
-            f"[TRT] 바인딩 메모리 할당 완료 (Input: {self.input_shape}, Output: {self.output_shape})"
+            f"[TRT] 바인딩 완료 (Input: {self.input_shape}, Output: {self.output_shape})"
         )
 
     def _allocate_buffers(self):
-        """Host Pinned Memory 및 Device Buffer 1회 사전 할당"""
-        self.host_inputs: list[np.ndarray] = []
-        self.cuda_inputs: list[cuda.DeviceAllocation] = []
-        self.host_outputs: list[np.ndarray] = []
-        self.cuda_outputs: list[cuda.DeviceAllocation] = []
-        self.bindings: list[int] = []
+        """텐서별 Pinned Memory 사전 할당 및 주소 1회 사전 바인딩 (Zero-Allocation)"""
+        for i in range(self.engine.num_io_tensors):
+            name = self.engine.get_tensor_name(i)
+            shape = tuple(self.engine.get_tensor_shape(name))
+            dtype = trt.nptype(self.engine.get_tensor_dtype(name))
 
-        num_io = (
-            self.engine.num_io_tensors
-            if hasattr(self.engine, "num_io_tensors")
-            else self.engine.num_bindings
-        )
+            # Page-Locked(Pinned) Host 메모리 & GPU Device 메모리 할당
+            h_mem = cuda.pagelocked_empty(shape, dtype=dtype)
+            d_mem = cuda.mem_alloc(h_mem.nbytes)
 
-        for i in range(num_io):
-            name = (
-                self.engine.get_tensor_name(i)
-                if hasattr(self.engine, "get_tensor_name")
-                else self.engine.get_binding_name(i)
-            )
-            shape = (
-                self.engine.get_tensor_shape(name)
-                if hasattr(self.engine, "get_tensor_shape")
-                else self.engine.get_binding_shape(i)
-            )
-            dtype = (
-                self.engine.get_tensor_dtype(name)
-                if hasattr(self.engine, "get_tensor_dtype")
-                else self.engine.get_binding_dtype(i)
-            )
+            # TensorRT 10 엔진에 GPU 버퍼 주소 1회 사전 등록
+            self.context.set_tensor_address(name, int(d_mem))
 
-            actual_shape = [1 if dim == -1 else dim for dim in shape]
-            size = trt.volume(actual_shape)
-            np_dtype = trt.nptype(dtype)
-
-            host_mem = cuda.pagelocked_empty(size, np_dtype)
-            cuda_mem = cuda.mem_alloc(host_mem.nbytes)
-            self.bindings.append(int(cuda_mem))
-
-            is_input = (
-                self.engine.get_tensor_mode(name) == trt.TensorIOMode.INPUT
-                if hasattr(self.engine, "get_tensor_mode")
-                else self.engine.binding_is_input(i)
-            )
-
-            if is_input:
-                self.host_inputs.append(host_mem)
-                self.cuda_inputs.append(cuda_mem)
+            if self.engine.get_tensor_mode(name) == trt.TensorIOMode.INPUT:
                 self.input_name = name
-                self.input_shape = actual_shape
+                self.input_shape = shape
+                self.h_input = h_mem
+                self.d_input = d_mem
             else:
-                self.host_outputs.append(host_mem)
-                self.cuda_outputs.append(cuda_mem)
                 self.output_name = name
-                self.output_shape = actual_shape
+                self.output_shape = shape
+                self.h_output = h_mem
+                self.d_output = d_mem
 
-    def execute(self, host_input_array: np.ndarray) -> np.ndarray:
-        """[H2D 복사 -> 커널 실행 -> D2H 복사 -> 동기화]"""
-        np.copyto(self.host_inputs[0], host_input_array.ravel())
-        cuda.memcpy_htod_async(self.cuda_inputs[0], self.host_inputs[0], self.stream)
+    def execute(self, input_data: np.ndarray) -> np.ndarray:
+        """비동기 파이프라인: H2D 복사 -> GPU 커널 실행 -> D2H 복사 -> 스트림 동기화"""
+        # 1. 사전 할당된 Pinned Memory로 입력 복사
+        np.copyto(self.h_input, input_data)
 
-        if hasattr(self.context, "set_tensor_address"):
-            self.context.set_tensor_address(self.input_name, int(self.cuda_inputs[0]))
-            self.context.set_tensor_address(self.output_name, int(self.cuda_outputs[0]))
-            self.context.execute_async_v3(stream_handle=self.stream.handle)
-        else:
-            self.context.execute_async_v2(
-                bindings=self.bindings, stream_handle=self.stream.handle
-            )
+        # 2. 비동기 전송 및 추론 실행 (주소 재바인딩 없이 즉각 실행)
+        cuda.memcpy_htod_async(self.d_input, self.h_input, self.stream)
+        self.context.execute_async_v3(stream_handle=self.stream.handle)
+        cuda.memcpy_dtoh_async(self.h_output, self.d_output, self.stream)
 
-        cuda.memcpy_dtoh_async(self.host_outputs[0], self.cuda_outputs[0], self.stream)
+        # 3. 동기화 후 고정 출력 버퍼 반환 (추가 메모리 할당 0byte)
         self.stream.synchronize()
-
-        return self.host_outputs[0].reshape(self.output_shape)
+        return self.h_output
 
     def destroy(self):
-        """하위 의존성 순서에 맞춰 안전하게 객체 소멸 유도"""
-        if hasattr(self, "stream") and self.stream:
+        """CUDA 스트림 동기화 및 리소스 안전 해제"""
+        if self.stream is not None:
             with suppress(cuda.Error, OSError, AttributeError):
                 self.stream.synchronize()
 
         self.context = None
         self.engine = None
         self.stream = None
-        self.cuda_inputs.clear()
-        self.cuda_outputs.clear()
 
     def __del__(self):
         self.destroy()
