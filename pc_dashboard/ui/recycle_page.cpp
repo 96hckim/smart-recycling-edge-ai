@@ -20,13 +20,14 @@ void RecyclePage::startSession(bool isMember, const QString& userName)
     resetState();
 
     if (m_isMember) {
-        ui->lblUserGreeting->setText(QString("👤 %1 님 환영합니다").arg(m_userName.isEmpty() ? "회원" : m_userName));
-        ui->lblUserGreeting->setStyleSheet("font-size: 24px; font-weight: 800; color: #10B981; background: transparent;");
+        const QString displayName = m_userName.isEmpty() ? "회원" : m_userName;
+        ui->lblUserGreeting->setText(QString("👤 %1 님 환영합니다").arg(displayName));
+        ui->lblUserGreeting->setStyleSheet("font-size: 30px; font-weight: 900; color: #10B981; background: transparent;");
         ui->lblSessionMode->setText("투입 완료 후 포인트가 자동으로 적립됩니다.");
         ui->lblRewardHeader->setText("💰 현재 세션 획득 리워드");
     } else {
         ui->lblUserGreeting->setText("👤 비회원 간편 투입");
-        ui->lblUserGreeting->setStyleSheet("font-size: 24px; font-weight: 800; color: #38BDF8; background: transparent;");
+        ui->lblUserGreeting->setStyleSheet("font-size: 30px; font-weight: 900; color: #38BDF8; background: transparent;");
         ui->lblSessionMode->setText("비회원 모드로 동작 중입니다 (포인트 미적립).");
         ui->lblRewardHeader->setText("🌱 절감 환경 리워드");
     }
@@ -47,27 +48,27 @@ void RecyclePage::updateDetectionState(const QString& className, double confiden
         ui->lblDetectClass->setText("물품 인식 대기 중...");
         ui->lblDetectConfidence->setText("신뢰도: - %");
         ui->progressBarDebounce->setValue(0);
-        ui->lblGuideBanner->setText("🎯 카메라 중앙 영역에 재활용품을 놓아주세요");
-        ui->lblGuideBanner->setStyleSheet("background-color: #111827; border: 1px solid #1F2937; border-radius: 14px; color: #38BDF8; font-size: 20px; font-weight: 700; padding: 8px;");
+        setGuideBanner("🎯 카메라 중앙 영역에 재활용품을 놓아주세요", "#38BDF8", "#0284C7", "#0D1927");
         return;
     }
 
-    ui->lblDetectClass->setText(QString("🔍 %1 감지됨").arg(className.toUpper()));
+    const QString upperClass = className.toUpper();
+    ui->lblDetectClass->setText(QString("🔍 %1 감지됨").arg(upperClass));
     ui->lblDetectConfidence->setText(QString("신뢰도: %1%").arg(QString::number(confidence * 100.0, 'f', 1)));
     ui->progressBarDebounce->setValue(debounceCount);
 
     if (debounceCount >= Config::STABLE_FRAME_THRESHOLD) {
-        if (className.toUpper().contains("GENERAL") || className.contains("일반")) {
-            ui->lblGuideBanner->setText("⚠️ 일반쓰레기 감지 (포인트 미지급)");
-            ui->lblGuideBanner->setStyleSheet("background-color: rgba(148, 163, 184, 0.2); border: 1.5px solid #94A3B8; border-radius: 14px; color: #F1F5F9; font-size: 20px; font-weight: 800; padding: 8px;");
+        if (upperClass.contains("GENERAL") || upperClass.contains("일반")) {
+            setGuideBanner("⚠️ 일반쓰레기 감지 (포인트 미지급)", "#F1F5F9", "#94A3B8", "rgba(148, 163, 184, 0.2)");
         } else {
-            ui->lblGuideBanner->setText(QString("✅ %1 인식 확정! 투입구에 넣어주세요").arg(className.toUpper()));
-            ui->lblGuideBanner->setStyleSheet("background-color: rgba(16, 185, 129, 0.15); border: 1.5px solid #10B981; border-radius: 14px; color: #10B981; font-size: 20px; font-weight: 800; padding: 8px;");
+            setGuideBanner(QString("✅ %1 인식 확정! 투입구에 넣어주세요").arg(upperClass),
+                "#10B981", "#10B981", "rgba(16, 185, 129, 0.15)");
         }
     }
 }
 
-void RecyclePage::updateSessionSummary(int canCount, int petCount, int paperCount, int generalCount, int totalPoints, double totalCarbon)
+void RecyclePage::updateSessionSummary(int canCount, int petCount, int paperCount, int generalCount,
+    int totalPoints, double totalCarbon)
 {
     ui->lblCanCount->setText(QString::number(canCount));
     ui->lblPetCount->setText(QString::number(petCount));
@@ -76,9 +77,12 @@ void RecyclePage::updateSessionSummary(int canCount, int petCount, int paperCoun
 
     if (m_isMember) {
         ui->lblTotalPoints->setText(QString("+ %1 P").arg(totalPoints));
+        ui->lblTotalPoints->setStyleSheet("font-size: 42px; font-weight: 900; color: #38BDF8; background: transparent;");
     } else {
-        ui->lblTotalPoints->setText("비회원 (0 P)");
+        ui->lblTotalPoints->setText("0 P (비회원)");
+        ui->lblTotalPoints->setStyleSheet("font-size: 34px; font-weight: 800; color: #64748B; background: transparent;");
     }
+
     ui->lblTotalCarbon->setText(QString("🌱 절감 탄소량: %1g CO2").arg(QString::number(totalCarbon, 'f', 1)));
 }
 
@@ -95,6 +99,16 @@ void RecyclePage::resetState()
     ui->lblDetectClass->setText("물품 인식 대기 중...");
     ui->lblDetectConfidence->setText("신뢰도: - %");
     ui->progressBarDebounce->setValue(0);
+    setGuideBanner("🎯 카메라 중앙 영역에 재활용품을 놓아주세요", "#38BDF8", "#0284C7", "#0D1927");
+}
+
+void RecyclePage::setGuideBanner(const QString& text, const QString& textColor,
+    const QString& borderColor, const QString& bgColor)
+{
+    ui->lblGuideBanner->setText(text);
+    ui->lblGuideBanner->setStyleSheet(
+        QString("background-color: %1; border: 2px solid %2; border-radius: 16px; color: %3; font-size: 22px; font-weight: 800; padding: 10px;")
+            .arg(bgColor, borderColor, textColor));
 }
 
 void RecyclePage::on_btnFinishSession_clicked()

@@ -9,11 +9,13 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
-    // OS 기본 타이틀바와 외곽 테두리 완전 제거
-    // setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
-
     ui->setupUi(this);
+
     initPages();
+
+    // 상단 타이틀 더블클릭 이벤트 감지 등록 (키오스크 터치 안전 종료 제스처)
+    ui->lblTitle->installEventFilter(this);
+    ui->lblTitle->setCursor(Qt::PointingHandCursor);
 }
 
 MainWindow::~MainWindow()
@@ -23,26 +25,33 @@ MainWindow::~MainWindow()
 
 void MainWindow::initPages()
 {
+    // 1. 3개 메인 페이지 위젯 생성
     m_idlePage = new IdlePage(this);
     m_recyclePage = new RecyclePage(this);
     m_resultPage = new ResultPage(this);
 
+    // 2. QStackedWidget에 순서대로 등록
     ui->stackedWidgetMain->addWidget(m_idlePage); // Index 0
     ui->stackedWidgetMain->addWidget(m_recyclePage); // Index 1
     ui->stackedWidgetMain->addWidget(m_resultPage); // Index 2
 
     ui->stackedWidgetMain->setCurrentWidget(m_idlePage);
 
-    // IdlePage 시그널
-    connect(m_idlePage, &IdlePage::sigMemberStartRequested, this, &MainWindow::onMemberStartRequested);
-    connect(m_idlePage, &IdlePage::sigGuestStartRequested, this, &MainWindow::onGuestStartRequested);
+    // 3. IdlePage 시그널 라우팅
+    connect(m_idlePage, &IdlePage::sigMemberStartRequested,
+        this, &MainWindow::onMemberStartRequested);
+    connect(m_idlePage, &IdlePage::sigGuestStartRequested,
+        this, &MainWindow::onGuestStartRequested);
 
-    // RecyclePage 시그널
-    connect(m_recyclePage, &RecyclePage::sigFinishSessionRequested, this, &MainWindow::onRecycleFinished);
-    connect(m_recyclePage, &RecyclePage::sigCancelSessionRequested, this, &MainWindow::onReturnToIdle);
+    // 4. RecyclePage 시그널 라우팅
+    connect(m_recyclePage, &RecyclePage::sigFinishSessionRequested,
+        this, &MainWindow::onRecycleFinished);
+    connect(m_recyclePage, &RecyclePage::sigCancelSessionRequested,
+        this, &MainWindow::onReturnToIdle);
 
-    // ResultPage 시그널
-    connect(m_resultPage, &ResultPage::sigReturnToIdleRequested, this, &MainWindow::onReturnToIdle);
+    // 5. ResultPage 시그널 라우팅
+    connect(m_resultPage, &ResultPage::sigReturnToIdleRequested,
+        this, &MainWindow::onReturnToIdle);
 }
 
 void MainWindow::updateBinLevels(int can, int pet, int paper, int general)
@@ -51,6 +60,28 @@ void MainWindow::updateBinLevels(int can, int pet, int paper, int general)
     ui->progressBarPet->setValue(std::clamp(pet, 0, 100));
     ui->progressBarPaper->setValue(std::clamp(paper, 0, 100));
     ui->progressBarGeneral->setValue(std::clamp(general, 0, 100));
+}
+
+void MainWindow::updateConnectionStatus(bool connected)
+{
+    if (connected) {
+        ui->lblConnStatus->setText("● AI VISION ONLINE");
+        ui->lblConnStatus->setStyleSheet("background-color: #0F172A; border: 1.5px solid #10B981; "
+                                         "border-radius: 12px; padding: 5px 14px; color: #10B981; font-weight: bold; font-size: 12px;");
+    } else {
+        ui->lblConnStatus->setText("○ AI VISION OFFLINE");
+        ui->lblConnStatus->setStyleSheet("background-color: #0F172A; border: 1.5px solid #EF4444; "
+                                         "border-radius: 12px; padding: 5px 14px; color: #EF4444; font-weight: bold; font-size: 12px;");
+    }
+}
+
+void MainWindow::updateTelemetry(double fps, double inferMs, double latencyMs)
+{
+    ui->lblTelemetry->setText(QString("FPS: %1 | Infer: %2ms | Network Latency: %3ms | Jetson Stream Port: %4")
+            .arg(QString::number(fps, 'f', 1))
+            .arg(QString::number(inferMs, 'f', 1))
+            .arg(QString::number(latencyMs, 'f', 1))
+            .arg(Config::JETSON_PORT));
 }
 
 void MainWindow::onMemberStartRequested(const QString& userId)
@@ -74,7 +105,7 @@ void MainWindow::onGuestStartRequested()
 
 void MainWindow::onRecycleFinished()
 {
-    // 테스트용 샘플 정산 데이터
+    // 정산 데이터 빌드 (추후 KioskController 세션 데이터와 직접 연동)
     m_currentSession.canCount = 1;
     m_currentSession.petCount = 2;
     m_currentSession.paperCount = 0;
@@ -91,17 +122,4 @@ void MainWindow::onReturnToIdle()
     m_currentSession = SessionSummary();
     m_recyclePage->resetState();
     ui->stackedWidgetMain->setCurrentWidget(m_idlePage);
-}
-
-void MainWindow::updateConnectionStatus(bool connected)
-{
-    if (connected) {
-        ui->lblConnStatus->setText("● AI VISION ONLINE");
-        ui->lblConnStatus->setStyleSheet("background-color: #0F172A; border: 1.5px solid #10B981; "
-                                         "border-radius: 12px; padding: 5px 14px; color: #10B981; font-weight: bold; font-size: 12px;");
-    } else {
-        ui->lblConnStatus->setText("○ AI VISION OFFLINE");
-        ui->lblConnStatus->setStyleSheet("background-color: #0F172A; border: 1.5px solid #EF4444; "
-                                         "border-radius: 12px; padding: 5px 14px; color: #EF4444; font-weight: bold; font-size: 12px;");
-    }
 }

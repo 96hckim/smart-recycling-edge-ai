@@ -7,131 +7,176 @@
     <x>0</x>
     <y>0</y>
     <width>1920</width>
-    <height>940</height>
+    <height>920</height>
    </rect>
   </property>
   <property name="styleSheet">
    <string notr="true">
 QWidget {
-    background-color: #0B0F17;
+    background-color: #070B14;
     color: #F8FAFC;
     font-family: 'Pretendard', 'Segoe UI', sans-serif;
-    font-size: 16px;
 }
 
-QFrame.kioskPanel {
-    background-color: #141B28;
-    border: 1px solid #232F42;
-    border-radius: 20px;
+QLabel {
+    background-color: transparent;
 }
 
+/* 중앙 메인 대시보드 카드 */
+QFrame#frameContainer {
+    background-color: #0F172A;
+    border: 2px solid #1E293B;
+    border-radius: 28px;
+}
+
+/* 상단 완료 타이틀 */
+QLabel#lblTitleIcon { font-size: 68px; }
 QLabel#lblResultHeader {
-    font-size: 36px;
-    font-weight: 800;
-    color: #10B981;
-    background: transparent;
+    font-size: 60px;
+    font-weight: 900;
+    color: #F8FAFC;
     letter-spacing: -0.5px;
 }
 QLabel#lblResultSub {
-    font-size: 18px;
+    font-size: 40px;
     font-weight: 500;
     color: #94A3B8;
-    background: transparent;
 }
 
+/* 중앙 종합 리워드 배너 */
 QFrame#frameTotalBanner {
-    background-color: #0F172A;
-    border: 1.5px solid #1E3A5F;
-    border-radius: 18px;
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 #11253E, stop:1 #0C362F);
+    border: 2px solid #0284C7;
+    border-radius: 20px;
 }
-QLabel#lblBannerTitle {
-    font-size: 16px;
+QLabel#lblPointsTitle, QLabel#lblCarbonTitle {
+    font-size: 24px;
     font-weight: 700;
     color: #94A3B8;
-    background: transparent;
 }
 QLabel#lblTotalPoints {
-    font-size: 44px;
+    font-size: 46px;
     font-weight: 900;
     color: #38BDF8;
-    background: transparent;
 }
 QLabel#lblTotalCarbon {
-    font-size: 22px;
-    font-weight: 800;
-    color: #10B981;
-    background: transparent;
-}
-
-QFrame.receiptBox {
-    background-color: #0D131F;
-    border: 1px solid #1E293B;
-    border-radius: 16px;
-}
-QLabel.receiptItemTitle {
-    font-size: 18px;
-    font-weight: 700;
-    color: #F8FAFC;
-    background: transparent;
-}
-QLabel.receiptItemCount {
-    font-size: 30px;
+    font-size: 46px;
     font-weight: 900;
-    color: #F8FAFC;
-    background: transparent;
+    color: #10B981;
 }
-QLabel.receiptItemPoints {
-    font-size: 15px;
-    font-weight: 700;
+QFrame#bannerDivider {
+    background-color: rgba(148, 163, 184, 0.2);
+    border: none;
+    width: 2px;
+}
+
+/* 4종 품목 영수증 카드 (기본: 미투입) */
+QFrame.receiptCard {
+    background-color: #131E30;
+    border: 2px solid #1E293B;
+    border-radius: 18px;
+}
+QLabel.receiptTitle {
+    font-size: 24px;
+    font-weight: 800;
     color: #94A3B8;
-    background: transparent;
+}
+QLabel.receiptCount {
+    font-size: 42px;
+    font-weight: 900;
+    color: #475569;
+}
+QLabel.receiptPoints {
+    font-size: 24px;
+    font-weight: 800;
+    color: #334155;
 }
 
+/* 4종 품목 활성화 상태 (active="true") */
+QFrame#boxReceiptCan[active="true"] { background-color: #0E2922; border: 2px solid #10B981; }
+QLabel#lblRCanTitle[active="true"] { color: #F8FAFC; }
+QLabel#lblRCanCount[active="true"] { color: #10B981; }
+QLabel#lblRCanPoints[active="true"] { color: #10B981; }
+
+QFrame#boxReceiptPet[active="true"] { background-color: #0E273D; border: 2px solid #38BDF8; }
+QLabel#lblRPetTitle[active="true"] { color: #F8FAFC; }
+QLabel#lblRPetCount[active="true"] { color: #38BDF8; }
+QLabel#lblRPetPoints[active="true"] { color: #38BDF8; }
+
+QFrame#boxReceiptPaper[active="true"] { background-color: #2D2311; border: 2px solid #F59E0B; }
+QLabel#lblRPaperTitle[active="true"] { color: #F8FAFC; }
+QLabel#lblRPaperCount[active="true"] { color: #F59E0B; }
+QLabel#lblRPaperPoints[active="true"] { color: #F59E0B; }
+
+QFrame#boxReceiptGeneral[active="true"] { background-color: #1E2838; border: 2px solid #94A3B8; }
+QLabel#lblRGeneralTitle[active="true"] { color: #F8FAFC; }
+QLabel#lblRGeneralCount[active="true"] { color: #E2E8F0; }
+QLabel#lblRGeneralPoints[active="true"] { color: #94A3B8; }
+
+/* 상태 안내 뱃지 */
 QLabel#lblUserNotice {
+    background-color: #131E33;
+    border: 1.5px solid #334155;
     border-radius: 14px;
-    font-size: 16px;
+    color: #CBD5E1;
+    font-size: 19px;
     font-weight: 700;
-    padding: 12px;
+    padding: 10px 20px;
+}
+QLabel#lblUserNotice[member="true"] {
+    background-color: rgba(16, 185, 129, 0.12);
+    border-color: #10B981;
+    color: #10B981;
 }
 
+/* 하단 확인 버튼 */
 QPushButton#btnConfirm {
     background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #10B981, stop:1 #06B6D4);
     color: #FFFFFF;
-    font-size: 20px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 900;
     border: none;
     border-radius: 16px;
 }
 QPushButton#btnConfirm:hover {
     background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #059669, stop:1 #0891B2);
 }
-QPushButton#btnConfirm:pressed { background-color: #047857; }
+QPushButton#btnConfirm:pressed {
+    background-color: #047857;
+}
+QPushButton#btnConfirm:disabled {
+    background-color: #334155;
+    color: #64748B;
+}
    </string>
   </property>
   <layout class="QVBoxLayout" name="rootVLayout">
-   <property name="spacing"><number>0</number></property>
-   <property name="leftMargin"><number>56</number></property>
-   <property name="topMargin"><number>28</number></property>
-   <property name="rightMargin"><number>56</number></property>
-   <property name="bottomMargin"><number>28</number></property>
-
+   <property name="leftMargin"><number>64</number></property>
+   <property name="topMargin"><number>24</number></property>
+   <property name="rightMargin"><number>64</number></property>
+   <property name="bottomMargin"><number>24</number></property>
    <item>
-    <widget class="QFrame" name="frameResultMain">
-     <property name="class" stdset="0"><string>kioskPanel</string></property>
-     <layout class="QVBoxLayout" name="resultMainVLayout">
-      <property name="spacing"><number>20</number></property>
-      <property name="leftMargin"><number>48</number></property>
-      <property name="topMargin"><number>32</number></property>
-      <property name="rightMargin"><number>48</number></property>
-      <property name="bottomMargin"><number>32</number></property>
+    <widget class="QFrame" name="frameContainer">
+     <layout class="QVBoxLayout" name="containerVLayout">
+      <property name="spacing"><number>18</number></property>
+      <property name="leftMargin"><number>40</number></property>
+      <property name="topMargin"><number>28</number></property>
+      <property name="rightMargin"><number>40</number></property>
+      <property name="bottomMargin"><number>28</number></property>
 
-      <!-- 상단 헤더 -->
+      <!-- 1. 상단 타이틀 -->
       <item>
-       <layout class="QVBoxLayout" name="headerVLayout">
-        <property name="spacing"><number>6</number></property>
+       <layout class="QVBoxLayout" name="titleVLayout">
+        <property name="spacing"><number>4</number></property>
+        <item>
+         <widget class="QLabel" name="lblTitleIcon">
+          <property name="text"><string>🎉</string></property>
+          <property name="alignment"><set>Qt::AlignCenter</set></property>
+         </widget>
+        </item>
         <item>
          <widget class="QLabel" name="lblResultHeader">
-          <property name="text"><string>🎉 분리배출이 완료되었습니다!</string></property>
+          <property name="text"><string>분리배출이 완료되었습니다!</string></property>
           <property name="alignment"><set>Qt::AlignCenter</set></property>
          </widget>
         </item>
@@ -144,103 +189,153 @@ QPushButton#btnConfirm:pressed { background-color: #047857; }
        </layout>
       </item>
 
-      <!-- 중앙 총합 배너 -->
+      <!-- 2. 중앙 통합 리워드 배너 (포인트 + 탄소) -->
       <item>
        <widget class="QFrame" name="frameTotalBanner">
-        <property name="minimumSize"><size><width>0</width><height>110</height></size></property>
+        <property name="minimumSize"><size><width>0</width><height>120</height></size></property>
+        <property name="maximumSize"><size><width>16777215</width><height>130</height></size></property>
         <layout class="QHBoxLayout" name="bannerHLayout">
-         <property name="leftMargin"><number>32</number></property>
-         <property name="rightMargin"><number>32</number></property>
+         <property name="leftMargin"><number>40</number></property>
+         <property name="rightMargin"><number>40</number></property>
+
          <item>
-          <layout class="QVBoxLayout" name="bannerLeftVLayout">
-           <property name="spacing"><number>4</number></property>
-           <item><widget class="QLabel" name="lblBannerTitle"><property name="text"><string>총 획득 리워드</string></property></widget></item>
-           <item><widget class="QLabel" name="lblTotalPoints"><property name="text"><string>+ 150 P</string></property></widget></item>
+          <layout class="QVBoxLayout" name="pointVLayout">
+           <property name="spacing"><number>2</number></property>
+           <property name="alignment"><set>Qt::AlignCenter</set></property>
+           <item>
+            <widget class="QLabel" name="lblPointsTitle">
+             <property name="text"><string>💰 총 적립 포인트</string></property>
+             <property name="alignment"><set>Qt::AlignCenter</set></property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lblTotalPoints">
+             <property name="text"><string>+ 0 P</string></property>
+             <property name="alignment"><set>Qt::AlignCenter</set></property>
+            </widget>
+           </item>
           </layout>
          </item>
-         <item><spacer name="bannerSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+
          <item>
-          <widget class="QLabel" name="lblTotalCarbon">
-           <property name="text"><string>🌱 총 탄소 절감량: 55.4g CO2</string></property>
-           <property name="alignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
+          <widget class="QFrame" name="bannerDivider">
+           <property name="minimumSize"><size><width>2</width><height>60</height></size></property>
+           <property name="maximumSize"><size><width>2</width><height>60</height></size></property>
+           <property name="frameShape"><enum>QFrame::VLine</enum></property>
+           <property name="frameShadow"><enum>QFrame::Sunken</enum></property>
           </widget>
          </item>
+
+         <item>
+          <layout class="QVBoxLayout" name="carbonVLayout">
+           <property name="spacing"><number>2</number></property>
+           <property name="alignment"><set>Qt::AlignCenter</set></property>
+           <item>
+            <widget class="QLabel" name="lblCarbonTitle">
+             <property name="text"><string>🌱 온실가스 탄소 절감량</string></property>
+             <property name="alignment"><set>Qt::AlignCenter</set></property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lblTotalCarbon">
+             <property name="text"><string>0.0 g CO₂</string></property>
+             <property name="alignment"><set>Qt::AlignCenter</set></property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+
         </layout>
        </widget>
       </item>
 
-      <!-- 4종 영수증 그리드 -->
+      <!-- 3. 4종 상세 품목 영수증 그리드 (4열 카드) -->
       <item>
        <layout class="QHBoxLayout" name="receiptHLayout">
         <property name="spacing"><number>14</number></property>
+
         <!-- CAN -->
         <item>
          <widget class="QFrame" name="boxReceiptCan">
-          <property name="class" stdset="0"><string>receiptBox</string></property>
+          <property name="class" stdset="0"><string>receiptCard</string></property>
+          <property name="minimumSize"><size><width>0</width><height>140</height></size></property>
+          <property name="maximumSize"><size><width>16777215</width><height>150</height></size></property>
           <layout class="QVBoxLayout" name="rCanVLayout">
-           <property name="spacing"><number>6</number></property>
-           <property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
-           <item><widget class="QLabel" name="lblRCanTitle"><property name="class" stdset="0"><string>receiptItemTitle</string></property><property name="text"><string>🥫 캔 (CAN)</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
-           <item><widget class="QLabel" name="lblRCanCount"><property name="class" stdset="0"><string>receiptItemCount</string></property><property name="text"><string>0 개</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
-           <item><widget class="QLabel" name="lblRCanPoints"><property name="class" stdset="0"><string>receiptItemPoints</string></property><property name="text"><string>0 P</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <property name="spacing"><number>4</number></property>
+           <property name="alignment"><set>Qt::AlignCenter</set></property>
+           <item><widget class="QLabel" name="lblRCanTitle"><property name="class" stdset="0"><string>receiptTitle</string></property><property name="text"><string>🥫 캔</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <item><widget class="QLabel" name="lblRCanCount"><property name="class" stdset="0"><string>receiptCount</string></property><property name="text"><string>0 개</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <item><widget class="QLabel" name="lblRCanPoints"><property name="class" stdset="0"><string>receiptPoints</string></property><property name="text"><string>-</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
           </layout>
          </widget>
         </item>
+
         <!-- PET -->
         <item>
          <widget class="QFrame" name="boxReceiptPet">
-          <property name="class" stdset="0"><string>receiptBox</string></property>
+          <property name="class" stdset="0"><string>receiptCard</string></property>
+          <property name="minimumSize"><size><width>0</width><height>140</height></size></property>
+          <property name="maximumSize"><size><width>16777215</width><height>150</height></size></property>
           <layout class="QVBoxLayout" name="rPetVLayout">
-           <property name="spacing"><number>6</number></property>
-           <property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
-           <item><widget class="QLabel" name="lblRPetTitle"><property name="class" stdset="0"><string>receiptItemTitle</string></property><property name="text"><string>🧴 페트 (PET)</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
-           <item><widget class="QLabel" name="lblRPetCount"><property name="class" stdset="0"><string>receiptItemCount</string></property><property name="text"><string>0 개</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
-           <item><widget class="QLabel" name="lblRPetPoints"><property name="class" stdset="0"><string>receiptItemPoints</string></property><property name="text"><string>0 P</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <property name="spacing"><number>4</number></property>
+           <property name="alignment"><set>Qt::AlignCenter</set></property>
+           <item><widget class="QLabel" name="lblRPetTitle"><property name="class" stdset="0"><string>receiptTitle</string></property><property name="text"><string>🧴 페트</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <item><widget class="QLabel" name="lblRPetCount"><property name="class" stdset="0"><string>receiptCount</string></property><property name="text"><string>0 개</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <item><widget class="QLabel" name="lblRPetPoints"><property name="class" stdset="0"><string>receiptPoints</string></property><property name="text"><string>-</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
           </layout>
          </widget>
         </item>
+
         <!-- PAPER -->
         <item>
          <widget class="QFrame" name="boxReceiptPaper">
-          <property name="class" stdset="0"><string>receiptBox</string></property>
+          <property name="class" stdset="0"><string>receiptCard</string></property>
+          <property name="minimumSize"><size><width>0</width><height>140</height></size></property>
+          <property name="maximumSize"><size><width>16777215</width><height>150</height></size></property>
           <layout class="QVBoxLayout" name="rPaperVLayout">
-           <property name="spacing"><number>6</number></property>
-           <property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
-           <item><widget class="QLabel" name="lblRPaperTitle"><property name="class" stdset="0"><string>receiptItemTitle</string></property><property name="text"><string>📦 종이 (PAPER)</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
-           <item><widget class="QLabel" name="lblRPaperCount"><property name="class" stdset="0"><string>receiptItemCount</string></property><property name="text"><string>0 개</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
-           <item><widget class="QLabel" name="lblRPaperPoints"><property name="class" stdset="0"><string>receiptItemPoints</string></property><property name="text"><string>0 P</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <property name="spacing"><number>4</number></property>
+           <property name="alignment"><set>Qt::AlignCenter</set></property>
+           <item><widget class="QLabel" name="lblRPaperTitle"><property name="class" stdset="0"><string>receiptTitle</string></property><property name="text"><string>📦 종이</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <item><widget class="QLabel" name="lblRPaperCount"><property name="class" stdset="0"><string>receiptCount</string></property><property name="text"><string>0 개</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <item><widget class="QLabel" name="lblRPaperPoints"><property name="class" stdset="0"><string>receiptPoints</string></property><property name="text"><string>-</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
           </layout>
          </widget>
         </item>
+
         <!-- GENERAL -->
         <item>
          <widget class="QFrame" name="boxReceiptGeneral">
-          <property name="class" stdset="0"><string>receiptBox</string></property>
+          <property name="class" stdset="0"><string>receiptCard</string></property>
+          <property name="minimumSize"><size><width>0</width><height>140</height></size></property>
+          <property name="maximumSize"><size><width>16777215</width><height>150</height></size></property>
           <layout class="QVBoxLayout" name="rGeneralVLayout">
-           <property name="spacing"><number>6</number></property>
-           <property name="leftMargin"><number>16</number></property><property name="topMargin"><number>16</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>16</number></property>
-           <item><widget class="QLabel" name="lblRGeneralTitle"><property name="class" stdset="0"><string>receiptItemTitle</string></property><property name="text"><string>🗑️ 일반 (GENERAL)</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
-           <item><widget class="QLabel" name="lblRGeneralCount"><property name="class" stdset="0"><string>receiptItemCount</string></property><property name="text"><string>0 개</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
-           <item><widget class="QLabel" name="lblRGeneralPoints"><property name="class" stdset="0"><string>receiptItemPoints</string></property><property name="text"><string>0 P (미지급)</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <property name="spacing"><number>4</number></property>
+           <property name="alignment"><set>Qt::AlignCenter</set></property>
+           <item><widget class="QLabel" name="lblRGeneralTitle"><property name="class" stdset="0"><string>receiptTitle</string></property><property name="text"><string>🗑️ 일반</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <item><widget class="QLabel" name="lblRGeneralCount"><property name="class" stdset="0"><string>receiptCount</string></property><property name="text"><string>0 개</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+           <item><widget class="QLabel" name="lblRGeneralPoints"><property name="class" stdset="0"><string>receiptPoints</string></property><property name="text"><string>-</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
           </layout>
          </widget>
         </item>
+
        </layout>
       </item>
 
-      <!-- 사용자 뱃지 -->
+      <!-- 4. 상태 안내 뱃지 -->
       <item>
        <widget class="QLabel" name="lblUserNotice">
-        <property name="minimumSize"><size><width>0</width><height>48</height></size></property>
+        <property name="minimumSize"><size><width>0</width><height>56</height></size></property>
+        <property name="maximumSize"><size><width>16777215</width><height>56</height></size></property>
         <property name="text"><string>✅ 회원 포인트가 안전하게 적립되었습니다.</string></property>
         <property name="alignment"><set>Qt::AlignCenter</set></property>
        </widget>
       </item>
 
-      <!-- 확인 버튼 -->
+      <!-- 5. 확인 버튼 -->
       <item>
        <widget class="QPushButton" name="btnConfirm">
-        <property name="minimumSize"><size><width>0</width><height>64</height></size></property>
+        <property name="minimumSize"><size><width>0</width><height>68</height></size></property>
+        <property name="maximumSize"><size><width>16777215</width><height>68</height></size></property>
         <property name="text"><string>확인 (5초 후 처음으로 이동)</string></property>
         <property name="cursor"><cursorShape>PointingHandCursor</cursorShape></property>
        </widget>
@@ -249,7 +344,6 @@ QPushButton#btnConfirm:pressed { background-color: #047857; }
      </layout>
     </widget>
    </item>
-
   </layout>
  </widget>
  <resources/>
