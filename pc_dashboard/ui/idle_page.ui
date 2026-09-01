@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>IdlePage</class>
+ <widget class="QWidget" name="IdlePage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1920</width>
+    <height>940</height>
+   </rect>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+QWidget {
+    background-color: #0B0F17;
+    color: #F8FAFC;
+    font-family: 'Pretendard', 'Segoe UI', sans-serif;
+    font-size: 16px;
+}
+
+QLabel#lblMainTitle {
+    font-size: 38px;
+    font-weight: 800;
+    color: #38BDF8;
+    background: transparent;
+}
+QLabel#lblSubTitle {
+    font-size: 19px;
+    font-weight: 500;
+    color: #94A3B8;
+    background: transparent;
+}
+
+QFrame#frameMemberCard, QFrame#frameGuestCard {
+    background-color: #141B28;
+    border: 2px solid #232F42;
+    border-radius: 20px;
+}
+QFrame#frameMemberCard:hover { border: 2px solid #10B981; }
+QFrame#frameGuestCard:hover { border: 2px solid #38BDF8; }
+
+QLabel#lblMemberTitle { font-size: 26px; font-weight: 800; color: #10B981; background: transparent; }
+QLabel#lblGuestTitle { font-size: 26px; font-weight: 800; color: #38BDF8; background: transparent; }
+
+QLabel#lblGuestIcon {
+    font-size: 96px;
+    color: #38BDF8;
+    background-color: rgba(56, 189, 248, 0.08);
+    border: 1px solid #25334D;
+    border-radius: 20px;
+}
+
+QLabel#lblQrCode {
+    background-color: #FFFFFF;
+    border-radius: 20px;
+    color: #0B0F17;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+QLabel#lblMemberDesc, QLabel#lblGuestDesc {
+    font-size: 17px;
+    color: #94A3B8;
+    background: transparent;
+    line-height: 1.5;
+}
+
+QLabel#lblQrGuideBadge {
+    background-color: rgba(16, 185, 129, 0.12);
+    border: 2px solid #10B981;
+    border-radius: 16px;
+    color: #10B981;
+    font-size: 19px;
+    font-weight: 800;
+}
+
+QPushButton#btnGuestStart {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #2563EB, stop:1 #38BDF8);
+    color: #FFFFFF;
+    font-size: 20px;
+    font-weight: 800;
+    border: none;
+    border-radius: 16px;
+}
+QPushButton#btnGuestStart:hover {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #1D4ED8, stop:1 #0284C7);
+}
+QPushButton#btnGuestStart:pressed { background-color: #1E40AF; }
+   </string>
+  </property>
+  <layout class="QVBoxLayout" name="mainVLayout">
+   <property name="spacing"><number>28</number></property>
+   <property name="leftMargin"><number>56</number></property>
+   <property name="topMargin"><number>36</number></property>
+   <property name="rightMargin"><number>56</number></property>
+   <property name="bottomMargin"><number>36</number></property>
+
+   <!-- 1. 상단 타이틀 -->
+   <item>
+    <layout class="QVBoxLayout" name="titleVLayout">
+     <property name="spacing"><number>8</number></property>
+     <item>
+      <widget class="QLabel" name="lblMainTitle">
+       <property name="text"><string>분리배출 방식을 선택해 주세요</string></property>
+       <property name="alignment"><set>Qt::AlignCenter</set></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="lblSubTitle">
+       <property name="text"><string>모바일 앱으로 QR을 스캔하여 포인트를 적립하거나, 바로 투입을 시작할 수 있습니다</string></property>
+       <property name="alignment"><set>Qt::AlignCenter</set></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+
+   <!-- 2. 중앙 메인 카드 2열 -->
+   <item>
+    <layout class="QHBoxLayout" name="cardsHLayout">
+     <property name="spacing"><number>36</number></property>
+
+     <!-- 좌측: 회원 QR 카드 -->
+     <item>
+      <widget class="QFrame" name="frameMemberCard">
+       <layout class="QVBoxLayout" name="memberVLayout">
+        <property name="spacing"><number>22</number></property>
+        <property name="leftMargin"><number>36</number></property>
+        <property name="topMargin"><number>36</number></property>
+        <property name="rightMargin"><number>36</number></property>
+        <property name="bottomMargin"><number>36</number></property>
+        <item>
+         <widget class="QLabel" name="lblMemberTitle">
+          <property name="text"><string>📱 회원 포인트 적립 (최대 +50P)</string></property>
+          <property name="alignment"><set>Qt::AlignCenter</set></property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="qrCenterLayout">
+          <item><spacer name="qrLSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+          <item>
+           <widget class="QLabel" name="lblQrCode">
+            <property name="minimumSize"><size><width>240</width><height>240</height></size></property>
+            <property name="maximumSize"><size><width>240</width><height>240</height></size></property>
+            <property name="text"><string>[ APP LOGIN QR ]</string></property>
+            <property name="alignment"><set>Qt::AlignCenter</set></property>
+           </widget>
+          </item>
+          <item><spacer name="qrRSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="lblMemberDesc">
+          <property name="minimumSize"><size><width>0</width><height>48</height></size></property>
+          <property name="text"><string>스마트폰 카메라로 QR 코드를 스캔하면&#10;자동 로그인 및 포인트가 적립됩니다.</string></property>
+          <property name="alignment"><set>Qt::AlignCenter</set></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lblQrGuideBadge">
+          <property name="minimumSize"><size><width>0</width><height>68</height></size></property>
+          <property name="text"><string>스캔 시 자동으로 시작됩니다</string></property>
+          <property name="alignment"><set>Qt::AlignCenter</set></property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+
+     <!-- 우측: 비회원 시작 카드 -->
+     <item>
+      <widget class="QFrame" name="frameGuestCard">
+       <layout class="QVBoxLayout" name="guestVLayout">
+        <property name="spacing"><number>22</number></property>
+        <property name="leftMargin"><number>36</number></property>
+        <property name="topMargin"><number>36</number></property>
+        <property name="rightMargin"><number>36</number></property>
+        <property name="bottomMargin"><number>36</number></property>
+        <item>
+         <widget class="QLabel" name="lblGuestTitle">
+          <property name="text"><string>🚀 비회원 간편 투입</string></property>
+          <property name="alignment"><set>Qt::AlignCenter</set></property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="iconCenterLayout">
+          <item><spacer name="iconLSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+          <item>
+           <widget class="QLabel" name="lblGuestIcon">
+            <property name="minimumSize"><size><width>240</width><height>240</height></size></property>
+            <property name="maximumSize"><size><width>240</width><height>240</height></size></property>
+            <property name="text"><string>♻</string></property>
+            <property name="alignment"><set>Qt::AlignCenter</set></property>
+           </widget>
+          </item>
+          <item><spacer name="iconRSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="lblGuestDesc">
+          <property name="minimumSize"><size><width>0</width><height>48</height></size></property>
+          <property name="text"><string>앱 인증 없이 즉시 투입구를 열고&#10;스마트 분리배출을 진행합니다. (포인트 미적립)</string></property>
+          <property name="alignment"><set>Qt::AlignCenter</set></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnGuestStart">
+          <property name="minimumSize"><size><width>0</width><height>68</height></size></property>
+          <property name="text"><string>포인트 없이 바로 시작하기</string></property>
+          <property name="cursor"><cursorShape>PointingHandCursor</cursorShape></property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+
+    </layout>
+   </item>
+
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
