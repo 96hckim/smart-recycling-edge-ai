@@ -1,5 +1,5 @@
 ﻿#include "idle_page.h"
-#include "app_config.h" // ★ 추가
+#include "app_config.h"
 #include "ui_idle_page.h"
 #include <QEvent>
 #include <QMouseEvent>

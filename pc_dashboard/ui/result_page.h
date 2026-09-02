@@ -1,9 +1,11 @@
-﻿#ifndef RESULT_PAGE_H
+﻿#pragma once
+#ifndef RESULT_PAGE_H
 #define RESULT_PAGE_H
 
 #include "app_config.h"
 #include <QFrame>
 #include <QLabel>
+#include <QMovie>
 #include <QTimer>
 #include <QVariantAnimation>
 #include <QWidget>
@@ -31,7 +33,10 @@ private slots:
     void onCarbonAnimUpdate(const QVariant& value);
 
 private:
+    void initConfettiOverlay();
+    void setupTimer();
     void setupAnimations();
+
     void updateCard(QFrame* box, QLabel* lblTitle, QLabel* lblCount, QLabel* lblPoints,
         int count, int unitPoint);
 
@@ -40,6 +45,7 @@ private:
     QTimer* m_countdownTimer { nullptr };
     QVariantAnimation* m_pointsAnim { nullptr };
     QVariantAnimation* m_carbonAnim { nullptr };
+    QMovie* m_confettiMovie { nullptr };
 
     int m_remainingSec { Config::RESULT_DISPLAY_TIMEOUT_SEC };
     bool m_isMemberSession { false };

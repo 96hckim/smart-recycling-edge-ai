@@ -5,12 +5,11 @@
 class QLabel;
 class QMovie;
 
-// 에코 트리 성장 단계 정의
 enum class TreeStage {
-    READY = 0, // 대기 (씨앗/화분)
-    SPROUT = 1, // 새싹 (1~2개)
-    SAPLING = 2, // 묘목 (3~4개)
-    MATURE = 3 // 완성된 큰 나무 (5개 이상)
+    BASE_TREE, // 0개: 잎이 없는 기본 나무 (초기 세팅)
+    SPROUT, // 1~2개: 잎 돋아남
+    SAPLING, // 3~4개: 잎 무성해짐
+    MATURE // 5개 이상: 완성된 나무
 };
 
 class EcoTreeController : public QObject {
@@ -24,7 +23,7 @@ public:
 
 private:
     void initMovie();
-    void showWaitingPlaceholder();
+    void showBaseTree();
     void updateStatusText(TreeStage stage, int count);
     TreeStage calculateStage(int count) const;
 
@@ -32,6 +31,6 @@ private:
     QLabel* m_lblMovie { nullptr };
     QLabel* m_lblStatus { nullptr };
     QMovie* m_movie { nullptr };
-    TreeStage m_currentStage { TreeStage::READY };
+    TreeStage m_currentStage { TreeStage::BASE_TREE };
     int m_targetFrame { 0 };
 };

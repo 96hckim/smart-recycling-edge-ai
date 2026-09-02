@@ -72,26 +72,35 @@ namespace Telemetry {
 }
 
 namespace VisionRender {
-    inline constexpr int BOX_PEN_WIDTH = 3; // 탐지 테두리 두께 (px)
-    inline constexpr int BADGE_FONT_SIZE = 12; // 배지 폰트 크기 (pt)
-    inline constexpr int BADGE_PAD_X = 8; // 배지 좌우 여백 (px)
-    inline constexpr int BADGE_PAD_Y = 4; // 배지 상하 여백 (px)
+    inline constexpr int BADGE_FONT_SIZE = 22; // 텍스트 크기 확대
+    inline constexpr int BOX_PEN_WIDTH = 4; // 바운딩 박스 선 두께 강화
+    inline constexpr int BADGE_PAD_X = 14; // 배지 좌우 여백 확장
+    inline constexpr int BADGE_PAD_Y = 8; // 배지 상하 여백 확장
 }
 
 namespace Result {
     inline constexpr int COUNTDOWN_INTERVAL_MS = 1000;
     inline constexpr int ANIM_POINTS_DURATION_MS = 900;
     inline constexpr int ANIM_CARBON_DURATION_MS = 1100;
+
+    // 폭죽 애니메이션 설정
+    inline const QString CONFETTI_RESOURCE_PATH = ":/images/confetti.gif";
+    inline constexpr int CONFETTI_SPEED = 100; // 100% 정속
 }
 
 namespace EcoTree {
     inline const QString RESOURCE_PATH = ":/images/tree_grow.gif";
-    inline constexpr int MOVIE_SPEED = 250;
+    inline constexpr int MOVIE_SPEED = 200;
     inline constexpr int DEFAULT_FRAME_COUNT = 120;
+
+    // 개수 임계값 (0개: 잎 없는 기본 나무, 1~2개: 새싹 잎, 3~4개: 풍성한 잎, 5개 이상: 완성)
     inline constexpr int THRESHOLD_STAGE_1 = 2;
     inline constexpr int THRESHOLD_STAGE_2 = 4;
-    inline constexpr double FRAME_RATIO_STAGE_1 = 0.35;
-    inline constexpr double FRAME_RATIO_STAGE_2 = 0.70;
+
+    // 프레임 진행 비율
+    inline constexpr double FRAME_RATIO_BASE = 0.30; // 0개 대기 상태: 잎 없는 기본 나무 프레임
+    inline constexpr double FRAME_RATIO_STAGE_1 = 0.55; // 1단계: 잎이 조금 돋아남
+    inline constexpr double FRAME_RATIO_STAGE_2 = 0.80; // 2단계: 잎이 무성해짐
 }
 
 // ============================================================================

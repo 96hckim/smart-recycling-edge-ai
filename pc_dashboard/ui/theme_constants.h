@@ -101,18 +101,21 @@ namespace Text {
     constexpr char CARBON_SAVED_FMT[] = "🌱 절감 탄소량: %1g CO2";
 }
 
+namespace Result {
+    // 타이틀 글자 영역(약 300px)에 최적화된 16:9 비율 폭죽 해상도
+    inline const QSize CONFETTI_DISPLAY_SIZE { 640, 300 }; // 1280, 720
+}
+
 // ============================================================================
 // 5. 에코 트리 UI 리소스 및 문구
 // ============================================================================
 namespace EcoTree {
-    inline const QSize DISPLAY_SIZE { 220, 220 };
-    inline const QString WAITING_EMOJI = "🪴";
-    inline const QString WAITING_STYLE = "font-size: 72px;";
+    inline const QSize DISPLAY_SIZE { 300, 300 };
 
-    inline const QString STATUS_READY = "재활용품을 넣어 나무를 키워보세요!";
-    inline const QString STATUS_STAGE_1_FMT = "🌱 새싹이 자라나고 있어요! (총 %1개)";
-    inline const QString STATUS_STAGE_2_FMT = "🌿 푸른 묘목으로 성장 중입니다! (총 %1개)";
-    inline const QString STATUS_STAGE_3_FMT = "🌳 지구를 지키는 울창한 나무 완성! (총 %1개)";
+    inline const QString STATUS_BASE = "재활용품을 넣어 나무에 잎을 틔워보세요!";
+    inline const QString STATUS_STAGE_1_FMT = "🌱 연둣빛 새싹 잎이 자라나요! (총 %1개)";
+    inline const QString STATUS_STAGE_2_FMT = "🌿 푸른 잎으로 무성해지는 중! (총 %1개)";
+    inline const QString STATUS_STAGE_3_FMT = "🌳 지구를 살리는 울창한 나무 완성! (총 %1개)";
 }
 
 } // namespace UITheme

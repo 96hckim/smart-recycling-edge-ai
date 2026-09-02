@@ -32,7 +32,6 @@ void RecyclePage::startSession(bool isMember, const QString& userName)
     applyDynamicProperty(ui->lblTotalPoints, UITheme::PROP_MEMBER, m_isMember);
 
     if (m_isMember) {
-        // ★ 하드코딩 "회원" -> UITheme::Text::DEFAULT_MEMBER_NAME 상수로 대체
         const QString displayName = m_userName.isEmpty() ? UITheme::Text::DEFAULT_MEMBER_NAME : m_userName;
         ui->lblUserGreeting->setText(QString(UITheme::Text::GREETING_MEMBER_FMT).arg(displayName));
         ui->lblUserGreeting->setStyleSheet(UITheme::Style::GREETING_MEMBER);
@@ -55,18 +54,31 @@ void RecyclePage::updateFrame(const QPixmap& pixmap)
     if (targetSize.width() <= 0 || targetSize.height() <= 0)
         return;
 
-    QPixmap frame = pixmap;
+    // 1. 원본 영상을 화면(lblVideo) 크기 비율에 맞춰 '먼저' 스케일링
+    QPixmap frame = pixmap.scaled(targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-    if (!m_detectionBox.isNull()) {
+    // 2. 확대된 화면 위에 직접 바운딩 박스 및 배지 렌더링
+    if (!m_detectionBox.isNull() && pixmap.width() > 0 && pixmap.height() > 0) {
+        // 원본 해상도 대비 스케일 비율 계산
+        const double scaleX = static_cast<double>(frame.width()) / pixmap.width();
+        const double scaleY = static_cast<double>(frame.height()) / pixmap.height();
+
+        // 스케일된 화면 좌표계 박스 산출
+        const QRect scaledBox(
+            static_cast<int>(m_detectionBox.x() * scaleX),
+            static_cast<int>(m_detectionBox.y() * scaleY),
+            static_cast<int>(m_detectionBox.width() * scaleX),
+            static_cast<int>(m_detectionBox.height() * scaleY));
+
         QPainter painter(&frame);
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.setRenderHint(QPainter::TextAntialiasing, true);
 
-        // 1) 품목 테마 색상 테두리 (상수 두께 적용)
+        // 1) 테마 색상 테두리
         painter.setPen(QPen(m_boxColor, Config::VisionRender::BOX_PEN_WIDTH));
-        painter.drawRect(m_detectionBox);
+        painter.drawRect(scaledBox);
 
-        // 2) 박스 상단 한글 품목 배지 ("캔", "페트", "종이", "일반")
+        // 2) 박스 상단 한글 배지
         if (!m_boxLabel.isEmpty()) {
             QFont font(UITheme::Style::FONT_FAMILY, Config::VisionRender::BADGE_FONT_SIZE, QFont::Bold);
             font.setStyleHint(QFont::SansSerif);
@@ -78,11 +90,11 @@ void RecyclePage::updateFrame(const QPixmap& pixmap)
             const int badgeW = fm.horizontalAdvance(m_boxLabel) + (padX * 2);
             const int badgeH = fm.height() + (padY * 2);
 
-            int badgeY = m_detectionBox.top() - badgeH;
+            int badgeY = scaledBox.top() - badgeH;
             if (badgeY < 0) {
-                badgeY = m_detectionBox.top();
+                badgeY = scaledBox.top();
             }
-            int badgeX = std::max(0, m_detectionBox.left());
+            int badgeX = std::max(0, scaledBox.left());
 
             const QRect badgeRect(badgeX, badgeY, badgeW, badgeH);
 
@@ -92,9 +104,8 @@ void RecyclePage::updateFrame(const QPixmap& pixmap)
         }
     }
 
-    ui->lblVideo->setPixmap(frame.scaled(targetSize,
-        Qt::KeepAspectRatio,
-        Qt::SmoothTransformation));
+    // 3. 최종 완성된 선명한 프레임 표출
+    ui->lblVideo->setPixmap(frame);
 }
 
 void RecyclePage::updateDetectionState(const QString& className, double confidence, int debounceCount, const QRect& box)

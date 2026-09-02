@@ -164,27 +164,77 @@ QPushButton#btnConfirm:disabled {
       <property name="rightMargin"><number>40</number></property>
       <property name="bottomMargin"><number>28</number></property>
 
-      <!-- 1. 상단 타이틀 -->
+      <!-- 1. 상단 타이틀 영역 (QGridLayout으로 폭죽 배경과 글자 중첩) -->
       <item>
-       <layout class="QVBoxLayout" name="titleVLayout">
-        <property name="spacing"><number>4</number></property>
-        <item>
-         <widget class="QLabel" name="lblTitleIcon">
-          <property name="text"><string>🎉</string></property>
-          <property name="alignment"><set>Qt::AlignCenter</set></property>
+       <layout class="QGridLayout" name="titleGridLayout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+
+        <!-- 1) 바닥에 깔리는 폭죽 라벨 (상하 최대 + 와이드 비율 확장) -->
+        <item row="0" column="0">
+         <widget class="QLabel" name="lblConfetti">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
          </widget>
         </item>
-        <item>
-         <widget class="QLabel" name="lblResultHeader">
-          <property name="text"><string>분리배출이 완료되었습니다!</string></property>
-          <property name="alignment"><set>Qt::AlignCenter</set></property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="lblResultSub">
-          <property name="text"><string>소중한 자원 순환에 동참해 주셔서 감사합니다</string></property>
-          <property name="alignment"><set>Qt::AlignCenter</set></property>
-         </widget>
+
+        <!-- 2) 폭죽 위에 겹치는 글자 레이아웃 (동일하게 0행 0열) -->
+        <item row="0" column="0">
+         <layout class="QVBoxLayout" name="titleTextLayout">
+          <property name="spacing">
+           <number>4</number>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <item>
+           <widget class="QLabel" name="lblTitleIcon">
+            <property name="text">
+             <string>🎉</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lblResultHeader">
+            <property name="text">
+             <string>분리배출이 완료되었습니다!</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lblResultSub">
+            <property name="text">
+             <string>소중한 자원 순환에 동참해 주셔서 감사합니다</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>

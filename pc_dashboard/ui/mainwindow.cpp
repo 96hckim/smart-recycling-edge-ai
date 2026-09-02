@@ -116,7 +116,6 @@ void MainWindow::updateBinLevels(int can, int pet, int paper, int general)
 
 void MainWindow::updateConnectionStatus(bool connected)
 {
-    // ★ 상수로 대체
     ui->lblConnStatus->setText(connected ? Config::Connection::STATUS_ONLINE : Config::Connection::STATUS_OFFLINE);
     ui->lblConnStatus->setProperty("online", connected);
     ui->lblConnStatus->style()->unpolish(ui->lblConnStatus);
@@ -125,7 +124,6 @@ void MainWindow::updateConnectionStatus(bool connected)
 
 void MainWindow::updateTelemetry(double fps, double inferMs, double latencyMs)
 {
-    // ★ 상수로 대체
     ui->lblTelemetry->setText(QString(Config::Telemetry::FORMAT_STR)
             .arg(QString::number(fps, 'f', 1))
             .arg(QString::number(inferMs, 'f', 1))

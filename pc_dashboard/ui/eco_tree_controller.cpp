@@ -10,7 +10,7 @@ EcoTreeController::EcoTreeController(QLabel* movieLabel, QLabel* statusLabel, QO
     , m_lblStatus(statusLabel)
 {
     initMovie();
-    showWaitingPlaceholder();
+    showBaseTree();
 }
 
 void EcoTreeController::initMovie()
@@ -23,9 +23,11 @@ void EcoTreeController::initMovie()
     if (m_lblMovie) {
         m_lblMovie->setScaledContents(false);
         m_lblMovie->setAlignment(Qt::AlignCenter);
+        m_lblMovie->setStyleSheet("background: transparent;");
+        m_lblMovie->setMovie(m_movie);
     }
 
-    // 목표 프레임 도달 시 정지 콜백
+    // 목표 프레임 도달 시 정지
     connect(m_movie, &QMovie::frameChanged, this, [this](int frameNumber) {
         if (m_targetFrame > 0 && frameNumber >= m_targetFrame) {
             m_movie->setPaused(true);
@@ -36,7 +38,7 @@ void EcoTreeController::initMovie()
 TreeStage EcoTreeController::calculateStage(int count) const
 {
     if (count <= 0) {
-        return TreeStage::READY;
+        return TreeStage::BASE_TREE;
     }
     if (count <= Config::EcoTree::THRESHOLD_STAGE_1) {
         return TreeStage::SPROUT;
@@ -52,15 +54,13 @@ void EcoTreeController::updateCount(int totalCount)
     const TreeStage newStage = calculateStage(totalCount);
     updateStatusText(newStage, totalCount);
 
-    // 0개 대기 상태 복귀
-    if (newStage == TreeStage::READY) {
-        m_currentStage = TreeStage::READY;
-        m_targetFrame = 0;
-        showWaitingPlaceholder();
+    // 0개로 리셋되는 경우 잎 없는 기본 나무 프레임으로 복귀
+    if (newStage == TreeStage::BASE_TREE) {
+        reset();
         return;
     }
 
-    // 동일 단계 유지 시 애니메이션 재시작 방지
+    // 동일 단계 유지 시 중복 재생 방지
     if (newStage == m_currentStage) {
         return;
     }
@@ -68,13 +68,6 @@ void EcoTreeController::updateCount(int totalCount)
     int totalFrames = m_movie->frameCount();
     if (totalFrames <= 0) {
         totalFrames = Config::EcoTree::DEFAULT_FRAME_COUNT;
-    }
-
-    // 화분 이모지에서 최초 GIF 모드로 전환되는 시점
-    if (m_currentStage == TreeStage::READY) {
-        m_lblMovie->setStyleSheet("");
-        m_lblMovie->setMovie(m_movie);
-        m_movie->jumpToFrame(0);
     }
 
     switch (newStage) {
@@ -87,8 +80,8 @@ void EcoTreeController::updateCount(int totalCount)
     case TreeStage::MATURE:
         m_targetFrame = totalFrames - 1;
         break;
-    case TreeStage::READY:
-        m_targetFrame = 0;
+    case TreeStage::BASE_TREE:
+        m_targetFrame = static_cast<int>(totalFrames * Config::EcoTree::FRAME_RATIO_BASE);
         break;
     }
 
@@ -99,23 +92,29 @@ void EcoTreeController::updateCount(int totalCount)
 
 void EcoTreeController::reset()
 {
-    m_currentStage = TreeStage::READY;
-    m_targetFrame = 0;
-    showWaitingPlaceholder();
+    m_currentStage = TreeStage::BASE_TREE;
+    showBaseTree();
 }
 
-void EcoTreeController::showWaitingPlaceholder()
+void EcoTreeController::showBaseTree()
 {
-    if (m_movie) {
-        m_movie->stop();
+    if (!m_movie) {
+        return;
     }
-    if (m_lblMovie) {
-        m_lblMovie->setMovie(nullptr);
-        m_lblMovie->setText(UITheme::EcoTree::WAITING_EMOJI);
-        m_lblMovie->setStyleSheet(UITheme::EcoTree::WAITING_STYLE);
+
+    m_movie->stop();
+
+    int totalFrames = m_movie->frameCount();
+    if (totalFrames <= 0) {
+        totalFrames = Config::EcoTree::DEFAULT_FRAME_COUNT;
     }
+
+    // 1단계(잎 없는 나무) 해당 프레임 위치로 이동 후 일시정지 상태 유지
+    m_targetFrame = static_cast<int>(totalFrames * Config::EcoTree::FRAME_RATIO_BASE);
+    m_movie->jumpToFrame(m_targetFrame);
+
     if (m_lblStatus) {
-        m_lblStatus->setText(UITheme::EcoTree::STATUS_READY);
+        m_lblStatus->setText(UITheme::EcoTree::STATUS_BASE);
     }
 }
 
@@ -125,8 +124,8 @@ void EcoTreeController::updateStatusText(TreeStage stage, int count)
         return;
 
     switch (stage) {
-    case TreeStage::READY:
-        m_lblStatus->setText(UITheme::EcoTree::STATUS_READY);
+    case TreeStage::BASE_TREE:
+        m_lblStatus->setText(UITheme::EcoTree::STATUS_BASE);
         break;
     case TreeStage::SPROUT:
         m_lblStatus->setText(QString(UITheme::EcoTree::STATUS_STAGE_1_FMT).arg(count));

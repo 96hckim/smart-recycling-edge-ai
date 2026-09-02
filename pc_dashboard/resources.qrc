@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file alias="images/confetti.gif">resources/images/confetti.gif</file>
         <file alias="images/tree_grow.gif">resources/images/tree_grow.gif</file>
     </qresource>
 </RCC>
