@@ -3,8 +3,11 @@
 
 extern volatile unsigned long g_sys_tick;
 
-volatile unsigned char g_rx_cmd = '0';
-volatile unsigned char g_rx_flag = 0;
+// UART2로 들어오는 한 줄(\n까지)을 담는 버퍼 (예: "1 90")
+#define RX_LINE_BUF_SIZE 32
+volatile char g_rx_line[RX_LINE_BUF_SIZE];
+volatile unsigned char g_rx_line_ready = 0; // 1이면 g_rx_line에 파싱 안 된 새 줄이 있음
+static unsigned char s_rx_idx = 0;
 
 void _Invalid_ISR(void)
 {
@@ -22,9 +25,27 @@ void SysTick_Handler(void)
 	g_sys_tick++;
 }
 
-// UART2 수신 인터럽트 ISR (Qt 원격 제어 명령 수신)
+// UART2 수신 인터럽트 ISR (ComPortMaster 등에서 "1 90\n" 형태로 보낸 명령 라인 조립)
 void USART2_IRQHandler(void)
 {
-	g_rx_cmd = (unsigned char)(USART2->DR & 0xFF);
-	g_rx_flag = 1;
+	unsigned char ch = (unsigned char)(USART2->DR & 0xFF);
+
+	// 이전 줄을 메인 루프가 아직 처리하지 않았으면, 새 입력은 버림(덮어쓰기 방지)
+	if (g_rx_line_ready)
+		return;
+
+	if (ch == '\r' || ch == '\n')
+	{
+		if (s_rx_idx > 0) // 빈 줄(엔터만 연속으로 눌림)은 무시
+		{
+			g_rx_line[s_rx_idx] = '\0';
+			g_rx_line_ready = 1;
+			s_rx_idx = 0;
+		}
+	}
+	else if (s_rx_idx < (RX_LINE_BUF_SIZE - 1))
+	{
+		g_rx_line[s_rx_idx++] = (char)ch;
+	}
+	// 버퍼 꽉 차면 그냥 그 이후 문자는 버림 (다음 개행까지 무시)
 }
