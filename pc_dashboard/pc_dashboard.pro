@@ -29,7 +29,6 @@ CONFIG(release, debug|release) {
 # 소스 파일 목록
 SOURCES += \
     main.cpp \
-    network/json_parser.cpp \
     ui/idle_page.cpp \
     ui/mainwindow.cpp \
     network/jetson_client.cpp \
@@ -45,7 +44,8 @@ HEADERS += \
     network/jetson_client.h \
     core/kiosk_client.h \
     ui/recycle_page.h \
-    ui/result_page.h
+    ui/result_page.h \
+    ui/theme_constants.h
 
 # UI 폼 파일 목록
 FORMS += \
@@ -53,3 +53,6 @@ FORMS += \
     ui/mainwindow.ui \
     ui/recycle_page.ui \
     ui/result_page.ui
+
+RESOURCES += \
+    resources/resources.qrc

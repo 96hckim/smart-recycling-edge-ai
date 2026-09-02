@@ -1,8 +1,12 @@
-﻿#ifndef RECYCLE_PAGE_H
+﻿#pragma once
+#ifndef RECYCLE_PAGE_H
 #define RECYCLE_PAGE_H
 
 #include "app_config.h"
+#include "theme_constants.h"
+#include <QColor>
 #include <QPixmap>
+#include <QRect>
 #include <QString>
 #include <QWidget>
 
@@ -17,15 +21,11 @@ public:
     explicit RecyclePage(QWidget* parent = nullptr);
     ~RecyclePage() override;
 
-    // 세션 시작 및 상태 초기화
     void startSession(bool isMember, const QString& userName = QString());
     void resetState();
 
-    // 비전 스트림 및 AI 디텍션 UI 업데이트
     void updateFrame(const QPixmap& pixmap);
-    void updateDetectionState(const QString& className, double confidence, int debounceCount);
-
-    // 세션 정산 현황 업데이트 (SessionSummary 구조체 참조)
+    void updateDetectionState(const QString& className, double confidence, int debounceCount, const QRect& box = QRect());
     void updateSessionSummary(const SessionSummary& summary);
 
 signals:
@@ -37,11 +37,14 @@ private slots:
     void on_btnCancelSession_clicked();
 
 private:
-    void setGuideBanner(const QString& text, const QString& textColor,
-        const QString& borderColor, const QString& bgColor);
+    void setGuideBanner(UITheme::BannerType type, const QString& customText = QString());
+    void applyDynamicProperty(QWidget* widget, const char* propName, const QVariant& value);
 
 private:
     Ui::RecyclePage* ui;
+    QRect m_detectionBox { };
+    QColor m_boxColor { "#10B981" };
+    QString m_boxLabel { };
     bool m_isMember { false };
     QString m_userName { };
 };

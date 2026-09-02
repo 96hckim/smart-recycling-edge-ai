@@ -1,5 +1,6 @@
 ﻿#include "mainwindow.h"
 #include "idle_page.h"
+#include "jetson_client.h"
 #include "recycle_page.h"
 #include "result_page.h"
 #include "ui_mainwindow.h"
@@ -13,10 +14,7 @@ MainWindow::MainWindow(QWidget* parent)
     ui->setupUi(this);
 
     initPages();
-
-    // 상단 타이틀 더블클릭 이벤트 감지 등록 (키오스크 터치 안전 종료 제스처)
-    ui->lblTitle->installEventFilter(this);
-    ui->lblTitle->setCursor(Qt::PointingHandCursor);
+    initJetsonClient();
 }
 
 MainWindow::~MainWindow()
@@ -26,33 +24,86 @@ MainWindow::~MainWindow()
 
 void MainWindow::initPages()
 {
-    // 1. 3개 메인 페이지 위젯 생성
     m_idlePage = new IdlePage(this);
     m_recyclePage = new RecyclePage(this);
     m_resultPage = new ResultPage(this);
 
-    // 2. QStackedWidget에 순서대로 등록
-    ui->stackedWidgetMain->addWidget(m_idlePage); // Index 0
-    ui->stackedWidgetMain->addWidget(m_recyclePage); // Index 1
-    ui->stackedWidgetMain->addWidget(m_resultPage); // Index 2
-
+    ui->stackedWidgetMain->addWidget(m_idlePage);
+    ui->stackedWidgetMain->addWidget(m_recyclePage);
+    ui->stackedWidgetMain->addWidget(m_resultPage);
     ui->stackedWidgetMain->setCurrentWidget(m_idlePage);
 
-    // 3. IdlePage 시그널 라우팅
-    connect(m_idlePage, &IdlePage::sigMemberStartRequested,
-        this, &MainWindow::onMemberStartRequested);
-    connect(m_idlePage, &IdlePage::sigGuestStartRequested,
-        this, &MainWindow::onGuestStartRequested);
+    connect(m_idlePage, &IdlePage::sigMemberStartRequested, this, &MainWindow::onMemberStartRequested);
+    connect(m_idlePage, &IdlePage::sigGuestStartRequested, this, &MainWindow::onGuestStartRequested);
 
-    // 4. RecyclePage 시그널 라우팅
-    connect(m_recyclePage, &RecyclePage::sigFinishSessionRequested,
-        this, &MainWindow::onRecycleFinished);
-    connect(m_recyclePage, &RecyclePage::sigCancelSessionRequested,
-        this, &MainWindow::onReturnToIdle);
+    connect(m_recyclePage, &RecyclePage::sigFinishSessionRequested, this, &MainWindow::onRecycleFinished);
+    connect(m_recyclePage, &RecyclePage::sigCancelSessionRequested, this, &MainWindow::onReturnToIdle);
 
-    // 5. ResultPage 시그널 라우팅
-    connect(m_resultPage, &ResultPage::sigReturnToIdleRequested,
-        this, &MainWindow::onReturnToIdle);
+    connect(m_resultPage, &ResultPage::sigReturnToIdleRequested, this, &MainWindow::onReturnToIdle);
+}
+
+void MainWindow::initJetsonClient()
+{
+    m_jetsonClient = new JetsonClient(Config::DEFAULT_JETSON_IP, Config::JETSON_PORT, this);
+
+    connect(m_jetsonClient, &JetsonClient::sigConnectionChanged, this, &MainWindow::updateConnectionStatus);
+    connect(m_jetsonClient, &JetsonClient::sigFrameReceived, this, &MainWindow::onFrameReceived);
+    connect(m_jetsonClient, &JetsonClient::sigMetadataReceived, this, &MainWindow::onMetadataReceived);
+    connect(m_jetsonClient, &JetsonClient::sigTelemetryUpdated, this, &MainWindow::updateTelemetry);
+
+    m_jetsonClient->connectToJetson();
+}
+
+void MainWindow::onFrameReceived(const QPixmap& pixmap)
+{
+    if (ui->stackedWidgetMain->currentWidget() == m_recyclePage) {
+        m_recyclePage->updateFrame(pixmap);
+    }
+}
+
+void MainWindow::onMetadataReceived(const FrameMetadata& meta)
+{
+    if (ui->stackedWidgetMain->currentWidget() != m_recyclePage)
+        return;
+
+    if (meta.detections.isEmpty()) {
+        resetDetectionState();
+        m_recyclePage->updateDetectionState("", 0.0, 0); // 미인식 시 자동 빈 박스 전달
+        return;
+    }
+
+    const Detection& top = meta.detections.first();
+
+    if (top.category != RecycleCategory::UNKNOWN && top.category == m_lastDetectedCategory) {
+        m_consecutiveDetections++;
+    } else {
+        m_lastDetectedCategory = top.category;
+        m_consecutiveDetections = 1;
+        m_doorOpenedForCurrentItem = false;
+    }
+
+    m_recyclePage->updateDetectionState(top.className, top.confidence, m_consecutiveDetections, top.box);
+
+    if (m_consecutiveDetections >= Config::STABLE_FRAME_THRESHOLD && !m_doorOpenedForCurrentItem) {
+        m_doorOpenedForCurrentItem = true;
+        m_currentSession.addItem(top.category, 1);
+        m_recyclePage->updateSessionSummary(m_currentSession);
+        openBinDoor(top.category);
+    }
+}
+
+void MainWindow::openBinDoor(RecycleCategory category)
+{
+    if (m_jetsonClient && m_jetsonClient->isConnected()) {
+        m_jetsonClient->sendOpenBinCommand(category);
+    }
+}
+
+void MainWindow::resetDetectionState()
+{
+    m_consecutiveDetections = 0;
+    m_lastDetectedCategory = RecycleCategory::UNKNOWN;
+    m_doorOpenedForCurrentItem = false;
 }
 
 void MainWindow::updateBinLevels(int can, int pet, int paper, int general)
@@ -65,10 +116,7 @@ void MainWindow::updateBinLevels(int can, int pet, int paper, int general)
 
 void MainWindow::updateConnectionStatus(bool connected)
 {
-    // 텍스트 설정
     ui->lblConnStatus->setText(connected ? "● AI VISION ONLINE" : "○ AI VISION OFFLINE");
-
-    // 동적 프로퍼티(online) 트리거로 QSS 색상 자동 반영 (인라인 폰트 크기 덮어쓰기 방지)
     ui->lblConnStatus->setProperty("online", connected);
     ui->lblConnStatus->style()->unpolish(ui->lblConnStatus);
     ui->lblConnStatus->style()->polish(ui->lblConnStatus);
@@ -88,6 +136,7 @@ void MainWindow::onMemberStartRequested(const QString& userId)
     m_currentSession.reset();
     m_currentSession.isMember = true;
     m_currentSession.userName = userId;
+    resetDetectionState();
 
     m_recyclePage->startSession(true, userId);
     ui->stackedWidgetMain->setCurrentWidget(m_recyclePage);
@@ -97,6 +146,7 @@ void MainWindow::onGuestStartRequested()
 {
     m_currentSession.reset();
     m_currentSession.isMember = false;
+    resetDetectionState();
 
     m_recyclePage->startSession(false);
     ui->stackedWidgetMain->setCurrentWidget(m_recyclePage);
@@ -104,10 +154,6 @@ void MainWindow::onGuestStartRequested()
 
 void MainWindow::onRecycleFinished()
 {
-    // SessionSummary 내부의 addItem() 호출 시 포인트 및 탄소 절감량 자동 계산
-    m_currentSession.addItem(RecycleCategory::CAN, 1);
-    m_currentSession.addItem(RecycleCategory::PET, 2);
-
     m_resultPage->showResult(m_currentSession);
     ui->stackedWidgetMain->setCurrentWidget(m_resultPage);
 }
@@ -115,6 +161,8 @@ void MainWindow::onRecycleFinished()
 void MainWindow::onReturnToIdle()
 {
     m_currentSession.reset();
+    resetDetectionState();
+
     m_recyclePage->resetState();
     ui->stackedWidgetMain->setCurrentWidget(m_idlePage);
 }

@@ -1,11 +1,17 @@
 ﻿#include "recycle_page.h"
 #include "ui_recycle_page.h"
+#include <QFontMetrics>
+#include <QPainter>
+#include <QStyle>
+#include <algorithm>
 
 RecyclePage::RecyclePage(QWidget* parent)
     : QWidget(parent)
     , ui(new Ui::RecyclePage)
 {
     ui->setupUi(this);
+    ui->lblVideo->setAlignment(Qt::AlignCenter);
+    ui->lblVideo->setScaledContents(false);
 }
 
 RecyclePage::~RecyclePage()
@@ -19,55 +25,98 @@ void RecyclePage::startSession(bool isMember, const QString& userName)
     m_userName = userName;
     resetState();
 
+    applyDynamicProperty(ui->lblUserGreeting, UITheme::PROP_MEMBER, m_isMember);
+    applyDynamicProperty(ui->lblTotalPoints, UITheme::PROP_MEMBER, m_isMember);
+
     if (m_isMember) {
         const QString displayName = m_userName.isEmpty() ? "회원" : m_userName;
-        ui->lblUserGreeting->setText(QString("👤 %1 님 환영합니다").arg(displayName));
-        ui->lblUserGreeting->setStyleSheet("font-size: 30px; font-weight: 900; color: #10B981; background: transparent;");
-        ui->lblSessionMode->setText("투입 완료 후 포인트가 자동으로 적립됩니다.");
-        ui->lblRewardHeader->setText("💰 현재 세션 획득 리워드");
+        ui->lblUserGreeting->setText(QString(UITheme::Text::GREETING_MEMBER_FMT).arg(displayName));
+        ui->lblUserGreeting->setStyleSheet(UITheme::Style::GREETING_MEMBER);
+        ui->lblSessionMode->setText(UITheme::Text::SESSION_MODE_MEMBER);
+        ui->lblRewardHeader->setText(UITheme::Text::REWARD_HEADER_MEMBER);
     } else {
-        ui->lblUserGreeting->setText("👤 비회원 간편 투입");
-        ui->lblUserGreeting->setStyleSheet("font-size: 30px; font-weight: 900; color: #38BDF8; background: transparent;");
-        ui->lblSessionMode->setText("비회원 모드로 동작 중입니다 (포인트 미적립).");
-        ui->lblRewardHeader->setText("🌱 절감 환경 리워드");
+        ui->lblUserGreeting->setText(UITheme::Text::GREETING_GUEST);
+        ui->lblUserGreeting->setStyleSheet(UITheme::Style::GREETING_GUEST);
+        ui->lblSessionMode->setText(UITheme::Text::SESSION_MODE_GUEST);
+        ui->lblRewardHeader->setText(UITheme::Text::REWARD_HEADER_GUEST);
     }
 }
 
 void RecyclePage::updateFrame(const QPixmap& pixmap)
 {
-    if (!pixmap.isNull()) {
-        ui->lblVideo->setPixmap(pixmap.scaled(ui->lblVideo->size(),
-            Qt::KeepAspectRatio,
-            Qt::SmoothTransformation));
+    if (pixmap.isNull())
+        return;
+
+    const QSize targetSize = ui->lblVideo->size();
+    if (targetSize.width() <= 0 || targetSize.height() <= 0)
+        return;
+
+    QPixmap frame = pixmap;
+
+    if (!m_detectionBox.isNull()) {
+        QPainter painter(&frame);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setRenderHint(QPainter::TextAntialiasing, true);
+
+        // 1) 품목 테마 색상 3px 테두리
+        painter.setPen(QPen(m_boxColor, 3));
+        painter.drawRect(m_detectionBox);
+
+        // 2) 박스 상단 한글 품목 배지 ("캔", "페트", "종이", "일반")
+        if (!m_boxLabel.isEmpty()) {
+            QFont font("Pretendard", 12, QFont::Bold);
+            font.setStyleHint(QFont::SansSerif);
+            painter.setFont(font);
+            QFontMetrics fm(font);
+
+            const int padX = 8;
+            const int padY = 4;
+            const int badgeW = fm.horizontalAdvance(m_boxLabel) + (padX * 2);
+            const int badgeH = fm.height() + (padY * 2);
+
+            int badgeY = m_detectionBox.top() - badgeH;
+            if (badgeY < 0) {
+                badgeY = m_detectionBox.top();
+            }
+            int badgeX = std::max(0, m_detectionBox.left());
+
+            const QRect badgeRect(badgeX, badgeY, badgeW, badgeH);
+
+            painter.fillRect(badgeRect, m_boxColor);
+            painter.setPen(Qt::white);
+            painter.drawText(badgeRect, Qt::AlignCenter, m_boxLabel);
+        }
     }
+
+    ui->lblVideo->setPixmap(frame.scaled(targetSize,
+        Qt::KeepAspectRatio,
+        Qt::SmoothTransformation));
 }
 
-void RecyclePage::updateDetectionState(const QString& className, double confidence, int debounceCount)
+void RecyclePage::updateDetectionState(const QString& className, double confidence, int debounceCount, const QRect& box)
 {
-    // 유효 신뢰도 미달이거나 물품 미인식 시 대기 상태 전환
     if (className.isEmpty() || confidence < Config::MIN_CONFIDENCE_THRESHOLD) {
-        ui->lblDetectClass->setText("물품 인식 대기 중...");
-        ui->lblDetectConfidence->setText("신뢰도: - %");
-        ui->progressBarDebounce->setValue(0);
-        setGuideBanner("🎯 카메라 중앙 영역에 재활용품을 놓아주세요", "#38BDF8", "#0284C7", "#0D1927");
+        m_detectionBox = QRect();
+        m_boxLabel.clear();
+        setGuideBanner(UITheme::BannerType::READY);
         return;
     }
 
-    // Config 파서로 품목 식별
     const RecycleCategory cat = Config::parseCategory(className);
-    const QString upperClass = className.toUpper();
+    const QString displayCategoryName = Config::getCategoryNameKo(cat);
 
-    ui->lblDetectClass->setText(QString("🔍 %1 감지됨").arg(upperClass));
-    ui->lblDetectConfidence->setText(QString("신뢰도: %1%").arg(QString::number(confidence * 100.0, 'f', 1)));
-    ui->progressBarDebounce->setValue(debounceCount);
+    m_detectionBox = box;
+    m_boxColor = Config::getCategoryColor(cat);
+    m_boxLabel = displayCategoryName; // 확률 제외, 한글 품목명만 표기
 
     if (debounceCount >= Config::STABLE_FRAME_THRESHOLD) {
         if (cat == RecycleCategory::GENERAL) {
-            setGuideBanner("⚠️ 일반쓰레기 감지 (포인트 미지급)", "#F1F5F9", "#94A3B8", "rgba(148, 163, 184, 0.2)");
+            setGuideBanner(UITheme::BannerType::WARNING);
         } else if (cat != RecycleCategory::UNKNOWN) {
-            setGuideBanner(QString("✅ %1 인식 확정! 투입구에 넣어주세요").arg(upperClass),
-                "#10B981", "#10B981", "rgba(16, 185, 129, 0.15)");
+            setGuideBanner(UITheme::BannerType::CONFIRMED, displayCategoryName);
         }
+    } else {
+        setGuideBanner(UITheme::BannerType::ANALYZING, displayCategoryName);
     }
 }
 
@@ -79,39 +128,76 @@ void RecyclePage::updateSessionSummary(const SessionSummary& summary)
     ui->lblGeneralCount->setText(QString::number(summary.generalCount));
 
     if (summary.isMember) {
-        ui->lblTotalPoints->setText(QString("+ %1 P").arg(summary.totalPoints));
-        ui->lblTotalPoints->setStyleSheet("font-size: 42px; font-weight: 900; color: #38BDF8; background: transparent;");
+        ui->lblTotalPoints->setText(QString(UITheme::Text::POINTS_MEMBER_FMT).arg(summary.totalPoints));
+        ui->lblTotalPoints->setStyleSheet(UITheme::Style::POINTS_MEMBER);
     } else {
-        ui->lblTotalPoints->setText("0 P (비회원)");
-        ui->lblTotalPoints->setStyleSheet("font-size: 34px; font-weight: 800; color: #64748B; background: transparent;");
+        ui->lblTotalPoints->setText(QString(UITheme::Text::POINTS_GUEST_FMT).arg(summary.totalPoints));
+        ui->lblTotalPoints->setStyleSheet(UITheme::Style::POINTS_GUEST);
     }
 
-    ui->lblTotalCarbon->setText(QString("🌱 절감 탄소량: %1g CO2").arg(QString::number(summary.totalCarbonG, 'f', 1)));
+    ui->lblTotalCarbon->setText(QString(UITheme::Text::CARBON_SAVED_FMT)
+            .arg(QString::number(summary.totalCarbonG, 'f', 1)));
 }
 
 void RecyclePage::resetState()
 {
+    m_detectionBox = QRect();
+    m_boxLabel.clear();
+
     ui->lblVideo->clear();
-    ui->lblVideo->setText("Jetson AI 비전 스트림 연결 중...");
+    ui->lblVideo->setText(UITheme::Text::VIDEO_INITIALIZING);
     ui->lblCanCount->setText("0");
     ui->lblPetCount->setText("0");
     ui->lblPaperCount->setText("0");
     ui->lblGeneralCount->setText("0");
-    ui->lblTotalPoints->setText("+ 0 P");
-    ui->lblTotalCarbon->setText("🌱 절감 탄소량: 0.0g CO2");
-    ui->lblDetectClass->setText("물품 인식 대기 중...");
-    ui->lblDetectConfidence->setText("신뢰도: - %");
-    ui->progressBarDebounce->setValue(0);
-    setGuideBanner("🎯 카메라 중앙 영역에 재활용품을 놓아주세요", "#38BDF8", "#0284C7", "#0D1927");
+
+    if (m_isMember) {
+        ui->lblTotalPoints->setText(QString(UITheme::Text::POINTS_MEMBER_FMT).arg(0));
+        ui->lblTotalPoints->setStyleSheet(UITheme::Style::POINTS_MEMBER);
+    } else {
+        ui->lblTotalPoints->setText(QString(UITheme::Text::POINTS_GUEST_FMT).arg(0));
+        ui->lblTotalPoints->setStyleSheet(UITheme::Style::POINTS_GUEST);
+    }
+
+    ui->lblTotalCarbon->setText(QString(UITheme::Text::CARBON_SAVED_FMT).arg("0.0"));
+    setGuideBanner(UITheme::BannerType::READY);
 }
 
-void RecyclePage::setGuideBanner(const QString& text, const QString& textColor,
-    const QString& borderColor, const QString& bgColor)
+void RecyclePage::setGuideBanner(UITheme::BannerType type, const QString& customText)
 {
-    ui->lblGuideBanner->setText(text);
+    const auto theme = UITheme::getBannerTheme(type);
+
+    QString message;
+    switch (type) {
+    case UITheme::BannerType::READY:
+        message = UITheme::Text::GUIDE_READY;
+        break;
+    case UITheme::BannerType::ANALYZING:
+        message = QString(UITheme::Text::GUIDE_ANALYZING_FMT).arg(customText);
+        break;
+    case UITheme::BannerType::CONFIRMED:
+        message = QString(UITheme::Text::GUIDE_CONFIRMED_FMT).arg(customText);
+        break;
+    case UITheme::BannerType::WARNING:
+        message = UITheme::Text::GUIDE_GENERAL_WARN;
+        break;
+    }
+
+    if (ui->lblGuideBanner->text() == message)
+        return;
+
+    ui->lblGuideBanner->setText(message);
     ui->lblGuideBanner->setStyleSheet(
-        QString("background-color: %1; border: 2px solid %2; border-radius: 16px; color: %3; font-size: 22px; font-weight: 800; padding: 10px;")
-            .arg(bgColor, borderColor, textColor));
+        QString(UITheme::Style::BANNER_TEMPLATE).arg(theme.bgColor, theme.borderColor, theme.textColor));
+}
+
+void RecyclePage::applyDynamicProperty(QWidget* widget, const char* propName, const QVariant& value)
+{
+    if (!widget)
+        return;
+    widget->setProperty(propName, value);
+    widget->style()->unpolish(widget);
+    widget->style()->polish(widget);
 }
 
 void RecyclePage::on_btnFinishSession_clicked()
