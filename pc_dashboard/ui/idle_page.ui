@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>IdlePage</class>
+ <widget class="QWidget" name="IdlePage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1920</width>
+    <height>900</height>
+   </rect>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+QWidget {
+    background-color: #0B0F17;
+    color: #F8FAFC;
+    font-family: 'Pretendard', 'Segoe UI', sans-serif;
+    font-size: 18px;
+}
+
+QLabel {
+    background-color: transparent;
+}
+
+/* 상단 메인 타이틀 (60px 초대형 폰트) */
+QLabel#lblMainTitle {
+    font-size: 60px;
+    font-weight: 900;
+    color: #38BDF8;
+    letter-spacing: -1.5px;
+}
+QLabel#lblSubTitle {
+    font-size: 26px;
+    font-weight: 600;
+    color: #94A3B8;
+}
+
+/* 대기 화면 카드 패널 */
+QFrame#frameMemberCard, QFrame#frameGuestCard {
+    background-color: #111827;
+    border: 2px solid #1F2937;
+    border-radius: 24px;
+}
+QFrame#frameMemberCard:hover { border: 2.5px solid #10B981; background-color: #131E2E; }
+QFrame#frameGuestCard:hover { border: 2.5px solid #38BDF8; background-color: #131E2E; }
+
+QLabel#lblMemberTitle { font-size: 32px; font-weight: 900; color: #10B981; }
+QLabel#lblGuestTitle { font-size: 32px; font-weight: 900; color: #38BDF8; }
+
+/* 중앙 아이콘 박스 */
+QLabel#lblGuestIcon {
+    font-size: 130px;
+    color: #10B981;
+    background-color: #0D1927;
+    border: 2px solid #1E293B;
+    border-radius: 24px;
+}
+
+/* QR 코드 라벨 */
+QLabel#lblQrCode {
+    background-color: #FFFFFF;
+    border: 3px solid #38BDF8;
+    border-radius: 24px;
+    color: #0B0F17;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+QLabel#lblMemberDesc, QLabel#lblGuestDesc {
+    font-size: 21px;
+    font-weight: 600;
+    color: #CBD5E1;
+    line-height: 1.4;
+}
+
+/* 좌측 QR 안내 뱃지 (높이 76px) */
+QLabel#lblQrGuideBadge {
+    background-color: rgba(16, 185, 129, 0.12);
+    border: 2px solid #10B981;
+    border-radius: 18px;
+    color: #10B981;
+    font-size: 24px;
+    font-weight: 900;
+}
+
+/* 우측 비회원 시작 버튼 (높이 76px) */
+QPushButton#btnGuestStart {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #2563EB, stop:1 #38BDF8);
+    color: #FFFFFF;
+    font-size: 24px;
+    font-weight: 900;
+    border: none;
+    border-radius: 18px;
+}
+QPushButton#btnGuestStart:hover {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #1D4ED8, stop:1 #0284C7);
+}
+QPushButton#btnGuestStart:pressed {
+    background-color: #1E40AF;
+}
+   </string>
+  </property>
+  <layout class="QVBoxLayout" name="mainVLayout">
+   <property name="spacing">
+    <number>28</number>
+   </property>
+   <property name="leftMargin">
+    <number>64</number>
+   </property>
+   <property name="topMargin">
+    <number>28</number>
+   </property>
+   <property name="rightMargin">
+    <number>64</number>
+   </property>
+   <property name="bottomMargin">
+    <number>20</number>
+   </property>
+   <item>
+    <layout class="QVBoxLayout" name="titleVLayout">
+     <property name="spacing">
+      <number>32</number>
+     </property>
+     <property name="topMargin">
+      <number>64</number>
+     </property>
+     <property name="bottomMargin">
+      <number>64</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="lblMainTitle">
+       <property name="text">
+        <string>분리배출 방식을 선택해 주세요</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="lblSubTitle">
+       <property name="text">
+        <string>모바일 앱 QR을 스캔하여 포인트를 적립하거나, 바로 투입을 시작할 수 있습니다</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="cardsHLayout">
+     <property name="spacing">
+      <number>40</number>
+     </property>
+     <item>
+      <widget class="QFrame" name="frameMemberCard">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <layout class="QVBoxLayout" name="memberVLayout">
+        <property name="spacing">
+         <number>18</number>
+        </property>
+        <property name="leftMargin">
+         <number>40</number>
+        </property>
+        <property name="topMargin">
+         <number>28</number>
+        </property>
+        <property name="rightMargin">
+         <number>40</number>
+        </property>
+        <property name="bottomMargin">
+         <number>28</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="lblMemberTitle">
+          <property name="text">
+           <string>📱 회원 포인트 적립 (최대 +50P)</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="qrCenterLayout">
+          <item>
+           <spacer name="qrLSpacer">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="lblQrCode">
+            <property name="minimumSize">
+             <size>
+              <width>280</width>
+              <height>280</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>280</width>
+              <height>280</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>[ APP LOGIN QR ]</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="qrRSpacer">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="lblMemberDesc">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>56</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>스마트폰 카메라로 QR 코드를 스캔하면
+자동 로그인 및 포인트가 적립됩니다.</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lblQrGuideBadge">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>76</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>76</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>스캔 시 자동으로 시작됩니다</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frameGuestCard">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <layout class="QVBoxLayout" name="guestVLayout">
+        <property name="spacing">
+         <number>18</number>
+        </property>
+        <property name="leftMargin">
+         <number>40</number>
+        </property>
+        <property name="topMargin">
+         <number>28</number>
+        </property>
+        <property name="rightMargin">
+         <number>40</number>
+        </property>
+        <property name="bottomMargin">
+         <number>28</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="lblGuestTitle">
+          <property name="text">
+           <string>🚀 비회원 간편 투입</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="iconCenterLayout">
+          <item>
+           <spacer name="iconLSpacer">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="lblGuestIcon">
+            <property name="minimumSize">
+             <size>
+              <width>280</width>
+              <height>280</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>280</width>
+              <height>280</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>♻</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="iconRSpacer">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="lblGuestDesc">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>56</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>앱 인증 없이 즉시 투입구를 열고
+스마트 분리배출을 진행합니다. (포인트 미적립)</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnGuestStart">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>76</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>76</height>
+           </size>
+          </property>
+          <property name="cursor">
+           <cursorShape>PointingHandCursor</cursorShape>
+          </property>
+          <property name="text">
+           <string>포인트 없이 바로 시작하기 ➔</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
