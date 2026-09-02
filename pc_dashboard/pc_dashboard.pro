@@ -29,6 +29,7 @@ CONFIG(release, debug|release) {
 # 소스 파일 목록
 SOURCES += \
     main.cpp \
+    ui/eco_tree_controller.cpp \
     ui/idle_page.cpp \
     ui/mainwindow.cpp \
     network/jetson_client.cpp \
@@ -39,6 +40,7 @@ SOURCES += \
 # 헤더 파일 목록
 HEADERS += \
     configs/app_config.h \
+    ui/eco_tree_controller.h \
     ui/idle_page.h \
     ui/mainwindow.h \
     network/jetson_client.h \
@@ -54,5 +56,6 @@ FORMS += \
     ui/recycle_page.ui \
     ui/result_page.ui
 
+# 리소스 파일 목록
 RESOURCES += \
-    resources/resources.qrc
+    resources.qrc

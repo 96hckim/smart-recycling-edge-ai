@@ -1,4 +1,5 @@
 ﻿#include "idle_page.h"
+#include "app_config.h" // ★ 추가
 #include "ui_idle_page.h"
 #include <QEvent>
 #include <QMouseEvent>
@@ -25,7 +26,7 @@ bool IdlePage::eventFilter(QObject* watched, QEvent* event)
         if (event->type() == QEvent::MouseButtonPress) {
             auto* mouseEvent = static_cast<QMouseEvent*>(event);
             if (mouseEvent->button() == Qt::LeftButton) {
-                emit sigMemberStartRequested("MEMBER_DEMO_USER");
+                emit sigMemberStartRequested(Config::Demo::MEMBER_USER_ID);
                 return true;
             }
         }

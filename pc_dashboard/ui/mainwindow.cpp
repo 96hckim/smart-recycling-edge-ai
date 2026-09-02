@@ -68,7 +68,7 @@ void MainWindow::onMetadataReceived(const FrameMetadata& meta)
 
     if (meta.detections.isEmpty()) {
         resetDetectionState();
-        m_recyclePage->updateDetectionState("", 0.0, 0); // 미인식 시 자동 빈 박스 전달
+        m_recyclePage->updateDetectionState("", 0.0, 0);
         return;
     }
 
@@ -116,7 +116,8 @@ void MainWindow::updateBinLevels(int can, int pet, int paper, int general)
 
 void MainWindow::updateConnectionStatus(bool connected)
 {
-    ui->lblConnStatus->setText(connected ? "● AI VISION ONLINE" : "○ AI VISION OFFLINE");
+    // ★ 상수로 대체
+    ui->lblConnStatus->setText(connected ? Config::Connection::STATUS_ONLINE : Config::Connection::STATUS_OFFLINE);
     ui->lblConnStatus->setProperty("online", connected);
     ui->lblConnStatus->style()->unpolish(ui->lblConnStatus);
     ui->lblConnStatus->style()->polish(ui->lblConnStatus);
@@ -124,7 +125,8 @@ void MainWindow::updateConnectionStatus(bool connected)
 
 void MainWindow::updateTelemetry(double fps, double inferMs, double latencyMs)
 {
-    ui->lblTelemetry->setText(QString("FPS: %1 | Infer: %2ms | Network Latency: %3ms | Jetson Stream Port: %4")
+    // ★ 상수로 대체
+    ui->lblTelemetry->setText(QString(Config::Telemetry::FORMAT_STR)
             .arg(QString::number(fps, 'f', 1))
             .arg(QString::number(inferMs, 'f', 1))
             .arg(QString::number(latencyMs, 'f', 1))

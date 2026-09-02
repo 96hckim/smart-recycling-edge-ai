@@ -1,6 +1,7 @@
 ﻿#ifndef IDLE_PAGE_H
 #define IDLE_PAGE_H
 
+#include "app_config.h"
 #include <QWidget>
 
 namespace Ui {
@@ -15,8 +16,8 @@ public:
     ~IdlePage() override;
 
 signals:
-    // 모바일 앱 QR 스캔 또는 시연용 터치 시 발생
-    void sigMemberStartRequested(const QString& userId = "MEMBER_DEMO_USER");
+    // 모바일 앱 QR 스캔 또는 시연용 터치 시 발생 (기본값 상수화)
+    void sigMemberStartRequested(const QString& userId = Config::Demo::MEMBER_USER_ID);
 
     // 비회원 바로 시작 버튼 클릭 시 발생
     void sigGuestStartRequested();

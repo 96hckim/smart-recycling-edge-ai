@@ -1,4 +1,5 @@
 ﻿#include "result_page.h"
+#include "theme_constants.h" // 추가
 #include "ui_result_page.h"
 #include <QEasingCurve>
 #include <QStyle>
@@ -12,7 +13,7 @@ ResultPage::ResultPage(QWidget* parent)
 {
     ui->setupUi(this);
 
-    m_countdownTimer->setInterval(1000);
+    m_countdownTimer->setInterval(Config::Result::COUNTDOWN_INTERVAL_MS);
     connect(m_countdownTimer, &QTimer::timeout, this, &ResultPage::onCountdownTick);
 
     setupAnimations();
@@ -25,11 +26,11 @@ ResultPage::~ResultPage()
 
 void ResultPage::setupAnimations()
 {
-    m_pointsAnim->setDuration(900);
+    m_pointsAnim->setDuration(Config::Result::ANIM_POINTS_DURATION_MS);
     m_pointsAnim->setEasingCurve(QEasingCurve::OutCubic);
     connect(m_pointsAnim, &QVariantAnimation::valueChanged, this, &ResultPage::onPointsAnimUpdate);
 
-    m_carbonAnim->setDuration(1100);
+    m_carbonAnim->setDuration(Config::Result::ANIM_CARBON_DURATION_MS);
     m_carbonAnim->setEasingCurve(QEasingCurve::OutCubic);
     connect(m_carbonAnim, &QVariantAnimation::valueChanged, this, &ResultPage::onCarbonAnimUpdate);
 }
@@ -40,7 +41,7 @@ void ResultPage::showResult(const SessionSummary& summary)
     m_targetPoints = summary.totalPoints;
     m_targetCarbon = summary.totalCarbonG;
 
-    // 1. Config::getPoint() 유틸리티 함수로 품목별 단가 매핑
+    // 1. 품목별 영수증 카드 갱신
     updateCard(ui->boxReceiptCan, ui->lblRCanTitle, ui->lblRCanCount, ui->lblRCanPoints,
         summary.canCount, Config::getPoint(RecycleCategory::CAN));
 
@@ -54,17 +55,17 @@ void ResultPage::showResult(const SessionSummary& summary)
         summary.generalCount, Config::getPoint(RecycleCategory::GENERAL));
 
     // 2. 사용자 상태 안내 뱃지 갱신
-    ui->lblUserNotice->setProperty("member", summary.isMember);
+    ui->lblUserNotice->setProperty(UITheme::PROP_MEMBER, summary.isMember);
     if (summary.isMember) {
-        const QString name = summary.userName.isEmpty() ? "회원" : summary.userName;
-        ui->lblUserNotice->setText(QString("✅ %1 님의 계정으로 포인트가 안전하게 적립되었습니다.").arg(name));
+        const QString name = summary.userName.isEmpty() ? UITheme::Text::DEFAULT_MEMBER_NAME : summary.userName;
+        ui->lblUserNotice->setText(QString(UITheme::Text::RESULT_NOTICE_MEMBER_FMT).arg(name));
     } else {
-        ui->lblUserNotice->setText("ℹ️ 비회원 이용 세션 (모바일 앱 가입 후 스캔 시 포인트가 적립됩니다)");
+        ui->lblUserNotice->setText(UITheme::Text::RESULT_NOTICE_GUEST);
     }
     ui->lblUserNotice->style()->unpolish(ui->lblUserNotice);
     ui->lblUserNotice->style()->polish(ui->lblUserNotice);
 
-    // 3. 지표 롤링 카운팅 애니메이션 구동
+    // 3. 지표 롤링 애니메이션
     m_pointsAnim->stop();
     m_carbonAnim->stop();
 
@@ -73,49 +74,52 @@ void ResultPage::showResult(const SessionSummary& summary)
         m_pointsAnim->setEndValue(m_targetPoints);
         m_pointsAnim->start();
     } else {
-        ui->lblTotalPoints->setText("0 P (비회원)");
+        ui->lblTotalPoints->setText(UITheme::Text::RESULT_POINTS_GUEST);
     }
 
     m_carbonAnim->setStartValue(0.0);
     m_carbonAnim->setEndValue(m_targetCarbon);
     m_carbonAnim->start();
 
-    // 4. 타이머 가동
+    // 4. 카운트다운 타이머 시작
     m_remainingSec = Config::RESULT_DISPLAY_TIMEOUT_SEC;
     ui->btnConfirm->setEnabled(true);
-    ui->btnConfirm->setText(QString("확인 (%1초 후 처음으로 이동)").arg(m_remainingSec));
+    ui->btnConfirm->setText(QString(UITheme::Text::RESULT_COUNTDOWN_BTN_FMT).arg(m_remainingSec));
     m_countdownTimer->start();
 }
 
 void ResultPage::onPointsAnimUpdate(const QVariant& value)
 {
     if (m_isMemberSession) {
-        ui->lblTotalPoints->setText(QString("+ %1 P").arg(value.toInt()));
+        ui->lblTotalPoints->setText(QString(UITheme::Text::POINTS_PLUS_FMT).arg(value.toInt()));
     }
 }
 
 void ResultPage::onCarbonAnimUpdate(const QVariant& value)
 {
-    ui->lblTotalCarbon->setText(QString("%1 g CO₂").arg(QString::number(value.toDouble(), 'f', 1)));
+    ui->lblTotalCarbon->setText(QString(UITheme::Text::RESULT_CARBON_FMT)
+            .arg(QString::number(value.toDouble(), 'f', 1)));
 }
 
 void ResultPage::updateCard(QFrame* box, QLabel* lblTitle, QLabel* lblCount, QLabel* lblPoints,
     int count, int unitPoint)
 {
-    lblCount->setText(QString("%1 개").arg(count));
+    lblCount->setText(QString(UITheme::Text::COUNT_UNIT_FMT).arg(count));
 
     if (count > 0) {
-        lblPoints->setText(unitPoint > 0 ? QString("+ %1 P").arg(count * unitPoint) : "0 P");
+        lblPoints->setText(unitPoint > 0 ? QString(UITheme::Text::POINTS_PLUS_FMT).arg(count * unitPoint)
+                                         : UITheme::Text::POINTS_ZERO);
     } else {
-        lblPoints->setText("-");
+        lblPoints->setText(UITheme::Text::EMPTY_DASH);
     }
 
     const bool isActive = (count > 0);
+    const char* prop = UITheme::PROP_ACTIVE;
 
-    box->setProperty("active", isActive);
-    lblTitle->setProperty("active", isActive);
-    lblCount->setProperty("active", isActive);
-    lblPoints->setProperty("active", isActive);
+    box->setProperty(prop, isActive);
+    lblTitle->setProperty(prop, isActive);
+    lblCount->setProperty(prop, isActive);
+    lblPoints->setProperty(prop, isActive);
 
     box->style()->unpolish(box);
     box->style()->polish(box);
@@ -134,7 +138,7 @@ void ResultPage::onCountdownTick()
         m_countdownTimer->stop();
         emit sigReturnToIdleRequested();
     } else {
-        ui->btnConfirm->setText(QString("확인 (%1초 후 처음으로 이동)").arg(m_remainingSec));
+        ui->btnConfirm->setText(QString(UITheme::Text::RESULT_COUNTDOWN_BTN_FMT).arg(m_remainingSec));
     }
 }
 

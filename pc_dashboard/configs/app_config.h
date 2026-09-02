@@ -6,8 +6,10 @@
 #include <QRect>
 #include <QString>
 #include <QVector>
-#include <array>
 
+// ============================================================================
+// 1. 시스템 전역 상태 열거형
+// ============================================================================
 enum class KioskState {
     IDLE,
     AUTH_WAIT,
@@ -25,33 +27,76 @@ enum class RecycleCategory {
     GENERAL = 3
 };
 
+// ============================================================================
+// 2. 비즈니스 로직 및 설정 네임스페이스
+// ============================================================================
 namespace Config {
-constexpr int CATEGORY_COUNT = 4;
 
-// 가위바위보 제스처 모델 임시 매핑 플래그 (실제 재활용 모델 배포 시 false로 전환)
+// 품목 총 개수 및 모델 스위칭 플래그
+constexpr int CATEGORY_COUNT = 4;
 constexpr bool USE_MOCK_RPS_MODEL = true;
 
-// 네트워크 설정 (Jetson Orin Nano IP/Port)
+// 네트워크 및 IPC 설정 (Jetson Orin Nano 통신)
 constexpr char DEFAULT_JETSON_IP[] = "10.10.15.48";
 constexpr quint16 JETSON_PORT = 9000;
 constexpr int SOCKET_BUFFER_RESERVE = 512 * 1024;
 constexpr int AUTO_RECONNECT_INTERVAL_MS = 2000;
 constexpr quint32 HEADER_SIZE = 8;
 
-// 프로토콜 명령 상수
+// 프로토콜 명령 키
 constexpr char CMD_OPEN_BIN[] = "OPEN_BIN";
 constexpr char KEY_CMD[] = "cmd";
 constexpr char KEY_TARGET[] = "target";
 
-// AI 판정 & 타이밍 설정
+// AI 판정 임계값
 constexpr int STABLE_FRAME_THRESHOLD = 18; // 약 0.6초 유지 시 확정
-constexpr double MIN_CONFIDENCE_THRESHOLD = 0.65; // 모호한 인식 필터링
-constexpr int RESULT_DISPLAY_TIMEOUT_SEC = 5;
+constexpr double MIN_CONFIDENCE_THRESHOLD = 0.65; // 모호한 바운딩 박스 필터링
 
-// 수거함 적재 용량
+// 키오스크 물리 적재함 용량
 constexpr int MAX_BIN_CAPACITY = 100;
 constexpr int BIN_FULL_WARNING_PERCENT = 80;
+constexpr int RESULT_DISPLAY_TIMEOUT_SEC = 5;
 
+// 서브 네임스페이스별 설정
+namespace Demo {
+    inline const QString MEMBER_USER_ID = "MEMBER_DEMO_USER";
+}
+
+namespace Connection {
+    inline const QString STATUS_ONLINE = "● AI VISION ONLINE";
+    inline const QString STATUS_OFFLINE = "○ AI VISION OFFLINE";
+}
+
+namespace Telemetry {
+    inline const QString FORMAT_STR = "FPS: %1 | Infer: %2ms | Network Latency: %3ms | Jetson Stream Port: %4";
+}
+
+namespace VisionRender {
+    inline constexpr int BOX_PEN_WIDTH = 3; // 탐지 테두리 두께 (px)
+    inline constexpr int BADGE_FONT_SIZE = 12; // 배지 폰트 크기 (pt)
+    inline constexpr int BADGE_PAD_X = 8; // 배지 좌우 여백 (px)
+    inline constexpr int BADGE_PAD_Y = 4; // 배지 상하 여백 (px)
+}
+
+namespace Result {
+    inline constexpr int COUNTDOWN_INTERVAL_MS = 1000;
+    inline constexpr int ANIM_POINTS_DURATION_MS = 900;
+    inline constexpr int ANIM_CARBON_DURATION_MS = 1100;
+}
+
+namespace EcoTree {
+    inline const QString RESOURCE_PATH = ":/images/tree_grow.gif";
+    inline constexpr int MOVIE_SPEED = 250;
+    inline constexpr int DEFAULT_FRAME_COUNT = 120;
+    inline constexpr int THRESHOLD_STAGE_1 = 2;
+    inline constexpr int THRESHOLD_STAGE_2 = 4;
+    inline constexpr double FRAME_RATIO_STAGE_1 = 0.35;
+    inline constexpr double FRAME_RATIO_STAGE_2 = 0.70;
+}
+
+// ============================================================================
+// 3. 재활용 품목 메타데이터 테이블 및 헬퍼 함수
+// ============================================================================
 struct ItemMeta {
     RecycleCategory category;
     const char* nameKo;
@@ -122,8 +167,12 @@ inline RecycleCategory parseCategory(const QString& name)
 
     return RecycleCategory::UNKNOWN;
 }
-}
 
+} // namespace Config
+
+// ============================================================================
+// 4. 프레임 메타데이터 및 세션 집계 구조체
+// ============================================================================
 struct Detection {
     int classId { -1 };
     QString className { };
@@ -172,9 +221,13 @@ struct SessionSummary {
 
     void recalculate()
     {
-        totalPoints = (canCount * Config::getPoint(RecycleCategory::CAN)) + (petCount * Config::getPoint(RecycleCategory::PET)) + (paperCount * Config::getPoint(RecycleCategory::PAPER));
+        totalPoints = (canCount * Config::getPoint(RecycleCategory::CAN))
+            + (petCount * Config::getPoint(RecycleCategory::PET))
+            + (paperCount * Config::getPoint(RecycleCategory::PAPER));
 
-        totalCarbonG = (canCount * Config::getCarbonG(RecycleCategory::CAN)) + (petCount * Config::getCarbonG(RecycleCategory::PET)) + (paperCount * Config::getCarbonG(RecycleCategory::PAPER));
+        totalCarbonG = (canCount * Config::getCarbonG(RecycleCategory::CAN))
+            + (petCount * Config::getCarbonG(RecycleCategory::PET))
+            + (paperCount * Config::getCarbonG(RecycleCategory::PAPER));
     }
 
     void reset()

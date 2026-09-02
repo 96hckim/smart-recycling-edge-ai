@@ -1,4 +1,5 @@
 ﻿#include "recycle_page.h"
+#include "eco_tree_controller.h"
 #include "ui_recycle_page.h"
 #include <QFontMetrics>
 #include <QPainter>
@@ -12,6 +13,8 @@ RecyclePage::RecyclePage(QWidget* parent)
     ui->setupUi(this);
     ui->lblVideo->setAlignment(Qt::AlignCenter);
     ui->lblVideo->setScaledContents(false);
+
+    m_ecoTree = new EcoTreeController(ui->lblEcoTree, ui->lblEcoTreeStatus, this);
 }
 
 RecyclePage::~RecyclePage()
@@ -29,7 +32,8 @@ void RecyclePage::startSession(bool isMember, const QString& userName)
     applyDynamicProperty(ui->lblTotalPoints, UITheme::PROP_MEMBER, m_isMember);
 
     if (m_isMember) {
-        const QString displayName = m_userName.isEmpty() ? "회원" : m_userName;
+        // ★ 하드코딩 "회원" -> UITheme::Text::DEFAULT_MEMBER_NAME 상수로 대체
+        const QString displayName = m_userName.isEmpty() ? UITheme::Text::DEFAULT_MEMBER_NAME : m_userName;
         ui->lblUserGreeting->setText(QString(UITheme::Text::GREETING_MEMBER_FMT).arg(displayName));
         ui->lblUserGreeting->setStyleSheet(UITheme::Style::GREETING_MEMBER);
         ui->lblSessionMode->setText(UITheme::Text::SESSION_MODE_MEMBER);
@@ -58,19 +62,19 @@ void RecyclePage::updateFrame(const QPixmap& pixmap)
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.setRenderHint(QPainter::TextAntialiasing, true);
 
-        // 1) 품목 테마 색상 3px 테두리
-        painter.setPen(QPen(m_boxColor, 3));
+        // 1) 품목 테마 색상 테두리 (상수 두께 적용)
+        painter.setPen(QPen(m_boxColor, Config::VisionRender::BOX_PEN_WIDTH));
         painter.drawRect(m_detectionBox);
 
         // 2) 박스 상단 한글 품목 배지 ("캔", "페트", "종이", "일반")
         if (!m_boxLabel.isEmpty()) {
-            QFont font("Pretendard", 12, QFont::Bold);
+            QFont font(UITheme::Style::FONT_FAMILY, Config::VisionRender::BADGE_FONT_SIZE, QFont::Bold);
             font.setStyleHint(QFont::SansSerif);
             painter.setFont(font);
             QFontMetrics fm(font);
 
-            const int padX = 8;
-            const int padY = 4;
+            const int padX = Config::VisionRender::BADGE_PAD_X;
+            const int padY = Config::VisionRender::BADGE_PAD_Y;
             const int badgeW = fm.horizontalAdvance(m_boxLabel) + (padX * 2);
             const int badgeH = fm.height() + (padY * 2);
 
@@ -107,7 +111,7 @@ void RecyclePage::updateDetectionState(const QString& className, double confiden
 
     m_detectionBox = box;
     m_boxColor = Config::getCategoryColor(cat);
-    m_boxLabel = displayCategoryName; // 확률 제외, 한글 품목명만 표기
+    m_boxLabel = displayCategoryName;
 
     if (debounceCount >= Config::STABLE_FRAME_THRESHOLD) {
         if (cat == RecycleCategory::GENERAL) {
@@ -137,6 +141,10 @@ void RecyclePage::updateSessionSummary(const SessionSummary& summary)
 
     ui->lblTotalCarbon->setText(QString(UITheme::Text::CARBON_SAVED_FMT)
             .arg(QString::number(summary.totalCarbonG, 'f', 1)));
+
+    if (m_ecoTree) {
+        m_ecoTree->updateCount(summary.canCount + summary.petCount + summary.paperCount);
+    }
 }
 
 void RecyclePage::resetState()
@@ -146,10 +154,10 @@ void RecyclePage::resetState()
 
     ui->lblVideo->clear();
     ui->lblVideo->setText(UITheme::Text::VIDEO_INITIALIZING);
-    ui->lblCanCount->setText("0");
-    ui->lblPetCount->setText("0");
-    ui->lblPaperCount->setText("0");
-    ui->lblGeneralCount->setText("0");
+    ui->lblCanCount->setText(QString::number(0));
+    ui->lblPetCount->setText(QString::number(0));
+    ui->lblPaperCount->setText(QString::number(0));
+    ui->lblGeneralCount->setText(QString::number(0));
 
     if (m_isMember) {
         ui->lblTotalPoints->setText(QString(UITheme::Text::POINTS_MEMBER_FMT).arg(0));
@@ -159,8 +167,12 @@ void RecyclePage::resetState()
         ui->lblTotalPoints->setStyleSheet(UITheme::Style::POINTS_GUEST);
     }
 
-    ui->lblTotalCarbon->setText(QString(UITheme::Text::CARBON_SAVED_FMT).arg("0.0"));
+    ui->lblTotalCarbon->setText(QString(UITheme::Text::CARBON_SAVED_FMT).arg(QString::number(0.0, 'f', 1)));
     setGuideBanner(UITheme::BannerType::READY);
+
+    if (m_ecoTree) {
+        m_ecoTree->reset();
+    }
 }
 
 void RecyclePage::setGuideBanner(UITheme::BannerType type, const QString& customText)

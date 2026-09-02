@@ -14,6 +14,8 @@ namespace Ui {
 class RecyclePage;
 }
 
+class EcoTreeController;
+
 class RecyclePage : public QWidget {
     Q_OBJECT
 
@@ -42,8 +44,9 @@ private:
 
 private:
     Ui::RecyclePage* ui;
+    EcoTreeController* m_ecoTree { nullptr };
     QRect m_detectionBox { };
-    QColor m_boxColor { "#10B981" };
+    QColor m_boxColor { UITheme::Style::DEFAULT_BOX_COLOR }; // ★ 상수로 교체
     QString m_boxLabel { };
     bool m_isMember { false };
     QString m_userName { };
