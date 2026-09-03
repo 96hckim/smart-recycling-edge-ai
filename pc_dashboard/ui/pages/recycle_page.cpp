@@ -102,7 +102,7 @@ void RecyclePage::updateFrame(const QPixmap& pixmap)
         }
     }
 
-    // 3. 최종 완성된 선명한 프레임 표출
+    // 3. 표출
     ui->lblVideo->setPixmap(frame);
 }
 
@@ -123,10 +123,10 @@ void RecyclePage::updateDetectionState(const QString& className, double confiden
     m_boxLabel = displayCategoryName;
 
     if (debounceCount >= Config::STABLE_FRAME_THRESHOLD) {
-        if (cat == RecycleCategory::GENERAL) {
-            setGuideBanner(UITheme::Recycle::BannerType::WARNING);
-        } else if (cat != RecycleCategory::UNKNOWN) {
+        if (cat != RecycleCategory::UNKNOWN) {
             setGuideBanner(UITheme::Recycle::BannerType::CONFIRMED, displayCategoryName);
+        } else {
+            setGuideBanner(UITheme::Recycle::BannerType::WARNING);
         }
     } else {
         setGuideBanner(UITheme::Recycle::BannerType::ANALYZING, displayCategoryName);
@@ -135,12 +135,14 @@ void RecyclePage::updateDetectionState(const QString& className, double confiden
 
 void RecyclePage::updateSessionSummary(const SessionSummary& summary)
 {
+    // 순서: 종이 -> 캔 -> 페트 -> 비닐
+    ui->lblPaperCount->setText(QString::number(summary.paperCount));
     ui->lblCanCount->setText(QString::number(summary.canCount));
     ui->lblPetCount->setText(QString::number(summary.petCount));
-    ui->lblPaperCount->setText(QString::number(summary.paperCount));
-    ui->lblGeneralCount->setText(QString::number(summary.generalCount));
+    ui->lblVinylCount->setText(QString::number(summary.vinylCount));
 
-    const int validItemCount = summary.canCount + summary.petCount + summary.paperCount;
+    // 4개 품목 모두 정식 투입 유효 아이템
+    const int validItemCount = summary.paperCount + summary.canCount + summary.petCount + summary.vinylCount;
     ui->btnFinishSession->setEnabled(validItemCount > 0);
 
     if (summary.isMember) {
@@ -155,7 +157,7 @@ void RecyclePage::updateSessionSummary(const SessionSummary& summary)
             .arg(QString::number(summary.totalCarbonG, 'f', 1)));
 
     if (m_ecoTree) {
-        m_ecoTree->updateCount(summary.canCount + summary.petCount + summary.paperCount);
+        m_ecoTree->updateCount(validItemCount);
     }
 }
 
@@ -166,10 +168,12 @@ void RecyclePage::resetState()
 
     ui->lblVideo->clear();
     ui->lblVideo->setText(UITheme::Recycle::Text::VIDEO_INITIALIZING);
+
+    // 순서: 종이 -> 캔 -> 페트 -> 비닐
+    ui->lblPaperCount->setText(QString::number(0));
     ui->lblCanCount->setText(QString::number(0));
     ui->lblPetCount->setText(QString::number(0));
-    ui->lblPaperCount->setText(QString::number(0));
-    ui->lblGeneralCount->setText(QString::number(0));
+    ui->lblVinylCount->setText(QString::number(0));
     ui->btnFinishSession->setEnabled(false);
 
     if (m_isMember) {

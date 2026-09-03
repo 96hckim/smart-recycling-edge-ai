@@ -18,12 +18,13 @@ enum class KioskState {
     ERROR_STATE
 };
 
+// 순서: 종이(0) -> 캔(1) -> 페트(2) -> 비닐(3)
 enum class RecycleCategory {
     UNKNOWN = -1,
-    CAN = 0,
-    PET = 1,
-    PAPER = 2,
-    GENERAL = 3
+    PAPER = 0,
+    CAN = 1,
+    PET = 2,
+    VINYL = 3
 };
 
 // ============================================================================
@@ -73,18 +74,17 @@ namespace Auth {
 }
 
 namespace EcoTree {
-    // 개수 임계값 (0개: 기본 나무, 1~2개: 새싹, 3~4개: 풍성한 잎, 5개 이상: 완성)
     inline constexpr int THRESHOLD_STAGE_1 = 2;
     inline constexpr int THRESHOLD_STAGE_2 = 4;
 
-    // 프레임 진행 비율
     inline constexpr double FRAME_RATIO_BASE = 0.30;
     inline constexpr double FRAME_RATIO_STAGE_1 = 0.55;
     inline constexpr double FRAME_RATIO_STAGE_2 = 0.80;
 }
 
 // ============================================================================
-// 3. 재활용 품목 메타데이터 테이블 및 헬퍼 함수 (순수 도메인)
+// 3. 재활용 품목 메타데이터 테이블 및 헬퍼 함수
+// 순서: 종이 -> 캔 -> 페트 -> 비닐
 // ============================================================================
 struct ItemMeta {
     RecycleCategory category;
@@ -95,10 +95,10 @@ struct ItemMeta {
 };
 
 inline constexpr ItemMeta ITEM_METAS[CATEGORY_COUNT] = {
+    { RecycleCategory::PAPER, "종이", "PAPER", 30, 8.5 },
     { RecycleCategory::CAN, "캔", "CAN", 50, 25.0 },
     { RecycleCategory::PET, "페트", "PET", 50, 15.2 },
-    { RecycleCategory::PAPER, "종이", "PAPER", 30, 8.5 },
-    { RecycleCategory::GENERAL, "일반", "GENERAL", 0, 0.0 }
+    { RecycleCategory::VINYL, "비닐", "VINYL", 10, 5.0 }
 };
 
 inline int getPoint(RecycleCategory cat)
@@ -130,22 +130,22 @@ inline RecycleCategory parseCategory(const QString& name)
     const QString upper = name.toUpper().trimmed();
 
     if constexpr (USE_MOCK_RPS_MODEL) {
+        if (upper.contains("PAPER") || upper.contains("보"))
+            return RecycleCategory::PAPER;
         if (upper.contains("ROCK") || upper.contains("주먹") || upper.contains("바위"))
             return RecycleCategory::CAN;
         if (upper.contains("SCISSOR") || upper.contains("가위"))
             return RecycleCategory::PET;
-        if (upper.contains("PAPER") || upper.contains("보"))
-            return RecycleCategory::PAPER;
     }
 
+    if (upper.contains("PAPER") || upper.contains("종이") || upper.contains("BOX"))
+        return RecycleCategory::PAPER;
     if (upper.contains("CAN") || upper.contains("캔"))
         return RecycleCategory::CAN;
     if (upper.contains("PET") || upper.contains("PLASTIC") || upper.contains("페트"))
         return RecycleCategory::PET;
-    if (upper.contains("PAPER") || upper.contains("종이") || upper.contains("BOX"))
-        return RecycleCategory::PAPER;
-    if (upper.contains("GENERAL") || upper.contains("TRASH") || upper.contains("일반"))
-        return RecycleCategory::GENERAL;
+    if (upper.contains("VINYL") || upper.contains("비닐") || upper.contains("PLASTIC_BAG") || upper.contains("WRAP"))
+        return RecycleCategory::VINYL;
 
     return RecycleCategory::UNKNOWN;
 }
@@ -173,27 +173,27 @@ struct FrameMetadata {
 struct SessionSummary {
     bool isMember { false };
     QString userName { };
+    int paperCount { 0 };
     int canCount { 0 };
     int petCount { 0 };
-    int paperCount { 0 };
-    int generalCount { 0 };
+    int vinylCount { 0 };
     int totalPoints { 0 };
     double totalCarbonG { 0.0 };
 
     void addItem(RecycleCategory cat, int count = 1)
     {
         switch (cat) {
+        case RecycleCategory::PAPER:
+            paperCount += count;
+            break;
         case RecycleCategory::CAN:
             canCount += count;
             break;
         case RecycleCategory::PET:
             petCount += count;
             break;
-        case RecycleCategory::PAPER:
-            paperCount += count;
-            break;
-        case RecycleCategory::GENERAL:
-            generalCount += count;
+        case RecycleCategory::VINYL:
+            vinylCount += count;
             break;
         default:
             break;
@@ -203,13 +203,15 @@ struct SessionSummary {
 
     void recalculate()
     {
-        totalPoints = (canCount * Config::getPoint(RecycleCategory::CAN))
+        totalPoints = (paperCount * Config::getPoint(RecycleCategory::PAPER))
+            + (canCount * Config::getPoint(RecycleCategory::CAN))
             + (petCount * Config::getPoint(RecycleCategory::PET))
-            + (paperCount * Config::getPoint(RecycleCategory::PAPER));
+            + (vinylCount * Config::getPoint(RecycleCategory::VINYL));
 
-        totalCarbonG = (canCount * Config::getCarbonG(RecycleCategory::CAN))
+        totalCarbonG = (paperCount * Config::getCarbonG(RecycleCategory::PAPER))
+            + (canCount * Config::getCarbonG(RecycleCategory::CAN))
             + (petCount * Config::getCarbonG(RecycleCategory::PET))
-            + (paperCount * Config::getCarbonG(RecycleCategory::PAPER));
+            + (vinylCount * Config::getCarbonG(RecycleCategory::VINYL));
     }
 
     void reset()

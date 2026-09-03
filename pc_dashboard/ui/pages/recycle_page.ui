@@ -272,118 +272,8 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
         <property name="spacing">
          <number>10</number>
         </property>
-        <item>
-         <widget class="QFrame" name="boxCan">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>96</height>
-           </size>
-          </property>
-          <property name="class" stdset="0">
-           <string>countItemBox</string>
-          </property>
-          <layout class="QVBoxLayout" name="canVLayout">
-           <property name="spacing">
-            <number>4</number>
-           </property>
-           <property name="leftMargin">
-            <number>6</number>
-           </property>
-           <property name="topMargin">
-            <number>10</number>
-           </property>
-           <property name="rightMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>10</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="lblCanTitle">
-             <property name="text">
-              <string>🥫 캔</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignCenter</set>
-             </property>
-             <property name="class" stdset="0">
-              <string>itemCountTitle</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="lblCanCount">
-             <property name="text">
-              <string>0</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignCenter</set>
-             </property>
-             <property name="class" stdset="0">
-              <string>itemCountNum</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QFrame" name="boxPet">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>96</height>
-           </size>
-          </property>
-          <property name="class" stdset="0">
-           <string>countItemBox</string>
-          </property>
-          <layout class="QVBoxLayout" name="petVLayout">
-           <property name="spacing">
-            <number>4</number>
-           </property>
-           <property name="leftMargin">
-            <number>6</number>
-           </property>
-           <property name="topMargin">
-            <number>10</number>
-           </property>
-           <property name="rightMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>10</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="lblPetTitle">
-             <property name="text">
-              <string>🧴 페트</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignCenter</set>
-             </property>
-             <property name="class" stdset="0">
-              <string>itemCountTitle</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="lblPetCount">
-             <property name="text">
-              <string>0</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignmentFlag::AlignCenter</set>
-             </property>
-             <property name="class" stdset="0">
-              <string>itemCountNum</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
+
+        <!-- 1. 종이 (PAPER) -->
         <item>
          <widget class="QFrame" name="boxPaper">
           <property name="minimumSize">
@@ -440,8 +330,10 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
           </layout>
          </widget>
         </item>
+
+        <!-- 2. 캔 (CAN) -->
         <item>
-         <widget class="QFrame" name="boxGeneral">
+         <widget class="QFrame" name="boxCan">
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -451,7 +343,7 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
           <property name="class" stdset="0">
            <string>countItemBox</string>
           </property>
-          <layout class="QVBoxLayout" name="generalVLayout">
+          <layout class="QVBoxLayout" name="canVLayout">
            <property name="spacing">
             <number>4</number>
            </property>
@@ -468,9 +360,9 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
             <number>10</number>
            </property>
            <item>
-            <widget class="QLabel" name="lblGeneralTitle">
+            <widget class="QLabel" name="lblCanTitle">
              <property name="text">
-              <string>🗑️ 일반</string>
+              <string>🥫 캔</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -481,7 +373,123 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="lblGeneralCount">
+            <widget class="QLabel" name="lblCanCount">
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountNum</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+
+        <!-- 3. 페트 (PET) -->
+        <item>
+         <widget class="QFrame" name="boxPet">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>96</height>
+           </size>
+          </property>
+          <property name="class" stdset="0">
+           <string>countItemBox</string>
+          </property>
+          <layout class="QVBoxLayout" name="petVLayout">
+           <property name="spacing">
+            <number>4</number>
+           </property>
+           <property name="leftMargin">
+            <number>6</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>10</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="lblPetTitle">
+             <property name="text">
+              <string>🧴 페트</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountTitle</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lblPetCount">
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountNum</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+
+        <!-- 4. 비닐 (VINYL) -->
+        <item>
+         <widget class="QFrame" name="boxVinyl">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>96</height>
+           </size>
+          </property>
+          <property name="class" stdset="0">
+           <string>countItemBox</string>
+          </property>
+          <layout class="QVBoxLayout" name="vinylVLayout">
+           <property name="spacing">
+            <number>4</number>
+           </property>
+           <property name="leftMargin">
+            <number>6</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>10</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="lblVinylTitle">
+             <property name="text">
+              <string>🛍️ 비닐</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountTitle</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lblVinylCount">
              <property name="text">
               <string>0</string>
              </property>

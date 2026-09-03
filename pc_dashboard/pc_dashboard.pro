@@ -2,7 +2,7 @@
 # Smart Recycle Kiosk Dashboard - Project Configuration
 # -----------------------------------------------------
 
-QT += core gui network widgets
+QT += core gui widgets network websockets
 
 CONFIG += c++17
 CONFIG += no_include_pwd

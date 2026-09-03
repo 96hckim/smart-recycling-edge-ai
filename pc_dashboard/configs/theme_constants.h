@@ -9,54 +9,41 @@
 
 namespace UITheme {
 
-// ============================================================================
-// 1. 전역 QSS 프로퍼티 키 및 공통 스타일
-// ============================================================================
 constexpr char PROP_MEMBER[] = "member";
 constexpr char PROP_BANNER_STATUS[] = "bannerStatus";
 inline constexpr const char* PROP_ACTIVE = "active";
 inline const QString FONT_FAMILY = "Pretendard";
 
-// 품목별 테마 색상 (app_config에서 이관)
+// 품목별 테마 색상 (종이: 호박색, 캔: 에메랄드, 페트: 하늘색, 비닐: 보라색 계열)
 inline QColor getCategoryColor(RecycleCategory cat)
 {
     switch (cat) {
+    case RecycleCategory::PAPER:
+        return QColor("#F59E0B");
     case RecycleCategory::CAN:
         return QColor("#10B981");
     case RecycleCategory::PET:
         return QColor("#38BDF8");
-    case RecycleCategory::PAPER:
-        return QColor("#F59E0B");
-    case RecycleCategory::GENERAL:
-        return QColor("#94A3B8");
+    case RecycleCategory::VINYL:
+        return QColor("#A855F7");
     default:
         return QColor("#10B981");
     }
 }
 
-// ============================================================================
-// 2. 상단 헤더 및 텔레메트리 (MainWindow)
-// ============================================================================
 namespace Header {
     inline const QString STATUS_ONLINE = "● AI VISION ONLINE";
     inline const QString STATUS_OFFLINE = "○ AI VISION OFFLINE";
     inline const QString TELEMETRY_FMT = "FPS: %1 | Infer: %2ms | Network Latency: %3ms | Jetson Stream Port: %4";
 }
 
-// ============================================================================
-// 3. 대기 화면 (IdlePage)
-// ============================================================================
 namespace Idle {
-    inline constexpr int QR_DISPLAY_SIZE = 280; // UI 위젯 규격과 일치
-    inline constexpr int QR_QUIET_ZONE_MODULES = 4; // 표준 바코드 여백 (인식 안정성 보장)
-    inline constexpr qreal QR_CORNER_RADIUS = 24.0; // QSS border-radius와 동기화 수치
+    inline constexpr int QR_DISPLAY_SIZE = 280;
+    inline constexpr int QR_QUIET_ZONE_MODULES = 4;
+    inline constexpr qreal QR_CORNER_RADIUS = 24.0;
 }
 
-// ============================================================================
-// 4. 투입 화면 및 실시간 AI 렌더링 (RecyclePage)
-// ============================================================================
 namespace Recycle {
-    // 뷰어 위 QPainter 렌더링 설정 (app_config에서 이관)
     inline constexpr int BADGE_FONT_SIZE = 22;
     inline constexpr int BOX_PEN_WIDTH = 4;
     inline constexpr int BADGE_PAD_X = 14;
@@ -109,16 +96,13 @@ namespace Recycle {
         constexpr char GUIDE_READY[] = "🎯 카메라 중앙 영역에 재활용품을 놓아주세요";
         constexpr char GUIDE_ANALYZING_FMT[] = "⏳ %1 인식 중... 고정해 주세요";
         constexpr char GUIDE_CONFIRMED_FMT[] = "✅ %1 인식 확정! 투입구에 넣어주세요";
-        constexpr char GUIDE_GENERAL_WARN[] = "⚠️ 일반쓰레기 감지 (포인트 미지급)";
+        constexpr char GUIDE_GENERAL_WARN[] = "⚠️ 미인식 품목 감지";
         constexpr char POINTS_MEMBER_FMT[] = "+ %1 P";
         constexpr char POINTS_GUEST_FMT[] = "%1 P (미적립)";
         constexpr char CARBON_SAVED_FMT[] = "🌱 절감 탄소량: %1g CO2";
     }
 }
 
-// ============================================================================
-// 5. 에코 트리 모듈 (EcoTreeController)
-// ============================================================================
 namespace EcoTree {
     inline const QString RESOURCE_PATH = ":/images/tree_grow.gif";
     inline const QSize DISPLAY_SIZE { 300, 300 };
@@ -133,9 +117,6 @@ namespace EcoTree {
     }
 }
 
-// ============================================================================
-// 6. 결과 화면 (ResultPage)
-// ============================================================================
 namespace Result {
     inline const QString CONFETTI_RESOURCE_PATH = ":/images/confetti.gif";
     inline const QSize CONFETTI_DISPLAY_SIZE { 640, 300 };

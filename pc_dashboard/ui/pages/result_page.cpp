@@ -60,15 +60,15 @@ void ResultPage::showResult(const SessionSummary& summary)
     m_targetPoints = summary.totalPoints;
     m_targetCarbon = summary.totalCarbonG;
 
-    // 1. 품목별 카드 갱신
+    // 1. 품목별 카드 갱신 (순서: 종이 -> 캔 -> 페트 -> 비닐)
+    updateCard(ui->boxReceiptPaper, ui->lblRPaperTitle, ui->lblRPaperCount, ui->lblRPaperPoints,
+        summary.paperCount, Config::getPoint(RecycleCategory::PAPER));
     updateCard(ui->boxReceiptCan, ui->lblRCanTitle, ui->lblRCanCount, ui->lblRCanPoints,
         summary.canCount, Config::getPoint(RecycleCategory::CAN));
     updateCard(ui->boxReceiptPet, ui->lblRPetTitle, ui->lblRPetCount, ui->lblRPetPoints,
         summary.petCount, Config::getPoint(RecycleCategory::PET));
-    updateCard(ui->boxReceiptPaper, ui->lblRPaperTitle, ui->lblRPaperCount, ui->lblRPaperPoints,
-        summary.paperCount, Config::getPoint(RecycleCategory::PAPER));
-    updateCard(ui->boxReceiptGeneral, ui->lblRGeneralTitle, ui->lblRGeneralCount, ui->lblRGeneralPoints,
-        summary.generalCount, Config::getPoint(RecycleCategory::GENERAL));
+    updateCard(ui->boxReceiptVinyl, ui->lblRVinylTitle, ui->lblRVinylCount, ui->lblRVinylPoints,
+        summary.vinylCount, Config::getPoint(RecycleCategory::VINYL));
 
     // 2. 사용자 알림 뱃지
     ui->lblUserNotice->setProperty(UITheme::PROP_MEMBER, summary.isMember);
@@ -159,9 +159,6 @@ void ResultPage::onCountdownTick()
     m_remainingSec--;
     if (m_remainingSec <= 0) {
         m_countdownTimer->stop();
-        // if (m_confettiMovie)
-        // m_confettiMovie->stop();
-        // emit sigReturnToIdleRequested();
     } else {
         ui->btnConfirm->setText(QString(UITheme::Result::Text::COUNTDOWN_BTN_FMT).arg(m_remainingSec));
     }

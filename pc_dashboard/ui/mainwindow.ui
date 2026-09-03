@@ -34,7 +34,6 @@ QLabel#lblTitle {
     letter-spacing: 0.5px;
     background: transparent;
 }
-/* 상단 AI 비전 연결 상태 뱃지 (기본: 온라인 초록) */
 QLabel#lblConnStatus {
     background-color: #0F172A;
     border: 2px solid #10B981;
@@ -44,14 +43,12 @@ QLabel#lblConnStatus {
     font-weight: 900;
     font-size: 16px;
 }
-
-/* 오프라인 상태 */
 QLabel#lblConnStatus[online=&quot;false&quot;] {
     border-color: #EF4444;
     color: #EF4444;
 }
 
-/* 하단 수거함 적재 상태 공통 바 */
+/* 하단 수거함 적재 상태 바 */
 QFrame#frameBinStatus {
     background-color: #0F172A;
     border-top: 2px solid #1E293B;
@@ -60,7 +57,7 @@ QFrame#frameBinStatus {
 QLabel#lblStatusTitle { font-size: 24px; font-weight: 900; color: #94A3B8; background: transparent; }
 QLabel.binNameLabel { font-size: 22px; font-weight: 800; color: #F1F5F9; background: transparent; }
 
-/* 수거함 대형 인셋 게이지 */
+/* 수거함 대형 게이지 */
 QProgressBar.binProgressBar {
     background-color: #080D14;
     border: 2px solid #334155;
@@ -74,10 +71,10 @@ QProgressBar.binProgressBar::chunk {
     border-radius: 7px;
     margin: 2px;
 }
+QProgressBar#progressBarPaper::chunk { background-color: #F59E0B; }
 QProgressBar#progressBarCan::chunk { background-color: #10B981; }
 QProgressBar#progressBarPet::chunk { background-color: #38BDF8; }
-QProgressBar#progressBarPaper::chunk { background-color: #F59E0B; }
-QProgressBar#progressBarGeneral::chunk { background-color: #64748B; }
+QProgressBar#progressBarVinyl::chunk { background-color: #A855F7; }
 
 /* 최하단 텔레메트리 바 */
 QLabel#lblTelemetry {
@@ -204,70 +201,8 @@ QLabel#lblTelemetry {
          </property>
         </widget>
        </item>
-       <item>
-        <widget class="QLabel" name="lblCanText">
-         <property name="text">
-          <string>🥫 캔</string>
-         </property>
-         <property name="class" stdset="0">
-          <string>binNameLabel</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QProgressBar" name="progressBarCan">
-         <property name="minimumSize">
-          <size>
-           <width>190</width>
-           <height>36</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>190</width>
-           <height>36</height>
-          </size>
-         </property>
-         <property name="value">
-          <number>35</number>
-         </property>
-         <property name="class" stdset="0">
-          <string>binProgressBar</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="lblPetText">
-         <property name="text">
-          <string>🧴 페트</string>
-         </property>
-         <property name="class" stdset="0">
-          <string>binNameLabel</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QProgressBar" name="progressBarPet">
-         <property name="minimumSize">
-          <size>
-           <width>190</width>
-           <height>36</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>190</width>
-           <height>36</height>
-          </size>
-         </property>
-         <property name="value">
-          <number>60</number>
-         </property>
-         <property name="class" stdset="0">
-          <string>binProgressBar</string>
-         </property>
-        </widget>
-       </item>
+
+       <!-- 1. 종이 -->
        <item>
         <widget class="QLabel" name="lblPaperText">
          <property name="text">
@@ -300,10 +235,12 @@ QLabel#lblTelemetry {
          </property>
         </widget>
        </item>
+
+       <!-- 2. 캔 -->
        <item>
-        <widget class="QLabel" name="lblGeneralText">
+        <widget class="QLabel" name="lblCanText">
          <property name="text">
-          <string>🗑️ 일반</string>
+          <string>🥫 캔</string>
          </property>
          <property name="class" stdset="0">
           <string>binNameLabel</string>
@@ -311,7 +248,75 @@ QLabel#lblTelemetry {
         </widget>
        </item>
        <item>
-        <widget class="QProgressBar" name="progressBarGeneral">
+        <widget class="QProgressBar" name="progressBarCan">
+         <property name="minimumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="value">
+          <number>35</number>
+         </property>
+         <property name="class" stdset="0">
+          <string>binProgressBar</string>
+         </property>
+        </widget>
+       </item>
+
+       <!-- 3. 페트 -->
+       <item>
+        <widget class="QLabel" name="lblPetText">
+         <property name="text">
+          <string>🧴 페트</string>
+         </property>
+         <property name="class" stdset="0">
+          <string>binNameLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBarPet">
+         <property name="minimumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="value">
+          <number>60</number>
+         </property>
+         <property name="class" stdset="0">
+          <string>binProgressBar</string>
+         </property>
+        </widget>
+       </item>
+
+       <!-- 4. 비닐 -->
+       <item>
+        <widget class="QLabel" name="lblVinylText">
+         <property name="text">
+          <string>🛍️ 비닐</string>
+         </property>
+         <property name="class" stdset="0">
+          <string>binNameLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBarVinyl">
          <property name="minimumSize">
           <size>
            <width>190</width>
@@ -332,6 +337,7 @@ QLabel#lblTelemetry {
          </property>
         </widget>
        </item>
+
        <item>
         <spacer name="binOuterRSpacer">
          <property name="orientation">
