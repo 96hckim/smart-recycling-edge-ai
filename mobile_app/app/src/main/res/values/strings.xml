@@ -1,3 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">SmartRecyclingEdgeAI</string>
+    <string name="app_name">스마트 재활용 수거</string>
+
+    <!-- Login Screen -->
+    <string name="login_title">간편 로그인 / 시작하기</string>
+    <string name="login_subtitle">지구를 지키는 스마트한 습관, 시작해 볼까요? 🌿</string>
+    <string name="login_phone_label">휴대폰 번호</string>
+    <string name="login_phone_placeholder">01012345678</string>
+    <string name="login_name_label">이름 (선택 입력)</string>
+    <string name="login_name_placeholder">미입력 시 \'회원\'</string>
+    <string name="login_btn_start">시작하기 🚀</string>
+    <string name="login_tip">💡 별도 가입 없이 휴대폰 번호 입력만으로 바로 이용할 수 있어요!</string>
+    <string name="login_phone_error">올바른 휴대폰 번호(10~11자리)를 입력해 주세요.</string>
+    <string name="login_invalid_qr">유효하지 않은 키오스크 QR 코드입니다.</string>
+
+    <!-- Home Header & Greeting -->
+    <string name="home_greeting">안녕하세요, %1$s 님! 🌱</string>
+    <string name="home_guest_greeting">안녕하세요, 회원님! 🌱</string>
+    <string name="home_phone_masked">%1$s</string>
+
+    <!-- Point Card -->
+    <string name="home_point_card_title">내 포인트 잔액</string>
+    <string name="home_point_amount">+ %1$d P</string>
+    <string name="home_point_refresh_tooltip">당겨서 새로고침</string>
+
+    <!-- Eco Contribution Card -->
+    <string name="home_eco_card_title">에코 기여도 요약 🌿</string>
+    <string name="home_eco_carbon_saved">누적 %1$.1f g CO₂ 절감 효과!</string>
+    <string name="home_eco_subtitle">지구를 지키는 아름다운 습관을 함께 만들고 있어요.</string>
+
+    <!-- Main Action Button -->
+    <string name="home_btn_open_kiosk">재활용 투입구 열기 (QR 스캔) 📦</string>
+
+    <!-- QR Scanner & Camera -->
+    <string name="qr_scan_title">키오스크 QR 코드를 스캔해 주세요</string>
+    <string name="qr_scan_guide">키오스크 화면의 QR 코드를 사각형 안에 맞춰주세요.</string>
+    <string name="qr_scan_permission_required">QR 코드 스캔을 위해 카메라 권한이 필요합니다.</string>
+    <string name="qr_scan_permission_grant">권한 허용하기</string>
+    <string name="qr_scan_invalid_qr">유효하지 않은 키오스크 QR 코드입니다. 다시 시도해 주세요.</string>
+
+    <!-- Kiosk Binding & Active State -->
+    <string name="kiosk_binding_progress">키오스크 세션을 연결하는 중...</string>
+    <string name="kiosk_active_title">키오스크와 연결되었습니다! 🌿</string>
+    <string name="kiosk_active_subtitle">수거함에 재활용품을 넣으면 실시간으로 정산됩니다.</string>
+    <string name="kiosk_active_waiting_hint">재활용품 투입 대기 중...</string>
+
+    <!-- Recycle Result Dialog -->
+    <string name="result_title">분리배출 완료! 🎉</string>
+    <string name="result_subtitle">지구가 한층 더 깨끗해졌어요!</string>
+    <string name="result_category_paper">종이 %1$d개</string>
+    <string name="result_category_can">캔 %1$d개</string>
+    <string name="result_category_pet">페트 %1$d개</string>
+    <string name="result_category_vinyl">비닐 %1$d개</string>
+    <string name="result_earned_points">+ %1$d P 획득!</string>
+    <string name="result_carbon_saved">%1$.1f g CO₂ 절감</string>
+    <string name="result_total_points">총 잔여 포인트: %1$d P</string>
+    <string name="result_btn_confirm">확인</string>
+
+    <!-- Common Messages & Actions -->
+    <string name="common_error">오류가 발생했습니다: %1$s</string>
+    <string name="common_logout">로그아웃</string>
+    <string name="common_close">닫기</string>
 </resources>

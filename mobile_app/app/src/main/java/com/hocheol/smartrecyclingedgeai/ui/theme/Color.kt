@@ -2,10 +2,30 @@ package com.hocheol.smartrecyclingedgeai.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Eco Theme Primary Colors (Forest Emerald)
+val ForestEmerald = Color(0xFF10B981)
+val ForestEmeraldDark = Color(0xFF059669)
+val ForestEmeraldLight = Color(0xFFD1FAE5)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Secondary & Accent Colors (Fresh Sky Blue & Amber)
+val SkyBlue = Color(0xFF38BDF8)
+val SkyBlueLight = Color(0xFFE0F2FE)
+val AmberAccent = Color(0xFFF59E0B)
+val AmberAccentLight = Color(0xFFFEF3C7)
+
+// Clean Background & Neutral Colors
+val CleanNeutralBg = Color(0xFFF8FAFC)
+val SurfaceWhite = Color(0xFFFFFFFF)
+
+// High-Contrast Text Colors
+val TextDarkSlate = Color(0xFF0F172A)
+val TextMutedGray = Color(0xFF64748B)
+
+// 4 Major Category Badge Colors
+val BadgePaper = Color(0xFFF59E0B)
+val BadgeCan = Color(0xFF10B981)
+val BadgePet = Color(0xFF38BDF8)
+val BadgeVinyl = Color(0xFFA855F7)
+
+// Status
+val ErrorRed = Color(0xFFEF4444)

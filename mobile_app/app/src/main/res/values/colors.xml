@@ -1,10 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Primary Theme Colors -->
+    <color name="primary_forest_emerald">#10B981</color>
+    <color name="primary_emerald_dark">#059669</color>
+    <color name="primary_emerald_light">#D1FAE5</color>
+
+    <!-- Secondary & Accent Colors -->
+    <color name="secondary_sky_blue">#38BDF8</color>
+    <color name="secondary_sky_blue_light">#E0F2FE</color>
+    <color name="accent_amber">#F59E0B</color>
+    <color name="accent_amber_light">#FEF3C7</color>
+
+    <!-- Background & Surface Colors -->
+    <color name="bg_clean_neutral">#F8FAFC</color>
+    <color name="surface_white">#FFFFFF</color>
+
+    <!-- Text Colors -->
+    <color name="text_dark_slate">#0F172A</color>
+    <color name="text_muted_gray">#64748B</color>
+    <color name="text_white">#FFFFFF</color>
+
+    <!-- 4 Major Recyclable Category Badge Colors -->
+    <color name="badge_paper">#F59E0B</color> <!-- 종이: Amber -->
+    <color name="badge_can">#10B981</color>   <!-- 캔: Emerald -->
+    <color name="badge_pet">#38BDF8</color>   <!-- 페트: Sky Blue -->
+    <color name="badge_vinyl">#A855F7</color> <!-- 비닐: Purple -->
+
+    <!-- Status & Overlay -->
+    <color name="error_red">#EF4444</color>
+    <color name="overlay_black_alpha50">#80000000</color>
 </resources>

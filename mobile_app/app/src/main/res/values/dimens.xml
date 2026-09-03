@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Padding & Margin Sizes -->
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_small">8dp</dimen>
+    <dimen name="spacing_medium">16dp</dimen>
+    <dimen name="spacing_large">24dp</dimen>
+    <dimen name="spacing_xlarge">32dp</dimen>
+    <dimen name="spacing_huge">48dp</dimen>
+
+    <!-- Corner Radius -->
+    <dimen name="radius_small">8dp</dimen>
+    <dimen name="radius_medium">16dp</dimen>
+    <dimen name="radius_large">20dp</dimen>
+    <dimen name="radius_xlarge">24dp</dimen>
+    <dimen name="radius_circle">100dp</dimen>
+
+    <!-- Component Sizes -->
+    <dimen name="btn_height_large">56dp</dimen>
+    <dimen name="card_elevation">4dp</dimen>
+    <dimen name="qr_scan_frame_size">260dp</dimen>
+    <dimen name="icon_size_medium">24dp</dimen>
+    <dimen name="icon_size_large">36dp</dimen>
+    <dimen name="icon_size_xlarge">48dp</dimen>
+</resources>

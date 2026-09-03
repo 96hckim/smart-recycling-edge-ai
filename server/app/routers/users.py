@@ -19,7 +19,7 @@ def get_user_profile(
     """모바일 홈 화면용 단일 유저 프로필 및 현재 포인트 조회."""
     cursor = db.cursor()
     cursor.execute(
-        "SELECT id, phone, points, created_at FROM users WHERE id = ?",
+        "SELECT id, phone, name, points, created_at FROM users WHERE id = ?",
         (user_id,),
     )
     user = cursor.fetchone()
@@ -33,6 +33,7 @@ def get_user_profile(
     return UserResponse(
         id=user["id"],
         phone=user["phone"],
+        name=user["name"] if user["name"] else "회원",
         points=user["points"],
         created_at=user["created_at"],
     )
