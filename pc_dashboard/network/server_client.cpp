@@ -1,5 +1,8 @@
 ﻿#include "server_client.h"
+#include "app_config.h"
 #include <QDebug>
+
+using namespace Config::Backend;
 
 ServerClient::ServerClient(int binId, const QString& serverHost, int serverPort, QObject* parent)
     : QObject(parent)
@@ -7,14 +10,12 @@ ServerClient::ServerClient(int binId, const QString& serverHost, int serverPort,
     , m_serverHost(serverHost)
     , m_serverPort(serverPort)
 {
-    // QWebSocket 시그널 바인딩
     connect(&m_webSocket, &QWebSocket::connected, this, &ServerClient::onSocketConnected);
     connect(&m_webSocket, &QWebSocket::disconnected, this, &ServerClient::onSocketDisconnected);
     connect(&m_webSocket, &QWebSocket::textMessageReceived, this, &ServerClient::onSocketMessageReceived);
     connect(&m_webSocket, QOverload<QAbstractSocket::SocketError>::of(&QWebSocket::error),
         this, &ServerClient::onSocketError);
 
-    // REST 응답 처리
     connect(&m_httpManager, &QNetworkAccessManager::finished, this, &ServerClient::onSubmitReplyFinished);
 }
 
@@ -25,11 +26,7 @@ ServerClient::~ServerClient()
 
 void ServerClient::connectToKioskSocket()
 {
-    QString wsUrl = QString("ws://%1:%2/ws/kiosk/%3/kiosk")
-                        .arg(m_serverHost)
-                        .arg(m_serverPort)
-                        .arg(m_binId);
-
+    QString wsUrl = WS_URL_FMT.arg(m_serverHost).arg(m_serverPort).arg(m_binId);
     qDebug() << "[ServerClient] Connecting to WS:" << wsUrl;
     m_webSocket.open(QUrl(wsUrl));
 }
@@ -63,53 +60,48 @@ void ServerClient::onSocketMessageReceived(const QString& message)
 {
     qDebug() << "[ServerClient] WS Message Received:" << message;
 
-    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
-    if (!doc.isObject())
+    QJsonParseError parseErr;
+    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8(), &parseErr);
+    if (parseErr.error != QJsonParseError::NoError || !doc.isObject()) {
+        qWarning() << "[ServerClient] Invalid JSON payload:" << parseErr.errorString();
         return;
+    }
 
     QJsonObject obj = doc.object();
-    QString eventType = obj["event"].toString();
+    QString eventType = obj[Key::EVENT].toString();
 
-    // 서버가 보낸 USER_AUTHENTICATED 이벤트 파싱
-    if (eventType == "USER_AUTHENTICATED") {
-        int userId = obj["user_id"].toInt();
-        QString name = obj["name"].toString();
-        if (name.isEmpty()) {
-            name = "회원";
-        }
-        QString phone = obj["phone"].toString();
-        int points = obj["points"].toInt();
+    // 이벤트 디스패처 구조
+    if (eventType == Event::USER_AUTHENTICATED) {
+        int userId = obj[Key::USER_ID].toInt();
+        QString name = obj[Key::NAME].toString(Config::Demo::MEMBER_USER_ID);
+        QString phone = obj[Key::PHONE].toString();
+        int points = obj[Key::POINTS].toInt();
 
         emit userAuthenticated(userId, name, phone, points);
+    } else {
+        qDebug() << "[ServerClient] Unhandled WS Event:" << eventType;
     }
 }
 
 void ServerClient::submitRecycleResult(int userId, const RecycleCounts& counts, double carbonSaved, int earnedPoints)
 {
-    QUrl url(QString("http://%1:%2/api/recycle/submit").arg(m_serverHost).arg(m_serverPort));
+    QUrl url(API_SUBMIT_PATH.arg(m_serverHost).arg(m_serverPort));
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     QJsonObject body;
-    body["bin_id"] = m_binId;
-    if (userId > 0) {
-        body["user_id"] = userId;
-    } else {
-        body["user_id"] = QJsonValue::Null;
-    }
+    body[Key::BIN_ID] = m_binId;
+    body[Key::USER_ID] = (userId > 0) ? QJsonValue(userId) : QJsonValue(QJsonValue::Null);
 
-    // 순서: 종이 -> 캔 -> 페트 -> 비닐
-    body["paper_count"] = counts.paper;
-    body["can_count"] = counts.can;
-    body["pet_count"] = counts.pet;
-    body["vinyl_count"] = counts.vinyl;
+    body[Key::PAPER_COUNT] = counts.paper;
+    body[Key::CAN_COUNT] = counts.can;
+    body[Key::PET_COUNT] = counts.pet;
+    body[Key::VINYL_COUNT] = counts.vinyl;
 
-    body["carbon_saved_g"] = carbonSaved;
-    body["earned_points"] = earnedPoints;
+    body[Key::CARBON_SAVED] = carbonSaved;
+    body[Key::EARNED_PTS] = earnedPoints;
 
-    QJsonDocument doc(body);
-    QByteArray postData = doc.toJson();
-
+    QByteArray postData = QJsonDocument(body).toJson(QJsonDocument::Compact);
     qDebug() << "[ServerClient] POST /api/recycle/submit:" << postData;
     m_httpManager.post(request, postData);
 }
@@ -125,14 +117,13 @@ void ServerClient::onSubmitReplyFinished(QNetworkReply* reply)
         return;
     }
 
-    QByteArray respData = reply->readAll();
-    QJsonDocument doc = QJsonDocument::fromJson(respData);
+    QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
     if (!doc.isObject())
         return;
 
     QJsonObject obj = doc.object();
-    int logId = obj["log_id"].toInt();
-    int totalPoints = obj["total_points"].toInt();
+    int logId = obj[Key::LOG_ID].toInt();
+    int totalPoints = obj[Key::TOTAL_POINTS].toInt();
 
     emit submitCompleted(logId, totalPoints);
 }

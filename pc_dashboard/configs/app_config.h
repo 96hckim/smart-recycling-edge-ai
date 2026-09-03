@@ -67,6 +67,33 @@ namespace Demo {
     inline const QString MEMBER_USER_ID = "회원";
 }
 
+namespace Backend {
+    inline const QString WS_URL_FMT = "ws://%1:%2/ws/kiosk/%3/kiosk";
+    inline const QString API_SUBMIT_PATH = "http://%1:%2/api/recycle/submit";
+
+    namespace Event {
+        inline const QString USER_AUTHENTICATED = "USER_AUTHENTICATED";
+        inline const QString EMERGENCY_STOP = "EMERGENCY_STOP";
+    }
+
+    namespace Key {
+        inline const QString EVENT = "event";
+        inline const QString USER_ID = "user_id";
+        inline const QString NAME = "name";
+        inline const QString PHONE = "phone";
+        inline const QString POINTS = "points";
+        inline const QString BIN_ID = "bin_id";
+        inline const QString PAPER_COUNT = "paper_count";
+        inline const QString CAN_COUNT = "can_count";
+        inline const QString PET_COUNT = "pet_count";
+        inline const QString VINYL_COUNT = "vinyl_count";
+        inline const QString CARBON_SAVED = "carbon_saved_g";
+        inline const QString EARNED_PTS = "earned_points";
+        inline const QString LOG_ID = "log_id";
+        inline const QString TOTAL_POINTS = "total_points";
+    }
+}
+
 // 모바일 앱 딥링크(App Link) 규격
 namespace Auth {
     inline const QString DEEPLINK_SCHEME = "smartrecycle://kiosk/auth";

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1920</width>
-    <height>900</height>
+    <height>911</height>
    </rect>
   </property>
   <property name="styleSheet">
@@ -183,7 +183,7 @@ QPushButton#btnGuestStart:pressed {
         <item>
          <widget class="QLabel" name="lblMemberTitle">
           <property name="text">
-           <string>📱 회원 포인트 적립 (최대 +50P)</string>
+           <string>📱 회원 포인트 적립</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignmentFlag::AlignCenter</set>
