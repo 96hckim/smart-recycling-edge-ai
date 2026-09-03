@@ -70,7 +70,7 @@ QFrame#bannerDivider {
     width: 2px;
 }
 
-/* 4종 품목 영수증 카드 (기본: 미투입) */
+/* 4종 품목 영수증 카드 */
 QFrame.receiptCard {
     background-color: #131E30;
     border: 2px solid #1E293B;
@@ -92,7 +92,7 @@ QLabel.receiptPoints {
     color: #334155;
 }
 
-/* 4종 품목 활성화 상태 (active="true") */
+/* 4종 품목 활성화 상태 */
 QFrame#boxReceiptCan[active="true"] { background-color: #0E2922; border: 2px solid #10B981; }
 QLabel#lblRCanTitle[active="true"] { color: #F8FAFC; }
 QLabel#lblRCanCount[active="true"] { color: #10B981; }

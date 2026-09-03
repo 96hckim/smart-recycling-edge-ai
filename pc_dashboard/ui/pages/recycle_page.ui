@@ -2,12 +2,15 @@
 <ui version="4.0">
  <class>RecyclePage</class>
  <widget class="QWidget" name="RecyclePage">
+  <property name="enabled">
+   <bool>false</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>1920</width>
-    <height>900</height>
+    <height>1052</height>
    </rect>
   </property>
   <property name="styleSheet">
@@ -40,7 +43,7 @@ QLabel#lblVideo {
     font-weight: 800;
 }
 
-/* 실시간 하단 가이드 배너 (높이 60px) */
+/* 실시간 하단 가이드 배너 */
 QLabel#lblGuideBanner {
     background-color: #0D1927;
     border: 2px solid #0284C7;
@@ -74,7 +77,7 @@ QLabel#lblRewardHeader { font-size: 19px; font-weight: 800; color: #94A3B8; }
 QLabel#lblTotalPoints { font-size: 42px; font-weight: 900; color: #38BDF8; }
 QLabel#lblTotalCarbon { font-size: 20px; font-weight: 800; color: #10B981; }
 
-/* 액션 버튼 (높이 64px) */
+/* 액션 버튼 */
 QPushButton#btnFinishSession {
     background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #10B981, stop:1 #06B6D4);
     color: #FFFFFF;
@@ -82,6 +85,11 @@ QPushButton#btnFinishSession {
     font-weight: 900;
     border: none;
     border-radius: 16px;
+}
+QPushButton#btnFinishSession:disabled {
+    background-color: #1E293B;
+    border: 1.5px solid #334155;
+    color: #64748B;
 }
 QPushButton#btnFinishSession:hover {
     background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #059669, stop:1 #0891B2);
@@ -561,18 +569,18 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
          </property>
          <item>
           <widget class="QLabel" name="lblEcoTreeTitle">
-           <property name="text">
-            <string>🌱 나의 에코 트리</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
            <property name="styleSheet">
             <string notr="true">
              font-size: 19px;
              font-weight: 800;
              color: #10B981;
             </string>
+           </property>
+           <property name="text">
+            <string>🌱 나의 에코 트리</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -590,28 +598,28 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
              <height>220</height>
             </size>
            </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
            <property name="text">
             <string/>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QLabel" name="lblEcoTreeStatus">
-           <property name="text">
-            <string>재활용품을 넣어 나무를 키워보세요!</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
            <property name="styleSheet">
             <string notr="true">
              font-size: 15px;
              font-weight: 600;
              color: #94A3B8;
             </string>
+           </property>
+           <property name="text">
+            <string>재활용품을 넣어 나무를 키워보세요!</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -625,6 +633,9 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
         </property>
         <item>
          <widget class="QPushButton" name="btnFinishSession">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>

@@ -15,10 +15,10 @@ EcoTreeController::EcoTreeController(QLabel* movieLabel, QLabel* statusLabel, QO
 
 void EcoTreeController::initMovie()
 {
-    m_movie = new QMovie(Config::EcoTree::RESOURCE_PATH, QByteArray(), this);
+    m_movie = new QMovie(UITheme::EcoTree::RESOURCE_PATH, QByteArray(), this);
     m_movie->setCacheMode(QMovie::CacheAll);
     m_movie->setScaledSize(UITheme::EcoTree::DISPLAY_SIZE);
-    m_movie->setSpeed(Config::EcoTree::MOVIE_SPEED);
+    m_movie->setSpeed(UITheme::EcoTree::MOVIE_SPEED);
 
     if (m_lblMovie) {
         m_lblMovie->setScaledContents(false);
@@ -67,7 +67,7 @@ void EcoTreeController::updateCount(int totalCount)
 
     int totalFrames = m_movie->frameCount();
     if (totalFrames <= 0) {
-        totalFrames = Config::EcoTree::DEFAULT_FRAME_COUNT;
+        totalFrames = UITheme::EcoTree::DEFAULT_FRAME_COUNT;
     }
 
     switch (newStage) {
@@ -106,7 +106,7 @@ void EcoTreeController::showBaseTree()
 
     int totalFrames = m_movie->frameCount();
     if (totalFrames <= 0) {
-        totalFrames = Config::EcoTree::DEFAULT_FRAME_COUNT;
+        totalFrames = UITheme::EcoTree::DEFAULT_FRAME_COUNT;
     }
 
     // 1단계(잎 없는 나무) 해당 프레임 위치로 이동 후 일시정지 상태 유지
@@ -114,7 +114,7 @@ void EcoTreeController::showBaseTree()
     m_movie->jumpToFrame(m_targetFrame);
 
     if (m_lblStatus) {
-        m_lblStatus->setText(UITheme::EcoTree::STATUS_BASE);
+        m_lblStatus->setText(UITheme::EcoTree::Text::STATUS_BASE);
     }
 }
 
@@ -125,16 +125,16 @@ void EcoTreeController::updateStatusText(TreeStage stage, int count)
 
     switch (stage) {
     case TreeStage::BASE_TREE:
-        m_lblStatus->setText(UITheme::EcoTree::STATUS_BASE);
+        m_lblStatus->setText(UITheme::EcoTree::Text::STATUS_BASE);
         break;
     case TreeStage::SPROUT:
-        m_lblStatus->setText(QString(UITheme::EcoTree::STATUS_STAGE_1_FMT).arg(count));
+        m_lblStatus->setText(QString(UITheme::EcoTree::Text::STATUS_STAGE_1_FMT).arg(count));
         break;
     case TreeStage::SAPLING:
-        m_lblStatus->setText(QString(UITheme::EcoTree::STATUS_STAGE_2_FMT).arg(count));
+        m_lblStatus->setText(QString(UITheme::EcoTree::Text::STATUS_STAGE_2_FMT).arg(count));
         break;
     case TreeStage::MATURE:
-        m_lblStatus->setText(QString(UITheme::EcoTree::STATUS_STAGE_3_FMT).arg(count));
+        m_lblStatus->setText(QString(UITheme::EcoTree::Text::STATUS_STAGE_3_FMT).arg(count));
         break;
     }
 }

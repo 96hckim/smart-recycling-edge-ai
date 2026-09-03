@@ -23,7 +23,7 @@ QLabel {
     background-color: transparent;
 }
 
-/* 상단 메인 타이틀 (60px 초대형 폰트) */
+/* 상단 메인 타이틀 */
 QLabel#lblMainTitle {
     font-size: 60px;
     font-weight: 900;
@@ -74,7 +74,7 @@ QLabel#lblMemberDesc, QLabel#lblGuestDesc {
     line-height: 1.4;
 }
 
-/* 좌측 QR 안내 뱃지 (높이 76px) */
+/* 좌측 QR 안내 뱃지 */
 QLabel#lblQrGuideBadge {
     background-color: rgba(16, 185, 129, 0.12);
     border: 2px solid #10B981;
@@ -84,7 +84,7 @@ QLabel#lblQrGuideBadge {
     font-weight: 900;
 }
 
-/* 우측 비회원 시작 버튼 (높이 76px) */
+/* 우측 비회원 시작 버튼 */
 QPushButton#btnGuestStart {
     background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #2563EB, stop:1 #38BDF8);
     color: #FFFFFF;

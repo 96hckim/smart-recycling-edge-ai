@@ -39,14 +39,14 @@ private slots:
     void on_btnCancelSession_clicked();
 
 private:
-    void setGuideBanner(UITheme::BannerType type, const QString& customText = QString());
+    void setGuideBanner(UITheme::Recycle::BannerType type, const QString& customText = QString());
     void applyDynamicProperty(QWidget* widget, const char* propName, const QVariant& value);
 
 private:
     Ui::RecyclePage* ui;
     EcoTreeController* m_ecoTree { nullptr };
     QRect m_detectionBox { };
-    QColor m_boxColor { UITheme::Style::DEFAULT_BOX_COLOR };
+    QColor m_boxColor { UITheme::Recycle::DEFAULT_BOX_COLOR };
     QString m_boxLabel { };
     bool m_isMember { false };
     QString m_userName { };
