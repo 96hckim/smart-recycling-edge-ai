@@ -33,7 +33,7 @@ public:
 
 signals:
     // 모바일이 QR을 찍고 로그인했을 때 방출 (화면 전환 트리거)
-    void userAuthenticated(int userId, const QString& phone, int currentPoints);
+    void userAuthenticated(int userId, const QString& name, const QString& phone, int currentPoints);
 
     // REST 투입 정산 성공 시 방출
     void submitCompleted(int logId, int totalPoints);

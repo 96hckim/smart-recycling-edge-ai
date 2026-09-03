@@ -6,11 +6,13 @@ from pydantic import BaseModel, Field
 # ============================================================================
 class LoginRequest(BaseModel):
     phone: str = Field(..., description="휴대폰 번호 (예: '01012345678')")
+    name: str | None = Field(default="회원", example="홍길동")
 
 
 class UserResponse(BaseModel):
     id: int
     phone: str
+    name: str | None = "회원"
     points: int
     created_at: str
 

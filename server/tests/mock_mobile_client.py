@@ -9,6 +9,7 @@ SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8000
 BIN_ID = 1
 MOCK_PHONE = "010-1234-5678"
+MOCK_NAME = "Admin"  # 이름 추가
 
 HTTP_BASE_URL = f"http://{SERVER_HOST}:{SERVER_PORT}"
 WS_URL = f"ws://{SERVER_HOST}:{SERVER_PORT}/ws/kiosk/{BIN_ID}/mobile"
@@ -20,9 +21,14 @@ async def main() -> None:
     print("=======================================================\n")
 
     async with httpx.AsyncClient(base_url=HTTP_BASE_URL) as client:
-        # [Step 1] 모바일 앱 간이 로그인 (DB에 번호가 없으면 자동 가입)
-        print(f"[1단계] 회원 간이 로그인 시도 (Phone: {MOCK_PHONE})...")
-        login_resp = await client.post("/api/auth/login", json={"phone": MOCK_PHONE})
+        # [Step 1] 모바일 앱 간이 로그인 (이름 포함)
+        print(
+            f"[1단계] 회원 간이 로그인 시도 (Phone: {MOCK_PHONE}, Name: {MOCK_NAME})..."
+        )
+        login_resp = await client.post(
+            "/api/auth/login",
+            json={"phone": MOCK_PHONE, "name": MOCK_NAME},
+        )
 
         if login_resp.status_code != 200:
             print(f"❌ 로그인 실패: {login_resp.status_code} {login_resp.text}")
@@ -30,8 +36,11 @@ async def main() -> None:
 
         user_data = login_resp.json()
         user_id = user_data["id"]
+        user_name = user_data.get("name", "회원")
         points = user_data["points"]
-        print(f"✅ 로그인 성공! (User ID: {user_id}, 현재 포인트: {points}P)\n")
+        print(
+            f"✅ 로그인 성공! (User ID: {user_id}, 이름: {user_name}, 현재 포인트: {points}P)\n"
+        )
 
         # [Step 2] 모바일 전용 WebSocket 방 입장 (키오스크 배출 완료 실시간 수신용)
         print(f"[2단계] 모바일 WebSocket 방 접속 중 -> {WS_URL}")
@@ -52,7 +61,7 @@ async def main() -> None:
                 return
 
             print(
-                "✅ 바인딩 성공! Qt 키오스크 화면이 '투입 화면'으로 전환되었는지 확인하세요."
+                f"✅ 바인딩 성공! Qt 키오스크 화면에 '{user_name}' 님 환영 문구와 함께 '투입 화면'으로 전환되었는지 확인하세요."
             )
             print(
                 "⏳ 키오스크에서 품목 투입 후 [투입 완료] 버튼을 누를 때까지 대기합니다...\n"

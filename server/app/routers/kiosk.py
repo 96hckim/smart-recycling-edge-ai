@@ -41,7 +41,7 @@ async def bind_kiosk_user(
 
     # 2. 유저 존재 여부 및 최신 정보 조회
     cursor.execute(
-        "SELECT id, phone, points FROM users WHERE id = ?", (payload.user_id,)
+        "SELECT id, phone, name, points FROM users WHERE id = ?", (payload.user_id,)
     )
     user = cursor.fetchone()
     if not user:
@@ -57,10 +57,11 @@ async def bind_kiosk_user(
     )
     db.commit()
 
-    # 4. 키오스크(Qt)로 실시간 인증 성공 이벤트 즉시 푸시
+    # 4. 키오스크(Qt)로 실시간 인증 성공 이벤트 푸시
     event_payload = {
         "event": "USER_AUTHENTICATED",
         "user_id": user["id"],
+        "name": user["name"] if user["name"] else "회원",
         "phone": user["phone"],
         "points": user["points"],
     }

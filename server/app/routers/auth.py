@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.database import get_db
 from app.schemas import LoginRequest, UserResponse
 
-# B008 규칙 준수를 위한 타입 별칭 정의
 DatabaseDep = Annotated[sqlite3.Connection, Depends(get_db)]
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
@@ -17,8 +16,9 @@ def login_or_register(
     payload: LoginRequest,
     db: DatabaseDep,
 ) -> UserResponse:
-    """휴대폰 번호 단일 식별자 기반 간이 로그인 및 자동 회원가입."""
     phone = payload.phone.strip()
+    name = payload.name.strip() if payload.name else "회원"
+
     if not phone:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -27,27 +27,39 @@ def login_or_register(
 
     cursor = db.cursor()
 
-    # 1. 기존 유저 조회
+    # 1. 기존 유저 조회 (name 포함)
     cursor.execute(
-        "SELECT id, phone, points, created_at FROM users WHERE phone = ?",
+        "SELECT id, phone, name, points, created_at FROM users WHERE phone = ?",
         (phone,),
     )
     user = cursor.fetchone()
 
-    # 2. 존재하지 않는 경우 신규 등록
+    # 2. 신규 등록
     if not user:
         cursor.execute(
-            "INSERT INTO users (phone, points) VALUES (?, 0)",
-            (phone,),
+            "INSERT INTO users (phone, name, points) VALUES (?, ?, 0)",
+            (phone, name),
         )
         db.commit()
 
-        # 방금 생성된 유저 재조회
         cursor.execute(
-            "SELECT id, phone, points, created_at FROM users WHERE id = ?",
+            "SELECT id, phone, name, points, created_at FROM users WHERE id = ?",
             (cursor.lastrowid,),
         )
         user = cursor.fetchone()
+    else:
+        # 기존 유저의 이름이 업데이트된 경우
+        if name != "회원" and user["name"] != name:
+            cursor.execute(
+                "UPDATE users SET name = ? WHERE id = ?",
+                (name, user["id"]),
+            )
+            db.commit()
+            cursor.execute(
+                "SELECT id, phone, name, points, created_at FROM users WHERE id = ?",
+                (user["id"],),
+            )
+            user = cursor.fetchone()
 
     if not user:
         raise HTTPException(
@@ -58,6 +70,7 @@ def login_or_register(
     return UserResponse(
         id=user["id"],
         phone=user["phone"],
+        name=user["name"],
         points=user["points"],
-        created_at=user["created_at"],
+        created_at=str(user["created_at"]),
     )

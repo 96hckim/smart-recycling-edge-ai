@@ -44,7 +44,7 @@ constexpr int AUTO_RECONNECT_INTERVAL_MS = 2000;
 constexpr quint32 HEADER_SIZE = 8;
 
 // FastAPI 중앙 백엔드 통신 설정
-constexpr char DEFAULT_BACKEND_HOST[] = "127.0.0.1";
+constexpr char DEFAULT_BACKEND_HOST[] = "10.10.15.8";
 constexpr quint16 DEFAULT_BACKEND_PORT = 8000;
 constexpr int DEFAULT_BIN_ID = 1;
 
@@ -64,7 +64,7 @@ constexpr int RESULT_DISPLAY_TIMEOUT_SEC = 5;
 constexpr int RECYCLE_SESSION_TIMEOUT_SEC = 60; // 60초 미동작 시 리셋
 
 namespace Demo {
-    inline const QString MEMBER_USER_ID = "MEMBER_DEMO_USER";
+    inline const QString MEMBER_USER_ID = "회원";
 }
 
 // 모바일 앱 딥링크(App Link) 규격

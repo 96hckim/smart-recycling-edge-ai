@@ -73,10 +73,14 @@ void ServerClient::onSocketMessageReceived(const QString& message)
     // 서버가 보낸 USER_AUTHENTICATED 이벤트 파싱
     if (eventType == "USER_AUTHENTICATED") {
         int userId = obj["user_id"].toInt();
+        QString name = obj["name"].toString();
+        if (name.isEmpty()) {
+            name = "회원";
+        }
         QString phone = obj["phone"].toString();
         int points = obj["points"].toInt();
 
-        emit userAuthenticated(userId, phone, points);
+        emit userAuthenticated(userId, name, phone, points);
     }
 }
 

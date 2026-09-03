@@ -68,11 +68,15 @@ void MainWindow::initServerClient()
     m_serverClient->connectToKioskSocket();
 }
 
-void MainWindow::onUserAuthenticated(int userId, const QString& phone, int currentPoints)
+void MainWindow::onUserAuthenticated(int userId, const QString& name, const QString& phone, int currentPoints)
 {
-    qDebug() << "[MainWindow] 모바일 QR 인증 감지: ID =" << userId << ", Phone =" << phone << ", Points =" << currentPoints;
+    qDebug() << "[MainWindow] 모바일 QR 인증 감지: ID =" << userId
+             << ", Name =" << name
+             << ", Phone =" << phone
+             << ", Points =" << currentPoints;
+
     m_currentUserId = userId;
-    onMemberStartRequested(phone);
+    onMemberStartRequested(name);
 }
 
 void MainWindow::onSubmitCompleted(int logId, int totalPoints)

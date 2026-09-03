@@ -44,7 +44,7 @@ private slots:
     void onReturnToIdle();
 
     // FastAPI Server Client Slots
-    void onUserAuthenticated(int userId, const QString& phone, int currentPoints);
+    void onUserAuthenticated(int userId, const QString& name, const QString& phone, int currentPoints);
     void onSubmitCompleted(int logId, int totalPoints);
     void onNetworkError(const QString& errorMessage);
 
