@@ -44,7 +44,16 @@ namespace Header {
 }
 
 // ============================================================================
-// 3. 투입 화면 및 실시간 AI 렌더링 (RecyclePage)
+// 3. 대기 화면 (IdlePage)
+// ============================================================================
+namespace Idle {
+    inline constexpr int QR_DISPLAY_SIZE = 280; // UI 위젯 규격과 일치
+    inline constexpr int QR_QUIET_ZONE_MODULES = 4; // 표준 바코드 여백 (인식 안정성 보장)
+    inline constexpr qreal QR_CORNER_RADIUS = 24.0; // QSS border-radius와 동기화 수치
+}
+
+// ============================================================================
+// 4. 투입 화면 및 실시간 AI 렌더링 (RecyclePage)
 // ============================================================================
 namespace Recycle {
     // 뷰어 위 QPainter 렌더링 설정 (app_config에서 이관)
@@ -108,7 +117,7 @@ namespace Recycle {
 }
 
 // ============================================================================
-// 4. 에코 트리 모듈 (EcoTreeController)
+// 5. 에코 트리 모듈 (EcoTreeController)
 // ============================================================================
 namespace EcoTree {
     inline const QString RESOURCE_PATH = ":/images/tree_grow.gif";
@@ -125,7 +134,7 @@ namespace EcoTree {
 }
 
 // ============================================================================
-// 5. 결과 화면 (ResultPage)
+// 6. 결과 화면 (ResultPage)
 // ============================================================================
 namespace Result {
     inline const QString CONFETTI_RESOURCE_PATH = ":/images/confetti.gif";

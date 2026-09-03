@@ -15,7 +15,7 @@ CONFIG(release, debug|release) {
     CONFIG += console
 }
 
-INCLUDEPATH += . configs network controllers ui ui/pages
+INCLUDEPATH += . configs network controllers ui ui/pages utils
 
 # 빌드 중간 파일 격리 (루트 디렉토리 오염 방지)
 win32 {
@@ -44,6 +44,7 @@ SOURCES += \
     main.cpp \
     network/jetson_client.cpp \
     network/server_client.cpp \
+    utils/qrcodegen.cpp \
     controllers/eco_tree_controller.cpp \
     ui/mainwindow.cpp \
     ui/pages/idle_page.cpp \
@@ -56,6 +57,7 @@ HEADERS += \
     configs/theme_constants.h \
     network/jetson_client.h \
     network/server_client.h \
+    utils/qrcodegen.hpp \
     controllers/eco_tree_controller.h \
     ui/mainwindow.h \
     ui/pages/idle_page.h \

@@ -652,7 +652,7 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
            <cursorShape>PointingHandCursor</cursorShape>
           </property>
           <property name="text">
-           <string>투입 완료 (정산하기) ➔</string>
+           <string>투입 완료 (정산하기)</string>
           </property>
          </widget>
         </item>

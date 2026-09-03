@@ -66,6 +66,12 @@ namespace Demo {
     inline const QString MEMBER_USER_ID = "MEMBER_DEMO_USER";
 }
 
+// 모바일 앱 딥링크(App Link) 규격
+namespace Auth {
+    inline const QString DEEPLINK_SCHEME = "smartrecycle://kiosk/auth";
+    inline const QString DEEPLINK_PAYLOAD_FMT = "%1?bin_id=%2";
+}
+
 namespace EcoTree {
     // 개수 임계값 (0개: 기본 나무, 1~2개: 새싹, 3~4개: 풍성한 잎, 5개 이상: 완성)
     inline constexpr int THRESHOLD_STAGE_1 = 2;

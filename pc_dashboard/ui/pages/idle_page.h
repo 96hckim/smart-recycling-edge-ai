@@ -1,7 +1,10 @@
-﻿#ifndef IDLE_PAGE_H
+﻿#pragma once
+#ifndef IDLE_PAGE_H
 #define IDLE_PAGE_H
 
 #include "app_config.h"
+#include "theme_constants.h"
+#include <QPixmap>
 #include <QWidget>
 
 namespace Ui {
@@ -15,19 +18,23 @@ public:
     explicit IdlePage(QWidget* parent = nullptr);
     ~IdlePage() override;
 
-signals:
-    // 모바일 앱 QR 스캔 또는 시연용 터치 시 발생 (기본값 상수화)
-    void sigMemberStartRequested(const QString& userId = Config::Demo::MEMBER_USER_ID);
+    void updateQrCode(const QString& qrData);
 
-    // 비회원 바로 시작 버튼 클릭 시 발생
+signals:
+    void sigMemberStartRequested(const QString& userId = Config::Demo::MEMBER_USER_ID);
     void sigGuestStartRequested();
 
 protected:
-    // PC 단독 테스트 및 시연용 마우스 클릭 이벤트 필터
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
     void on_btnGuestStart_clicked();
+
+private:
+    void initQrCode();
+    QPixmap generateQrPixmap(const QString& text,
+        int targetSize = UITheme::Idle::QR_DISPLAY_SIZE,
+        int margin = UITheme::Idle::QR_QUIET_ZONE_MODULES);
 
 private:
     Ui::IdlePage* ui;
