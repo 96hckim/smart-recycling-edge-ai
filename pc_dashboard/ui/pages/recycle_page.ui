@@ -3,7 +3,7 @@
  <class>RecyclePage</class>
  <widget class="QWidget" name="RecyclePage">
   <property name="enabled">
-   <bool>false</bool>
+   <bool>true</bool>
   </property>
   <property name="geometry">
    <rect>
@@ -77,7 +77,7 @@ QLabel#lblRewardHeader { font-size: 19px; font-weight: 800; color: #94A3B8; }
 QLabel#lblTotalPoints { font-size: 42px; font-weight: 900; color: #38BDF8; }
 QLabel#lblTotalCarbon { font-size: 20px; font-weight: 800; color: #10B981; }
 
-/* 액션 버튼 */
+/* 액션 버튼 공통 규격: 폰트 22px, 굵기 900, 테두리 반경 16px */
 QPushButton#btnFinishSession {
     background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #10B981, stop:1 #06B6D4);
     color: #FFFFFF;
@@ -99,8 +99,8 @@ QPushButton#btnFinishSession:pressed { background-color: #047857; }
 QPushButton#btnCancelSession {
     background-color: #1E293B;
     color: #CBD5E1;
-    font-size: 20px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 900;
     border: 1.5px solid #334155;
     border-radius: 16px;
 }
@@ -272,7 +272,6 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
         <property name="spacing">
          <number>10</number>
         </property>
-
         <!-- 1. 종이 (PAPER) -->
         <item>
          <widget class="QFrame" name="boxPaper">
@@ -639,6 +638,7 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
         <property name="spacing">
          <number>12</number>
         </property>
+        <!-- 1. 투입 완료 버튼 (높이 68px, 폰트 22px) -->
         <item>
          <widget class="QPushButton" name="btnFinishSession">
           <property name="enabled">
@@ -647,13 +647,13 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>64</height>
+            <height>68</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>64</height>
+            <height>68</height>
            </size>
           </property>
           <property name="cursor">
@@ -664,18 +664,19 @@ QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2);
           </property>
          </widget>
         </item>
+        <!-- 2. 투입 취소 버튼 (높이 68px, 폰트 22px 동기화) -->
         <item>
          <widget class="QPushButton" name="btnCancelSession">
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>64</height>
+            <height>68</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>64</height>
+            <height>68</height>
            </size>
           </property>
           <property name="cursor">
