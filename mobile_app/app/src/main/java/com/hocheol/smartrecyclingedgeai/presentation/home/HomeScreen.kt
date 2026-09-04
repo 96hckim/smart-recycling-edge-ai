@@ -323,8 +323,8 @@ private fun EcoContributionCard(
             Text(
                 text = stringResource(R.string.home_eco_carbon_saved, carbonSavedG),
                 fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -332,7 +332,7 @@ private fun EcoContributionCard(
             Text(
                 text = stringResource(R.string.home_eco_subtitle),
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
             )
         }
     }

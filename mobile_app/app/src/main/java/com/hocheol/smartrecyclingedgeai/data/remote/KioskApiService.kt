@@ -2,6 +2,7 @@ package com.hocheol.smartrecyclingedgeai.data.remote
 
 import com.hocheol.smartrecyclingedgeai.data.model.request.KioskBindRequest
 import com.hocheol.smartrecyclingedgeai.data.model.response.KioskBindResponse
+import com.hocheol.smartrecyclingedgeai.data.model.response.RecycleLogListResponse
 import com.hocheol.smartrecyclingedgeai.data.model.response.UserResponse
 import com.hocheol.smartrecyclingedgeai.utils.Constants
 import retrofit2.Response
@@ -20,4 +21,9 @@ interface KioskApiService {
     suspend fun bindKiosk(
         @Body request: KioskBindRequest
     ): Response<KioskBindResponse>
+
+    @GET(Constants.ENDPOINT_GET_LOGS)
+    suspend fun getUserLogs(
+        @Path("user_id") userId: Int
+    ): Response<RecycleLogListResponse>
 }

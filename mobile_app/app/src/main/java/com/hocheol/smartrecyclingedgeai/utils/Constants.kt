@@ -9,6 +9,12 @@ object Constants {
     const val ENDPOINT_LOGIN = "api/auth/login"
     const val ENDPOINT_GET_USER = "api/users/{user_id}"
     const val ENDPOINT_BIND_KIOSK = "api/kiosk/bind"
+    const val ENDPOINT_GET_LOGS = "api/users/{user_id}/logs"
+
+    // Eco Gamification Factors
+    const val CARBON_G_PER_PINE_TREE = 6600.0
+    const val ECO_LEVEL1_MAX_COUNT = 5
+    const val ECO_LEVEL2_MAX_COUNT = 15
 
     // Deeplink Specs
     const val DEEPLINK_SCHEME = "smartrecycle"

@@ -1,73 +1,176 @@
 package com.hocheol.smartrecyclingedgeai.presentation.main
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hocheol.smartrecyclingedgeai.R
+import com.hocheol.smartrecyclingedgeai.presentation.history.HistoryScreen
+import com.hocheol.smartrecyclingedgeai.presentation.history.HistoryUiState
+import com.hocheol.smartrecyclingedgeai.presentation.home.HomeScreen
+import com.hocheol.smartrecyclingedgeai.presentation.home.HomeUiState
+import com.hocheol.smartrecyclingedgeai.presentation.mypage.MyPageScreen
+import com.hocheol.smartrecyclingedgeai.presentation.mypage.MyPageUiState
 
 @Composable
 fun MainScreen(
-    userName: String?,
-    phone: String?,
+    homeUiState: HomeUiState,
+    historyUiState: HistoryUiState,
+    myPageUiState: MyPageUiState,
+    onRefreshHome: () -> Unit,
+    onOpenQRScanner: () -> Unit,
+    onCloseQRScanner: () -> Unit,
+    onQrScanned: (String) -> Unit,
+    onConfirmResult: () -> Unit,
+    onCancelActiveSession: () -> Unit,
+    onRefreshHistory: () -> Unit,
+    onShowLogoutDialog: () -> Unit,
+    onDismissLogoutDialog: () -> Unit,
+    onConfirmLogout: () -> Unit,
     onLogoutClick: () -> Unit,
+    onErrorMessageShownHome: () -> Unit,
+    onErrorMessageShownHistory: () -> Unit,
+    onErrorMessageShownMyPage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "스마트 재활용 메인",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+    var selectedTab by remember { mutableIntStateOf(0) }
 
-            Spacer(modifier = Modifier.height(24.dp))
+    Scaffold(
+        bottomBar = {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ) {
+                NavigationBarItem(
+                    selected = selectedTab == 0,
+                    onClick = {
+                        selectedTab = 0
+                    },
+                    icon = {
+                        Icon(
+                            Icons.Default.Home,
+                            contentDescription = stringResource(R.string.nav_home)
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.nav_home),
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
 
-            Text(
-                text = "환영합니다, ${userName ?: "회원"}님!",
-                style = MaterialTheme.typography.titleMedium,
-                fontSize = 20.sp
-            )
+                NavigationBarItem(
+                    selected = selectedTab == 1,
+                    onClick = {
+                        selectedTab = 1
+                    },
+                    icon = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.List,
+                            contentDescription = stringResource(R.string.nav_history)
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.nav_history),
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
 
-            if (!phone.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "연락처: $phone",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                NavigationBarItem(
+                    selected = selectedTab == 2,
+                    onClick = {
+                        selectedTab = 2
+                    },
+                    icon = {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = stringResource(R.string.nav_mypage)
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.nav_mypage),
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
                 )
             }
+        },
+        modifier = modifier
+    ) { innerPadding ->
+        when (selectedTab) {
+            0 -> HomeScreen(
+                uiState = homeUiState,
+                onRefresh = onRefreshHome,
+                onOpenQRScanner = onOpenQRScanner,
+                onCloseQRScanner = onCloseQRScanner,
+                onQrScanned = onQrScanned,
+                onConfirmResult = onConfirmResult,
+                onCancelActiveSession = onCancelActiveSession,
+                onLogoutClick = onLogoutClick,
+                onErrorMessageShown = onErrorMessageShownHome,
+                modifier = Modifier.padding(innerPadding)
+            )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            1 -> HistoryScreen(
+                uiState = historyUiState,
+                onRefresh = onRefreshHistory,
+                onErrorMessageShown = onErrorMessageShownHistory,
+                modifier = Modifier.padding(innerPadding)
+            )
 
-            OutlinedButton(
-                onClick = onLogoutClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-            ) {
-                Text("로그아웃")
-            }
+            2 -> MyPageScreen(
+                uiState = myPageUiState,
+                onShowLogoutDialog = onShowLogoutDialog,
+                onDismissLogoutDialog = onDismissLogoutDialog,
+                onConfirmLogout = onConfirmLogout,
+                onErrorMessageShown = onErrorMessageShownMyPage,
+                modifier = Modifier.padding(innerPadding)
+            )
         }
     }
 }

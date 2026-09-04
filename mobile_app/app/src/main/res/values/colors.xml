@@ -20,11 +20,17 @@
     <color name="text_muted_gray">#64748B</color>
     <color name="text_white">#FFFFFF</color>
 
-    <!-- 4 Major Recyclable Category Badge Colors -->
+    <!-- 4 Major Recyclable Category Badge Text Colors -->
     <color name="badge_paper">#F59E0B</color> <!-- 종이: Amber -->
     <color name="badge_can">#10B981</color>   <!-- 캔: Emerald -->
     <color name="badge_pet">#38BDF8</color>   <!-- 페트: Sky Blue -->
     <color name="badge_vinyl">#A855F7</color> <!-- 비닐: Purple -->
+
+    <!-- 4 Major Recyclable Category Badge Background Colors -->
+    <color name="badge_paper_bg">#FEF3C7</color>
+    <color name="badge_can_bg">#D1FAE5</color>
+    <color name="badge_pet_bg">#E0F2FE</color>
+    <color name="badge_vinyl_bg">#F3E8FF</color>
 
     <!-- Status & Overlay -->
     <color name="error_red">#EF4444</color>

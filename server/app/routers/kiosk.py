@@ -147,6 +147,7 @@ async def submit_recycle_result(
     # 5. 모바일 앱(Android)으로 정산 완료 이벤트 푸시
     mobile_event = {
         "event": "RECYCLE_COMPLETE",
+        "user_id": payload.user_id,
         "earned_points": payload.earned_points,
         "total_points": total_user_points,
         "carbon_saved_g": payload.carbon_saved_g,

@@ -9,6 +9,7 @@ ServerClient::ServerClient(int binId, const QString& serverHost, int serverPort,
     , m_binId(binId)
     , m_serverHost(serverHost)
     , m_serverPort(serverPort)
+    , m_reconnectTimer(new QTimer(this))
 {
     connect(&m_webSocket, &QWebSocket::connected, this, &ServerClient::onSocketConnected);
     connect(&m_webSocket, &QWebSocket::disconnected, this, &ServerClient::onSocketDisconnected);
@@ -17,35 +18,50 @@ ServerClient::ServerClient(int binId, const QString& serverHost, int serverPort,
         this, &ServerClient::onSocketError);
 
     connect(&m_httpManager, &QNetworkAccessManager::finished, this, &ServerClient::onSubmitReplyFinished);
+
+    m_reconnectTimer->setInterval(Config::AUTO_RECONNECT_INTERVAL_MS);
+    connect(m_reconnectTimer, &QTimer::timeout, this, &ServerClient::onReconnectTimeout);
 }
 
 ServerClient::~ServerClient()
 {
-    m_webSocket.close();
+    disconnectSocket();
 }
 
 void ServerClient::connectToKioskSocket()
 {
-    QString wsUrl = WS_URL_FMT.arg(m_serverHost).arg(m_serverPort).arg(m_binId);
-    qDebug() << "[ServerClient] Connecting to WS:" << wsUrl;
-    m_webSocket.open(QUrl(wsUrl));
+    if (m_webSocket.state() == QAbstractSocket::UnconnectedState) {
+        QString wsUrl = WS_URL_FMT.arg(m_serverHost).arg(m_serverPort).arg(m_binId);
+        qDebug() << "[ServerClient] Connecting to WS:" << wsUrl;
+        m_webSocket.open(QUrl(wsUrl));
+    }
 }
 
 void ServerClient::disconnectSocket()
 {
+    m_reconnectTimer->stop();
     if (m_webSocket.isValid()) {
         m_webSocket.close();
     }
 }
 
+bool ServerClient::isConnected() const
+{
+    return (m_webSocket.state() == QAbstractSocket::ConnectedState);
+}
+
 void ServerClient::onSocketConnected()
 {
     qDebug() << "[ServerClient] WebSocket Connected for Bin ID:" << m_binId;
+    m_reconnectTimer->stop(); // 연결 성공 시 재연결 타이머 중지
 }
 
 void ServerClient::onSocketDisconnected()
 {
-    qDebug() << "[ServerClient] WebSocket Disconnected.";
+    qWarning() << "[ServerClient] WebSocket Disconnected. 재연결 시도 대기 중...";
+    if (!m_reconnectTimer->isActive()) {
+        m_reconnectTimer->start(); // 연결 끊김 감지 시 자동 재연결 시작
+    }
 }
 
 void ServerClient::onSocketError(QAbstractSocket::SocketError error)
@@ -54,6 +70,17 @@ void ServerClient::onSocketError(QAbstractSocket::SocketError error)
     QString errStr = m_webSocket.errorString();
     qWarning() << "[ServerClient] Socket Error:" << errStr;
     emit networkErrorOccurred(errStr);
+
+    if (!m_reconnectTimer->isActive()) {
+        m_reconnectTimer->start(); // 소켓 오류 시에도 재연결 시작
+    }
+}
+
+void ServerClient::onReconnectTimeout()
+{
+    if (m_webSocket.state() == QAbstractSocket::UnconnectedState) {
+        connectToKioskSocket();
+    }
 }
 
 void ServerClient::onSocketMessageReceived(const QString& message)
@@ -70,7 +97,6 @@ void ServerClient::onSocketMessageReceived(const QString& message)
     QJsonObject obj = doc.object();
     QString eventType = obj[Key::EVENT].toString();
 
-    // 이벤트 디스패처 구조
     if (eventType == Event::USER_AUTHENTICATED) {
         int userId = obj[Key::USER_ID].toInt();
         QString name = obj[Key::NAME].toString(Config::Demo::MEMBER_USER_ID);

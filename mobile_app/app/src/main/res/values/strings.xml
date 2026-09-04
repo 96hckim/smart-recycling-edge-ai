@@ -2,6 +2,11 @@
 <resources>
     <string name="app_name">스마트 재활용 수거</string>
 
+    <!-- Navigation -->
+    <string name="nav_home">홈</string>
+    <string name="nav_history">배출 이력</string>
+    <string name="nav_mypage">마이페이지</string>
+
     <!-- Login Screen -->
     <string name="login_title">간편 로그인 / 시작하기</string>
     <string name="login_subtitle">지구를 지키는 스마트한 습관, 시작해 볼까요? 🌿</string>
@@ -31,6 +36,27 @@
 
     <!-- Main Action Button -->
     <string name="home_btn_open_kiosk">재활용 투입구 열기 (QR 스캔) 📦</string>
+
+    <!-- History Screen -->
+    <string name="history_title">나의 배출 이력 📜</string>
+    <string name="history_empty">아직 배출 내역이 없어요!</string>
+    <string name="history_empty_subtitle">재활용 투입구를 통해 첫 배출을 시작해 보세요 🌱</string>
+    <string name="history_total_count">총 %1$d회 배출</string>
+    <string name="history_total_carbon">누적 %1$.1f g CO₂ 절감</string>
+
+    <!-- MyPage Screen & Eco Gamification -->
+    <string name="mypage_title">마이페이지 👤</string>
+    <string name="mypage_user_info">내 정보</string>
+    <string name="mypage_eco_level">에코 등급</string>
+    <string name="mypage_pine_tree_saved">소나무 %1$.2f그루 심은 효과! 🌳</string>
+    <string name="mypage_tips_title">올바른 분리배출 팁 💡</string>
+    <string name="mypage_tip_paper">📦 종이류: 택배 상자는 테이프와 운송장을 제거하고 펼쳐서 배출해 주세요.</string>
+    <string name="mypage_tip_can">🥫 캔류: 내용물을 비우고 물로 헹군 뒤 가능한 한 눌러서 배출해 주세요.</string>
+    <string name="mypage_tip_pet">🍾 페트병: 라벨을 떼어내고 찌그러뜨린 뒤 뚜껑을 닫아 배출해 주세요.</string>
+    <string name="mypage_tip_vinyl">🛍️ 비닐류: 이물질을 깨끗이 씻어내고 건조 후 배출해 주세요.</string>
+    <string name="mypage_logout_dialog_title">로그아웃</string>
+    <string name="mypage_logout_dialog_message">정말 로그아웃 하시겠습니까?</string>
+    <string name="mypage_logout_btn_cancel">취소</string>
 
     <!-- QR Scanner & Camera -->
     <string name="qr_scan_title">키오스크 QR 코드를 스캔해 주세요</string>

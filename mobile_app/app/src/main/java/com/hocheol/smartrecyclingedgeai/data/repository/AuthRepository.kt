@@ -5,8 +5,11 @@ import com.hocheol.smartrecyclingedgeai.data.model.request.LoginRequest
 import com.hocheol.smartrecyclingedgeai.data.remote.AuthApiService
 import com.hocheol.smartrecyclingedgeai.domain.model.User
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class AuthRepository(
+@Singleton
+class AuthRepository @Inject constructor(
     private val apiService: AuthApiService,
     private val sessionManager: SessionManager
 ) {
@@ -25,10 +28,10 @@ class AuthRepository(
             if (response.isSuccessful && body != null) {
                 val user = User(
                     id = body.id,
-                    phone = body.phone,
-                    name = body.name,
-                    points = body.points,
-                    createdAt = body.createdAt
+                    phone = body.phone ?: "",
+                    name = body.name ?: "회원",
+                    points = body.points ?: 0,
+                    createdAt = body.createdAt ?: ""
                 )
                 sessionManager.saveSession(
                     userId = user.id,

@@ -5,47 +5,49 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.hocheol.smartrecyclingedgeai.presentation.home.HomeScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hocheol.smartrecyclingedgeai.presentation.history.HistoryViewModel
 import com.hocheol.smartrecyclingedgeai.presentation.home.HomeViewModel
 import com.hocheol.smartrecyclingedgeai.presentation.login.LoginScreen
 import com.hocheol.smartrecyclingedgeai.presentation.login.LoginViewModel
+import com.hocheol.smartrecyclingedgeai.presentation.main.MainScreen
+import com.hocheol.smartrecyclingedgeai.presentation.mypage.MyPageViewModel
 import com.hocheol.smartrecyclingedgeai.ui.theme.SmartRecyclingEdgeAITheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-    private val loginViewModel: LoginViewModel by viewModels {
-        LoginViewModel.Factory(application)
-    }
-
-    private val homeViewModel: HomeViewModel by viewModels {
-        HomeViewModel.Factory(application)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Edge-to-Edge 활성화 (투명 시스템바 및 라이트/다크 아이콘 스타일 제어는 SmartRecyclingEdgeAITheme에서 일괄 처리)
         enableEdgeToEdge()
-
-        intent?.data?.let { uri ->
-            homeViewModel.handleDeeplink(uri)
-        }
 
         setContent {
             SmartRecyclingEdgeAITheme {
-                val loginUiState by loginViewModel.uiState.collectAsState()
-                val homeUiState by homeViewModel.uiState.collectAsState()
+                val loginViewModel: LoginViewModel = hiltViewModel()
+                val homeViewModel: HomeViewModel = hiltViewModel()
+                val historyViewModel: HistoryViewModel = hiltViewModel()
+                val myPageViewModel: MyPageViewModel = hiltViewModel()
+
+                val loginUiState by loginViewModel.uiState.collectAsStateWithLifecycle()
+                val homeUiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+                val historyUiState by historyViewModel.uiState.collectAsStateWithLifecycle()
+                val myPageUiState by myPageViewModel.uiState.collectAsStateWithLifecycle()
+
+                intent?.data?.let { uri ->
+                    homeViewModel.handleDeeplink(uri)
+                }
 
                 when {
                     loginUiState.isCheckingAutoLogin -> {
@@ -61,19 +63,38 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
+
                     loginUiState.isLoggedIn -> {
-                        HomeScreen(
-                            uiState = homeUiState,
-                            onRefresh = { homeViewModel.refresh() },
+                        MainScreen(
+                            homeUiState = homeUiState,
+                            historyUiState = historyUiState,
+                            myPageUiState = myPageUiState,
+                            onRefreshHome = { homeViewModel.refresh() },
                             onOpenQRScanner = { homeViewModel.openQRScanner() },
                             onCloseQRScanner = { homeViewModel.closeQRScanner() },
-                            onQrScanned = { rawContent -> homeViewModel.handleScannedQrContent(rawContent) },
-                            onConfirmResult = { homeViewModel.dismissRecycleResultDialog() },
+                            onQrScanned = { rawContent ->
+                                homeViewModel.handleScannedQrContent(rawContent)
+                            },
+                            onConfirmResult = {
+                                homeViewModel.dismissRecycleResultDialog()
+                                historyViewModel.refresh()
+                                myPageViewModel.loadMyPageData()
+                            },
                             onCancelActiveSession = { homeViewModel.cancelKioskSession() },
+                            onRefreshHistory = { historyViewModel.refresh() },
+                            onShowLogoutDialog = { myPageViewModel.showLogoutDialog() },
+                            onDismissLogoutDialog = { myPageViewModel.dismissLogoutDialog() },
+                            onConfirmLogout = {
+                                myPageViewModel.dismissLogoutDialog()
+                                loginViewModel.logout()
+                            },
                             onLogoutClick = { loginViewModel.logout() },
-                            onErrorMessageShown = { homeViewModel.clearErrorMessage() }
+                            onErrorMessageShownHome = { homeViewModel.clearErrorMessage() },
+                            onErrorMessageShownHistory = { historyViewModel.clearErrorMessage() },
+                            onErrorMessageShownMyPage = { myPageViewModel.clearErrorMessage() }
                         )
                     }
+
                     else -> {
                         LoginScreen(
                             uiState = loginUiState,
@@ -90,8 +111,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent.data?.let { uri ->
-            homeViewModel.handleDeeplink(uri)
-        }
+        // intent handling
     }
 }

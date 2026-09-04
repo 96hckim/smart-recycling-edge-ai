@@ -5,12 +5,16 @@ import com.hocheol.smartrecyclingedgeai.data.model.request.KioskBindRequest
 import com.hocheol.smartrecyclingedgeai.data.model.response.KioskBindResponse
 import com.hocheol.smartrecyclingedgeai.data.remote.KioskApiService
 import com.hocheol.smartrecyclingedgeai.data.remote.KioskWebSocketManager
+import com.hocheol.smartrecyclingedgeai.domain.model.RecycleLog
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleResult
 import com.hocheol.smartrecyclingedgeai.domain.model.User
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class KioskRepository(
+@Singleton
+class KioskRepository @Inject constructor(
     private val apiService: KioskApiService,
     private val webSocketManager: KioskWebSocketManager,
     private val sessionManager: SessionManager
@@ -37,10 +41,10 @@ class KioskRepository(
             if (response.isSuccessful && body != null) {
                 val user = User(
                     id = body.id,
-                    phone = body.phone,
-                    name = body.name,
-                    points = body.points,
-                    createdAt = body.createdAt
+                    phone = body.phone ?: "",
+                    name = body.name ?: "회원",
+                    points = body.points ?: 0,
+                    createdAt = body.createdAt ?: ""
                 )
                 sessionManager.saveSession(
                     userId = user.id,
@@ -66,6 +70,33 @@ class KioskRepository(
             } else {
                 val errorBody = response.errorBody()?.string() ?: "키오스크 바인딩 실패"
                 Result.failure(Exception("바인딩 실패 (${response.code()}): $errorBody"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("네트워크 통신 오류: ${e.localizedMessage}"))
+        }
+    }
+
+    suspend fun getUserLogs(userId: Int): Result<List<RecycleLog>> {
+        return try {
+            val response = apiService.getUserLogs(userId)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                val logs = body.logs.map { item ->
+                    RecycleLog(
+                        id = item.id,
+                        binId = item.binId,
+                        canCount = item.canCount,
+                        petCount = item.petCount,
+                        paperCount = item.paperCount,
+                        vinylCount = item.vinylCount,
+                        carbonSavedG = item.carbonSavedG,
+                        earnedPoints = item.earnedPoints,
+                        createdAt = item.createdAt
+                    )
+                }
+                Result.success(logs)
+            } else {
+                Result.failure(Exception("배출 내역 조회 실패 (${response.code()})"))
             }
         } catch (e: Exception) {
             Result.failure(Exception("네트워크 통신 오류: ${e.localizedMessage}"))

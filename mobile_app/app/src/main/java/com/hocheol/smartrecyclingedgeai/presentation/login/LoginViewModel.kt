@@ -1,23 +1,20 @@
 package com.hocheol.smartrecyclingedgeai.presentation.login
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.hocheol.smartrecyclingedgeai.data.local.SessionManager
-import com.hocheol.smartrecyclingedgeai.data.remote.RetrofitClient
 import com.hocheol.smartrecyclingedgeai.data.repository.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class LoginViewModel(
-    application: Application,
+@HiltViewModel
+class LoginViewModel @Inject constructor(
     private val repository: AuthRepository
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -110,18 +107,6 @@ class LoginViewModel(
             _uiState.update {
                 LoginUiState(isCheckingAutoLogin = false)
             }
-        }
-    }
-
-    class Factory(private val application: Application) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
-                val sessionManager = SessionManager.getInstance(application)
-                val repository = AuthRepository(RetrofitClient.authApiService, sessionManager)
-                return LoginViewModel(application, repository) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }

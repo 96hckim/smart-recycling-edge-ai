@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,10 +32,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.hocheol.smartrecyclingedgeai.R
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleResult
-import com.hocheol.smartrecyclingedgeai.ui.theme.BadgeCan
-import com.hocheol.smartrecyclingedgeai.ui.theme.BadgePaper
-import com.hocheol.smartrecyclingedgeai.ui.theme.BadgePet
-import com.hocheol.smartrecyclingedgeai.ui.theme.BadgeVinyl
 
 @Composable
 fun RecycleResultDialog(
@@ -85,31 +84,43 @@ fun RecycleResultDialog(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     CategoryBadgeChip(
                         emoji = "📦",
                         label = stringResource(R.string.result_category_paper, result.paperCount),
-                        bgColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        textColor = BadgePaper
+                        bgColor = colorResource(R.color.badge_paper_bg),
+                        textColor = colorResource(R.color.badge_paper),
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
                     )
                     CategoryBadgeChip(
                         emoji = "🥫",
                         label = stringResource(R.string.result_category_can, result.canCount),
-                        bgColor = MaterialTheme.colorScheme.primaryContainer,
-                        textColor = BadgeCan
+                        bgColor = colorResource(R.color.badge_can_bg),
+                        textColor = colorResource(R.color.badge_can),
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
                     )
                     CategoryBadgeChip(
                         emoji = "🍾",
                         label = stringResource(R.string.result_category_pet, result.petCount),
-                        bgColor = MaterialTheme.colorScheme.secondaryContainer,
-                        textColor = BadgePet
+                        bgColor = colorResource(R.color.badge_pet_bg),
+                        textColor = colorResource(R.color.badge_pet),
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
                     )
                     CategoryBadgeChip(
                         emoji = "🛍️",
                         label = stringResource(R.string.result_category_vinyl, result.vinylCount),
-                        bgColor = Color(0xFFF3E8FF),
-                        textColor = BadgeVinyl
+                        bgColor = colorResource(R.color.badge_vinyl_bg),
+                        textColor = colorResource(R.color.badge_vinyl),
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
                     )
                 }
 
@@ -177,18 +188,23 @@ private fun CategoryBadgeChip(
     emoji: String,
     label: String,
     bgColor: Color,
-    textColor: Color
+    textColor: Color,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = bgColor)
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        modifier = modifier
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(text = emoji, fontSize = 16.sp)
-            Spacer(modifier = Modifier.height(2.dp))
+            Text(text = emoji, fontSize = 20.sp)
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = label,
                 fontSize = 11.sp,

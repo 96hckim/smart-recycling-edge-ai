@@ -5,27 +5,23 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
 private val Context.dataStore by preferencesDataStore(name = "user_session")
 
-class SessionManager private constructor(private val context: Context) {
-
+@Singleton
+class SessionManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     companion object {
         private val KEY_USER_ID = intPreferencesKey("user_id")
         private val KEY_USER_NAME = stringPreferencesKey("user_name")
         private val KEY_PHONE = stringPreferencesKey("phone")
-
-        @Volatile
-        private var INSTANCE: SessionManager? = null
-
-        fun getInstance(context: Context): SessionManager {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: SessionManager(context.applicationContext).also { INSTANCE = it }
-            }
-        }
     }
 
     val userIdFlow: Flow<Int?> = context.dataStore.data.map { preferences ->

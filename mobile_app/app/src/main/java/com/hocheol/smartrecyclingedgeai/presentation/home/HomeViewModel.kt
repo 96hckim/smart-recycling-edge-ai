@@ -1,40 +1,49 @@
 package com.hocheol.smartrecyclingedgeai.presentation.home
 
-import android.app.Application
 import android.net.Uri
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.hocheol.smartrecyclingedgeai.data.local.SessionManager
-import com.hocheol.smartrecyclingedgeai.data.remote.RetrofitClient
-import com.hocheol.smartrecyclingedgeai.data.remote.KioskWebSocketManager
 import com.hocheol.smartrecyclingedgeai.data.repository.KioskRepository
 import com.hocheol.smartrecyclingedgeai.utils.Constants
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class HomeViewModel(
-    application: Application,
+@HiltViewModel
+class HomeViewModel @Inject constructor(
     private val kioskRepository: KioskRepository,
     private val sessionManager: SessionManager
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        loadUserInfo()
+        observeUserSession()
         observeRecycleEvents()
     }
 
-    fun loadUserInfo() {
+    private fun observeUserSession() {
         viewModelScope.launch {
-            val userId = sessionManager.userIdFlow.firstOrNull() ?: return@launch
+            sessionManager.userIdFlow.collectLatest { userId ->
+                if (userId != null) {
+                    fetchUserInfo(userId)
+                } else {
+                    _uiState.update { HomeUiState() }
+                }
+            }
+        }
+    }
+
+    private fun fetchUserInfo(userId: Int) {
+        viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val result = kioskRepository.getUserInfo(userId)
             result.onSuccess { user ->
@@ -67,9 +76,11 @@ class HomeViewModel(
     private fun observeRecycleEvents() {
         viewModelScope.launch {
             kioskRepository.recycleResultFlow.collect { result ->
+                kioskRepository.disconnectKioskWebSocket()
                 _uiState.update {
                     it.copy(
                         isKioskActive = false,
+                        activeBinId = null,
                         recycleResult = result
                     )
                 }
@@ -182,22 +193,5 @@ class HomeViewModel(
 
     fun clearErrorMessage() {
         _uiState.update { it.copy(errorMessage = null) }
-    }
-
-    class Factory(private val application: Application) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-                val sessionManager = SessionManager.getInstance(application)
-                val wsManager = KioskWebSocketManager(RetrofitClient.okHttpClient)
-                val repository = KioskRepository(
-                    apiService = RetrofitClient.kioskApiService,
-                    webSocketManager = wsManager,
-                    sessionManager = sessionManager
-                )
-                return HomeViewModel(application, repository, sessionManager) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
-        }
     }
 }

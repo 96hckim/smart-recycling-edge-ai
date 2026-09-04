@@ -45,11 +45,18 @@ private val LightColorScheme = lightColorScheme(
 private val DarkColorScheme = darkColorScheme(
     primary = ForestEmerald,
     onPrimary = Color.White,
-    primaryContainer = ForestEmeraldDark,
-    onPrimaryContainer = ForestEmeraldLight,
+    primaryContainer = Color(0xFF065F46),
+    onPrimaryContainer = Color(0xFFA7F3D0),
 
     secondary = SkyBlue,
     onSecondary = Color.White,
+    secondaryContainer = Color(0xFF075985),
+    onSecondaryContainer = Color(0xFFBAE6FD),
+
+    tertiary = AmberAccent,
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFF78350F),
+    onTertiaryContainer = Color(0xFFFDE68A),
 
     background = Color(0xFF0F172A),
     onBackground = Color(0xFFF8FAFC),
@@ -60,7 +67,8 @@ private val DarkColorScheme = darkColorScheme(
     onSurfaceVariant = Color(0xFFCBD5E1),
 
     outline = Color(0xFF64748B),
-    error = ErrorRed
+    error = ErrorRed,
+    onError = Color.White
 )
 
 @Composable
