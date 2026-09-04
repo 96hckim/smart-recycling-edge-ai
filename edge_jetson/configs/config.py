@@ -52,10 +52,21 @@ class NetworkConfig:
 class SerialConfig:
     """STM32 UART 서보모터 제어 통신 설정"""
 
-    port: str = "/dev/ttyTHS1"  # Jetson 40Pin UART
+    port: str = "/tmp/ttyV0"  # Jetson 40Pin UART
     baudrate: int = 115200
     timeout: float = 0.1
-    enabled: bool = False  # 하드웨어 보드 연결 시 True로 전환
+    enabled: bool = True  # 하드웨어 보드 연결 시 True로 전환
+
+
+@dataclass(frozen=True)
+class DoorConfig:
+    """도어 제어 FSM 및 디바운스 필터 설정"""
+
+    stable_frames: int = 15  # 문 열림 확정을 위한 연속 감지 프레임 수 (~0.5초)
+    min_hold_sec: float = 2.0  # 문 열림 최소 유지 시간(초)
+    lost_tolerance: int = (
+        15  # [수정] 5 -> 15프레임 (약 0.5초간 완전히 사라져야 닫힘 판정)
+    )
 
 
 @dataclass(frozen=True)
@@ -66,6 +77,7 @@ class AppConfig:
     model: ModelConfig = field(default_factory=ModelConfig)
     net: NetworkConfig = field(default_factory=NetworkConfig)
     serial: SerialConfig = field(default_factory=SerialConfig)
+    door: DoorConfig = field(default_factory=DoorConfig)  # [추가]
 
 
 # 전역 설정 싱글톤 인스턴스
