@@ -2,7 +2,6 @@
 edge_jetson/main.py
 
 스마트 분리수거 비전 시스템 - Jetson 최상위 이벤트 루프
-(Qt 화면 세션에 따른 온디맨드 스트리밍 + 자동 객체 인식 도어 개방)
 """
 
 import signal
@@ -22,7 +21,7 @@ def main():
     print("[EDGE AI] 스마트 분리수거 비전 시스템 부팅 중...")
     print("=" * 60)
 
-    # 1. 하드웨어 및 통신 모듈 초기화
+    # 1. 하드웨어 및 통신 모듈 초기화 (설정값 주입)
     camera = CameraStream(
         device_id=cfg.cam.device_id,
         width=cfg.cam.width,
@@ -56,7 +55,7 @@ def main():
         enabled=cfg.serial.enabled,
     )
 
-    # 2. 비차단 키보드 리더 및 OS 시그널 등록
+    # 2. 비차단 키보드 리더 및 OS 시그널 핸들러 등록
     key_reader = NonBlockingKeyReader()
     is_running = True
 
@@ -68,114 +67,65 @@ def main():
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
 
-    # 3. 세션 제어 및 오토 디텍트 상태 변수
-    is_streaming = False
+    # 3. 오인식 방지용 Debounce 필터 변수
+    STABLE_FRAME_THRESHOLD = 5  # 동일 클래스 연속 5프레임 검출 시 트리거
     current_target_class: str | None = None
     consecutive_detected_count = 0
 
-    def reset_detection_state():
-        nonlocal current_target_class, consecutive_detected_count
-        current_target_class = None
-        consecutive_detected_count = 0
-
-    # 4. Qt 제어 명령 디스패처 (세션 시작/종료 전용)
-    def handle_start_stream(_: dict):
-        nonlocal is_streaming
-        is_streaming = True
-        reset_detection_state()
-        print("[CTRL] 분리배출 세션 시작 -> AI 추론 및 영상 스트리밍 활성화")
-
-    def handle_stop_stream(_: dict):
-        nonlocal is_streaming
-        is_streaming = False
-        reset_detection_state()
-        print("[CTRL] 분리배출 세션 종료 -> 대기 모드 (절전 전환)")
-
-    command_dispatcher = {
-        cfg.proto.CMD_START_STREAM: handle_start_stream,
-        cfg.proto.CMD_STOP_STREAM: handle_stop_stream,
-    }
-
-    # 5. 오토 디텍트 처리 함수 (추후 도어 닫힘 상태 센서 연동 시 이 부분에 조건 추가)
-    def process_auto_detection(detections: list[dict]):
-        nonlocal current_target_class, consecutive_detected_count
-
-        if not detections:
-            reset_detection_state()
-            return
-
-        # 가장 신뢰도 높은 객체 선택
-        best_det = max(detections, key=lambda x: x["confidence"])
-        detected_name = best_det["class_name"]
-
-        if detected_name == current_target_class:
-            consecutive_detected_count += 1
-        else:
-            current_target_class = detected_name
-            consecutive_detected_count = 1
-
-        # 연속 검출 기준 충족 시 즉시 STM32로 해당 품목 투입 도어 개방 명령 전송
-        if consecutive_detected_count >= cfg.ctrl.STABLE_FRAME_THRESHOLD:
-            # TODO: 추후 도어 닫힘 상태 확인 조건(예: is_door_closed) 추가 예정 지점
-            serial_ctrl.send_command(class_name=detected_name)
-
     print(f"\n[SERVER] 파이프라인 준비 완료 (TCP Port: {cfg.net.port})")
-    print("[INFO] 터미널에서 'q' 키를 누르면 엔터 없이 즉시 종료됩니다.\n")
+    print("[INFO] 터미널에서 'q' 키를 누르면 엔터 없이 즉시 안전하게 종료됩니다.\n")
 
     prev_time = time.time()
 
-    # 6. 메인 이벤트 루프
+    # 4. 메인 이벤트 루프
     try:
         while is_running:
-            # 6-1. 종료 단축키 검사
+            # 4-1. 단일 키 'q' 입력 감지 (즉시 탈출)
             key = key_reader.get_key()
             if key and key.lower() == "q":
                 print("\n[SYSTEM] 사용자 'q' 입력 감지 -> 정상 종료 시퀀스 시작")
                 break
 
-            # 6-2. 관제 PC 클라이언트 연결 수락
+            # 4-2. 관제 PC 대시보드 연결 대기 (논블로킹)
             if not socket_server.is_connected:
-                is_streaming = False
-                reset_detection_state()
                 socket_server.accept_client()
-                time.sleep(cfg.ctrl.ACCEPT_POLL_SEC)
                 continue
 
-            # 6-3. 관제 PC 세션 제어 명령 수신
-            cmd_data = socket_server.receive_command()
-            if cmd_data:
-                cmd = cmd_data.get(cfg.proto.KEY_CMD)
-                handler = command_dispatcher.get(cmd)
-                if handler:
-                    handler(cmd_data)
-                else:
-                    print(f"[CTRL WARN] 처리되지 않은 제어 명령: {cmd}")
-
-            # 6-4. [절전 모드] 분리수거 화면이 아닐 때는 추론 및 전송 스킵
-            if not is_streaming:
-                time.sleep(cfg.ctrl.IDLE_SLEEP_SEC)
-                continue
-
-            # 6-5. 카메라 프레임 획득
+            # 4-3. 카메라 최신 프레임 획득 (초저지연)
             ret, frame = camera.read()
             if not ret or frame is None:
                 continue
 
-            # 6-6. TensorRT 추론
+            # 4-4. TensorRT AI 추론
             t0 = time.time()
             detections = detector.detect(frame)
             infer_ms = (time.time() - t0) * 1000.0
 
-            # 6-7. 자동 감지 및 시리얼 도어 개방 처리
-            process_auto_detection(detections)
+            # 4-5. STM32 하드웨어 제어 (오인식 방지 필터링)
+            if detections:
+                best_det = max(detections, key=lambda x: x["confidence"])
+                detected_name = best_det["class_name"]
 
-            # 6-8. FPS 계산
+                if detected_name == current_target_class:
+                    consecutive_detected_count += 1
+                else:
+                    current_target_class = detected_name
+                    consecutive_detected_count = 1
+
+                # 연속 검출 기준 충족 시 STM32 명령 전송 (쿨다운 2초 내부 관리)
+                if consecutive_detected_count >= STABLE_FRAME_THRESHOLD:
+                    serial_ctrl.send_command(class_name=detected_name)
+            else:
+                current_target_class = None
+                consecutive_detected_count = 0
+
+            # 4-6. 실시간 FPS 계산
             curr_time = time.time()
             time_diff = curr_time - prev_time
             fps = 1.0 / time_diff if time_diff > 0 else 0.0
             prev_time = curr_time
 
-            # 6-9. 관제 PC로 패킷 전송
+            # 4-7. 관제 PC로 [영상 + 메타데이터] 일괄 패킷 송신
             meta = {
                 "timestamp": curr_time,
                 "fps": round(fps, 1),
@@ -185,7 +135,7 @@ def main():
             socket_server.send_frame(frame, meta)
 
     finally:
-        # 7. 리소스 안전 반환
+        # 5. 모든 자원 안전 반환 (역순 정리)
         print("\n[CLEANUP] 전체 리소스를 안전하게 해제합니다...")
         key_reader.restore()
         socket_server.close()
