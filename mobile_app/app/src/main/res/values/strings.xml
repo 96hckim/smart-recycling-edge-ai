@@ -77,6 +77,7 @@
     <string name="qr_scan_permission_grant">권한 허용하기</string>
 
     <!-- Kiosk Binding & Active State -->
+    <string name="kiosk_login_required">키오스크 이용을 위해 로그인이 필요합니다.</string>
     <string name="kiosk_active_title">키오스크와 연결되었습니다! 🌿</string>
     <string name="kiosk_active_subtitle">수거함에 재활용품을 넣으면 실시간으로 정산됩니다.</string>
     <string name="kiosk_active_waiting_hint">재활용품 투입 대기 중…</string>

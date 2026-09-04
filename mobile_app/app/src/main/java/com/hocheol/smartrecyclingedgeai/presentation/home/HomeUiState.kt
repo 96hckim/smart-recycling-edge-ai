@@ -11,6 +11,7 @@ data class HomeUiState(
     val isKioskBinding: Boolean = false,
     val isKioskActive: Boolean = false,
     val activeBinId: Int? = null,
+    val pendingDeeplinkBinId: Int? = null,
     val recycleResult: RecycleResult? = null,
     val errorMessage: String? = null,
     val infoMessage: String? = null

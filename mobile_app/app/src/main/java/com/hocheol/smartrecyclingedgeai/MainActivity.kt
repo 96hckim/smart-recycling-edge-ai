@@ -115,12 +115,18 @@ class MainActivity : ComponentActivity() {
                     }
 
                     else -> {
+                        val displayErrorMessage =
+                            loginUiState.errorMessage ?: homeUiState.errorMessage
+
                         LoginScreen(
-                            uiState = loginUiState,
+                            uiState = loginUiState.copy(errorMessage = displayErrorMessage),
                             onPhoneChanged = { loginViewModel.onPhoneChanged(it) },
                             onNameChanged = { loginViewModel.onNameChanged(it) },
                             onLoginClick = { loginViewModel.login() },
-                            onErrorMessageShown = { loginViewModel.clearErrorMessage() }
+                            onErrorMessageShown = {
+                                loginViewModel.clearErrorMessage()
+                                homeViewModel.clearErrorMessage()
+                            }
                         )
                     }
                 }

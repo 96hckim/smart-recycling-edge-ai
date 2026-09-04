@@ -36,6 +36,17 @@ class HomeViewModel @Inject constructor(
             sessionManager.userIdFlow.collectLatest { userId ->
                 if (userId != null) {
                     fetchUserInfo(userId)
+                    // 로그아웃 상태에서 들어왔던 대기 중인 딥링크가 있는 경우, 로그인 완료 시 즉시 키오스크 바인딩 수행!
+                    val pendingBinId = _uiState.value.pendingDeeplinkBinId
+                    if (pendingBinId != null) {
+                        _uiState.update {
+                            it.copy(
+                                pendingDeeplinkBinId = null,
+                                isKioskBinding = true
+                            )
+                        }
+                        bindKiosk(binId = pendingBinId, userId = userId)
+                    }
                 } else {
                     _uiState.update { HomeUiState() }
                 }
@@ -119,14 +130,27 @@ class HomeViewModel @Inject constructor(
             return
         }
 
-        _uiState.update {
-            it.copy(
-                isScanningQR = false,
-                isKioskBinding = true
-            )
-        }
+        viewModelScope.launch {
+            val userId = sessionManager.userIdFlow.firstOrNull()
+            if (userId == null) {
+                _uiState.update {
+                    it.copy(
+                        isScanningQR = false,
+                        errorMessage = "키오스크 연결을 위해 로그인이 필요합니다."
+                    )
+                }
+                return@launch
+            }
 
-        bindKiosk(binId)
+            _uiState.update {
+                it.copy(
+                    isScanningQR = false,
+                    isKioskBinding = true
+                )
+            }
+
+            bindKiosk(binId = binId, userId = userId)
+        }
     }
 
     fun handleDeeplink(uri: Uri) {
@@ -137,12 +161,25 @@ class HomeViewModel @Inject constructor(
         if (scheme == Constants.DEEPLINK_SCHEME && host == Constants.DEEPLINK_HOST && binIdParam != null) {
             val binId = binIdParam.toIntOrNull()
             if (binId != null) {
-                // 이미 동일한 binId로 키오스크 세션이 활성화 중이거나 바인딩 중이면 중복 요청 차단
-                if (_uiState.value.isKioskActive && _uiState.value.activeBinId == binId) return
-                if (_uiState.value.isKioskBinding) return
+                viewModelScope.launch {
+                    val userId = sessionManager.userIdFlow.firstOrNull()
+                    if (userId != null) {
+                        // 로그인 상태: 즉시 키오스크 바인딩
+                        if (_uiState.value.isKioskActive && _uiState.value.activeBinId == binId) return@launch
+                        if (_uiState.value.isKioskBinding) return@launch
 
-                _uiState.update { it.copy(isKioskBinding = true) }
-                bindKiosk(binId)
+                        _uiState.update { it.copy(isKioskBinding = true) }
+                        bindKiosk(binId = binId, userId = userId)
+                    } else {
+                        // 로그아웃 상태: 가짜 바인딩 API 절대 호출 금지! 대기 binId 세팅 및 안내 메시지 표출
+                        _uiState.update {
+                            it.copy(
+                                pendingDeeplinkBinId = binId,
+                                errorMessage = "키오스크 연결을 위해 로그인이 필요합니다."
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -159,17 +196,30 @@ class HomeViewModel @Inject constructor(
         return rawContent.toIntOrNull()
     }
 
-    private fun bindKiosk(binId: Int) {
+    private fun bindKiosk(binId: Int, userId: Int? = null) {
         viewModelScope.launch {
-            val userId = sessionManager.userIdFlow.firstOrNull() ?: 1
-            val result = kioskRepository.bindKiosk(binId = binId, userId = userId)
+            val actualUserId = userId ?: sessionManager.userIdFlow.firstOrNull()
+            if (actualUserId == null) {
+                // 로그인 안 된 상태에서는 가짜 바인딩 금지!
+                _uiState.update {
+                    it.copy(
+                        isKioskBinding = false,
+                        pendingDeeplinkBinId = binId,
+                        errorMessage = "키오스크 연결을 위해 로그인이 필요합니다."
+                    )
+                }
+                return@launch
+            }
+
+            val result = kioskRepository.bindKiosk(binId = binId, userId = actualUserId)
             result.onSuccess {
                 kioskRepository.connectKioskWebSocket(binId)
                 _uiState.update { state ->
                     state.copy(
                         isKioskBinding = false,
                         isKioskActive = true,
-                        activeBinId = binId
+                        activeBinId = binId,
+                        pendingDeeplinkBinId = null
                     )
                 }
             }.onFailure { error ->
