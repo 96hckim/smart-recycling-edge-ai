@@ -24,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,12 +31,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.hocheol.smartrecyclingedgeai.R
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleResult
+import com.hocheol.smartrecyclingedgeai.ui.theme.AppTheme
 
 @Composable
 fun RecycleResultDialog(
     result: RecycleResult,
     onConfirmClick: () -> Unit
 ) {
+    val badgeColors = AppTheme.badgeColors
+
     Dialog(onDismissRequest = onConfirmClick) {
         Card(
             shape = RoundedCornerShape(24.dp),
@@ -89,8 +91,8 @@ fun RecycleResultDialog(
                     CategoryBadgeChip(
                         emoji = "📦",
                         label = stringResource(R.string.result_category_paper, result.paperCount),
-                        bgColor = colorResource(R.color.badge_paper_bg),
-                        textColor = colorResource(R.color.badge_paper),
+                        bgColor = badgeColors.paperBg,
+                        textColor = badgeColors.paperText,
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)
@@ -98,8 +100,8 @@ fun RecycleResultDialog(
                     CategoryBadgeChip(
                         emoji = "🥫",
                         label = stringResource(R.string.result_category_can, result.canCount),
-                        bgColor = colorResource(R.color.badge_can_bg),
-                        textColor = colorResource(R.color.badge_can),
+                        bgColor = badgeColors.canBg,
+                        textColor = badgeColors.canText,
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)
@@ -107,8 +109,8 @@ fun RecycleResultDialog(
                     CategoryBadgeChip(
                         emoji = "🍾",
                         label = stringResource(R.string.result_category_pet, result.petCount),
-                        bgColor = colorResource(R.color.badge_pet_bg),
-                        textColor = colorResource(R.color.badge_pet),
+                        bgColor = badgeColors.petBg,
+                        textColor = badgeColors.petText,
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)
@@ -116,8 +118,8 @@ fun RecycleResultDialog(
                     CategoryBadgeChip(
                         emoji = "🛍️",
                         label = stringResource(R.string.result_category_vinyl, result.vinylCount),
-                        bgColor = colorResource(R.color.badge_vinyl_bg),
-                        textColor = colorResource(R.color.badge_vinyl),
+                        bgColor = badgeColors.vinylBg,
+                        textColor = badgeColors.vinylText,
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)

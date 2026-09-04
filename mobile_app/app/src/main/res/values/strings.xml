@@ -5,6 +5,7 @@
     <!-- Navigation -->
     <string name="nav_home">홈</string>
     <string name="nav_history">배출 이력</string>
+    <string name="nav_shop">상점</string>
     <string name="nav_mypage">마이페이지</string>
 
     <!-- Login Screen -->
@@ -16,13 +17,10 @@
     <string name="login_name_placeholder">미입력 시 \'회원\'</string>
     <string name="login_btn_start">시작하기 🚀</string>
     <string name="login_tip">💡 별도 가입 없이 휴대폰 번호 입력만으로 바로 이용할 수 있어요!</string>
-    <string name="login_phone_error">올바른 휴대폰 번호(10~11자리)를 입력해 주세요.</string>
-    <string name="login_invalid_qr">유효하지 않은 키오스크 QR 코드입니다.</string>
 
     <!-- Home Header & Greeting -->
     <string name="home_greeting">안녕하세요, %1$s 님! 🌱</string>
     <string name="home_guest_greeting">안녕하세요, 회원님! 🌱</string>
-    <string name="home_phone_masked">%1$s</string>
 
     <!-- Point Card -->
     <string name="home_point_card_title">내 포인트 잔액</string>
@@ -37,6 +35,21 @@
     <!-- Main Action Button -->
     <string name="home_btn_open_kiosk">재활용 투입구 열기 (QR 스캔) 📦</string>
 
+    <!-- Shop Screen -->
+    <string name="shop_title">포인트 상점 🛒</string>
+    <string name="shop_user_point_title">사용 가능 포인트</string>
+    <string name="shop_user_point_amount">%1$,d P</string>
+    <string name="shop_product_price">%1$,d P</string>
+    <string name="shop_product_btn_exchange">교환하기</string>
+    <string name="shop_product_btn_lack">포인트 부족</string>
+    <string name="shop_purchase_dialog_title">상품 교환 확인</string>
+    <string name="shop_purchase_dialog_message">[%1$s] %2$s 상품을 %3$,d P로 교환하시겠습니까?</string>
+    <string name="shop_purchase_not_enough_points">⚠️ 보유 포인트가 부족하여 교환할 수 없습니다.</string>
+    <string name="shop_purchase_btn_confirm">교환하기</string>
+    <string name="shop_coupon_title">쿠폰 교환 완료! 🎉</string>
+    <string name="shop_coupon_barcode_label">가상 바코드 / 쿠폰 번호</string>
+    <string name="shop_coupon_guide_message">발급된 쿠폰은 마이페이지 또는 제휴 매장에서 사용할 수 있습니다.</string>
+
     <!-- History Screen -->
     <string name="history_title">나의 배출 이력 📜</string>
     <string name="history_empty">아직 배출 내역이 없어요!</string>
@@ -46,7 +59,6 @@
 
     <!-- MyPage Screen & Eco Gamification -->
     <string name="mypage_title">마이페이지 👤</string>
-    <string name="mypage_user_info">내 정보</string>
     <string name="mypage_eco_level">에코 등급</string>
     <string name="mypage_pine_tree_saved">소나무 %1$.2f그루 심은 효과! 🌳</string>
     <string name="mypage_tips_title">올바른 분리배출 팁 💡</string>
@@ -63,13 +75,11 @@
     <string name="qr_scan_guide">키오스크 화면의 QR 코드를 사각형 안에 맞춰주세요.</string>
     <string name="qr_scan_permission_required">QR 코드 스캔을 위해 카메라 권한이 필요합니다.</string>
     <string name="qr_scan_permission_grant">권한 허용하기</string>
-    <string name="qr_scan_invalid_qr">유효하지 않은 키오스크 QR 코드입니다. 다시 시도해 주세요.</string>
 
     <!-- Kiosk Binding & Active State -->
-    <string name="kiosk_binding_progress">키오스크 세션을 연결하는 중...</string>
     <string name="kiosk_active_title">키오스크와 연결되었습니다! 🌿</string>
     <string name="kiosk_active_subtitle">수거함에 재활용품을 넣으면 실시간으로 정산됩니다.</string>
-    <string name="kiosk_active_waiting_hint">재활용품 투입 대기 중...</string>
+    <string name="kiosk_active_waiting_hint">재활용품 투입 대기 중…</string>
 
     <!-- Recycle Result Dialog -->
     <string name="result_title">분리배출 완료! 🎉</string>
@@ -84,7 +94,6 @@
     <string name="result_btn_confirm">확인</string>
 
     <!-- Common Messages & Actions -->
-    <string name="common_error">오류가 발생했습니다: %1$s</string>
     <string name="common_logout">로그아웃</string>
     <string name="common_close">닫기</string>
 </resources>

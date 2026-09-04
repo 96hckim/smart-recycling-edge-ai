@@ -6,7 +6,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -71,12 +74,48 @@ private val DarkColorScheme = darkColorScheme(
     onError = Color.White
 )
 
+// 4대 분리수거 카테고리 뱃지 전용 디자인 시스템 색상 스펙
+data class BadgeColorScheme(
+    val paperBg: Color,
+    val paperText: Color,
+    val canBg: Color,
+    val canText: Color,
+    val petBg: Color,
+    val petText: Color,
+    val vinylBg: Color,
+    val vinylText: Color
+)
+
+private val LightBadgeColorScheme = BadgeColorScheme(
+    paperBg = Color(0xFFFEF3C7), paperText = Color(0xFFB45309),
+    canBg = Color(0xFFD1FAE5), canText = Color(0xFF047857),
+    petBg = Color(0xFFE0F2FE), petText = Color(0xFF0284C7),
+    vinylBg = Color(0xFFF3E8FF), vinylText = Color(0xFF7E22CE)
+)
+
+private val DarkBadgeColorScheme = BadgeColorScheme(
+    paperBg = Color(0xFF78350F), paperText = Color(0xFFFDE68A),
+    canBg = Color(0xFF065F46), canText = Color(0xFFA7F3D0),
+    petBg = Color(0xFF075985), petText = Color(0xFFBAE6FD),
+    vinylBg = Color(0xFF581C87), vinylText = Color(0xFFE9D5FF)
+)
+
+val LocalBadgeColorScheme = staticCompositionLocalOf { LightBadgeColorScheme }
+
+object AppTheme {
+    val badgeColors: BadgeColorScheme
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalBadgeColorScheme.current
+}
+
 @Composable
 fun SmartRecyclingEdgeAITheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val badgeColorScheme = if (darkTheme) DarkBadgeColorScheme else LightBadgeColorScheme
     val view = LocalView.current
 
     if (!view.isInEditMode) {
@@ -90,9 +129,13 @@ fun SmartRecyclingEdgeAITheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalBadgeColorScheme provides badgeColorScheme
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

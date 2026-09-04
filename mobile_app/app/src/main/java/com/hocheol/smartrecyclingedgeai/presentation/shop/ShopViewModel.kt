@@ -24,7 +24,7 @@ class ShopViewModel @Inject constructor(
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ShopUiState())
+    private val _uiState = MutableStateFlow(ShopUiState( ))
     val uiState: StateFlow<ShopUiState> = _uiState.asStateFlow()
 
     init {
@@ -40,14 +40,27 @@ class ShopViewModel @Inject constructor(
         viewModelScope.launch {
             sessionManager.userIdFlow.collectLatest { userId ->
                 if (userId != null) {
-                    val userResult = kioskRepository.getUserInfo(userId)
-                    val points = userResult.getOrNull()?.points ?: 0
-                    _uiState.update { it.copy(userPoints = points) }
+                    fetchUserPoints(userId)
                 } else {
                     _uiState.update { it.copy(userPoints = 0) }
                 }
             }
         }
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            val userId = sessionManager.userIdFlow.firstOrNull()
+            if (userId != null) {
+                fetchUserPoints(userId)
+            }
+        }
+    }
+
+    private suspend fun fetchUserPoints(userId: Int) {
+        val userResult = kioskRepository.getUserInfo(userId)
+        val points = userResult.getOrNull()?.points ?: 0
+        _uiState.update { it.copy(userPoints = points) }
     }
 
     fun selectCategory(category: ShopCategory) {
@@ -91,7 +104,7 @@ class ShopViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = sessionManager.userIdFlow.firstOrNull()
             if (userId != null) {
-                kioskRepository.getUserInfo(userId)
+                fetchUserPoints(userId)
             }
         }
     }

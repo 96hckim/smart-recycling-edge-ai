@@ -28,10 +28,10 @@ class AuthRepository @Inject constructor(
             if (response.isSuccessful && body != null) {
                 val user = User(
                     id = body.id,
-                    phone = body.phone ?: "",
-                    name = body.name ?: "회원",
-                    points = body.points ?: 0,
-                    createdAt = body.createdAt ?: ""
+                    phone = body.phone,
+                    name = body.name,
+                    points = body.points,
+                    createdAt = body.createdAt
                 )
                 sessionManager.saveSession(
                     userId = user.id,

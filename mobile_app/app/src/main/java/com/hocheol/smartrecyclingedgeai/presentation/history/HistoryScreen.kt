@@ -38,13 +38,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hocheol.smartrecyclingedgeai.R
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleLog
+import com.hocheol.smartrecyclingedgeai.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -212,6 +212,8 @@ private fun HistorySummaryCard(logs: List<RecycleLog>) {
 
 @Composable
 private fun HistoryItemCard(log: RecycleLog) {
+    val badgeColors = AppTheme.badgeColors
+
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -259,29 +261,29 @@ private fun HistoryItemCard(log: RecycleLog) {
                 if (log.paperCount > 0) {
                     ItemBadgeChip(
                         label = stringResource(R.string.result_category_paper, log.paperCount),
-                        bgColor = colorResource(R.color.badge_paper_bg),
-                        textColor = colorResource(R.color.badge_paper)
+                        bgColor = badgeColors.paperBg,
+                        textColor = badgeColors.paperText
                     )
                 }
                 if (log.canCount > 0) {
                     ItemBadgeChip(
                         label = stringResource(R.string.result_category_can, log.canCount),
-                        bgColor = colorResource(R.color.badge_can_bg),
-                        textColor = colorResource(R.color.badge_can)
+                        bgColor = badgeColors.canBg,
+                        textColor = badgeColors.canText
                     )
                 }
                 if (log.petCount > 0) {
                     ItemBadgeChip(
                         label = stringResource(R.string.result_category_pet, log.petCount),
-                        bgColor = colorResource(R.color.badge_pet_bg),
-                        textColor = colorResource(R.color.badge_pet)
+                        bgColor = badgeColors.petBg,
+                        textColor = badgeColors.petText
                     )
                 }
                 if (log.vinylCount > 0) {
                     ItemBadgeChip(
                         label = stringResource(R.string.result_category_vinyl, log.vinylCount),
-                        bgColor = colorResource(R.color.badge_vinyl_bg),
-                        textColor = colorResource(R.color.badge_vinyl)
+                        bgColor = badgeColors.vinylBg,
+                        textColor = badgeColors.vinylText
                     )
                 }
             }

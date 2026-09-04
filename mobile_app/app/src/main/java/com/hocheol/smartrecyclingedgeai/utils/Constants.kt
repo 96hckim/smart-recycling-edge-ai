@@ -19,23 +19,10 @@ object Constants {
     // Deeplink Specs
     const val DEEPLINK_SCHEME = "smartrecycle"
     const val DEEPLINK_HOST = "kiosk"
-    const val DEEPLINK_PATH_AUTH = "/auth"
     const val PARAM_BIN_ID = "bin_id"
 
     // WebSocket Event Names
     const val EVENT_RECYCLE_COMPLETE = "RECYCLE_COMPLETE"
-
-    // Item Category Keys
-    const val KEY_PAPER_COUNT = "paper_count"
-    const val KEY_CAN_COUNT = "can_count"
-    const val KEY_PET_COUNT = "pet_count"
-    const val KEY_VINYL_COUNT = "vinyl_count"
-
-    // Carbon Saved Factors (grams per item)
-    const val CARBON_SAVED_PER_PAPER_G = 15.0
-    const val CARBON_SAVED_PER_CAN_G = 30.0
-    const val CARBON_SAVED_PER_PET_G = 20.0
-    const val CARBON_SAVED_PER_VINYL_G = 10.0
 
     // Network Timeouts
     const val CONNECT_TIMEOUT_SECONDS = 10L

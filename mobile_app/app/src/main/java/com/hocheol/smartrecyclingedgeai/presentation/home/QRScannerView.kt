@@ -10,6 +10,8 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
@@ -65,6 +67,7 @@ import com.hocheol.smartrecyclingedgeai.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
@@ -182,7 +185,7 @@ private fun CameraPreviewScanner(
     var isReadyToScan by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        delay(400)
+        delay(400.milliseconds)
         isReadyToScan = true
     }
 
@@ -203,11 +206,20 @@ private fun CameraPreviewScanner(
             cameraProviderFuture.addListener({
                 val cameraProvider = cameraProviderFuture.get()
                 val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
+                    it.surfaceProvider = previewView.surfaceProvider
                 }
 
+                val resolutionSelector = ResolutionSelector.Builder()
+                    .setResolutionStrategy(
+                        ResolutionStrategy(
+                            Size(1280, 720),
+                            ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                        )
+                    )
+                    .build()
+
                 val imageAnalysis = ImageAnalysis.Builder()
-                    .setTargetResolution(Size(1280, 720))
+                    .setResolutionSelector(resolutionSelector)
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
 
@@ -225,7 +237,7 @@ private fun CameraPreviewScanner(
                                     if (!rawValue.isNullOrBlank() && !isScanned) {
                                         isScanned = true
                                         coroutineScope.launch {
-                                            delay(250)
+                                            delay(250.milliseconds)
                                             onQrCodeScanned(rawValue)
                                         }
                                         break
@@ -281,7 +293,7 @@ private fun QRScannerOverlay() {
             val innerPath = Path().apply {
                 addRoundRect(
                     RoundRect(
-                        rect = androidx.compose.ui.geometry.Rect(left, top, left + framePx, top + framePx),
+                        rect = Rect(left, top, left + framePx, top + framePx),
                         cornerRadius = CornerRadius(24.dp.toPx(), 24.dp.toPx())
                     )
                 )

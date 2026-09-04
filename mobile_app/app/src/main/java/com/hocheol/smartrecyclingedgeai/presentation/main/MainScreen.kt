@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -22,17 +23,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.hocheol.smartrecyclingedgeai.R
+import com.hocheol.smartrecyclingedgeai.domain.model.ShopCategory
+import com.hocheol.smartrecyclingedgeai.domain.model.ShopProduct
 import com.hocheol.smartrecyclingedgeai.presentation.history.HistoryScreen
 import com.hocheol.smartrecyclingedgeai.presentation.history.HistoryUiState
 import com.hocheol.smartrecyclingedgeai.presentation.home.HomeScreen
 import com.hocheol.smartrecyclingedgeai.presentation.home.HomeUiState
 import com.hocheol.smartrecyclingedgeai.presentation.mypage.MyPageScreen
 import com.hocheol.smartrecyclingedgeai.presentation.mypage.MyPageUiState
+import com.hocheol.smartrecyclingedgeai.presentation.shop.ShopScreen
+import com.hocheol.smartrecyclingedgeai.presentation.shop.ShopUiState
 
 @Composable
 fun MainScreen(
     homeUiState: HomeUiState,
     historyUiState: HistoryUiState,
+    shopUiState: ShopUiState,
     myPageUiState: MyPageUiState,
     onRefreshHome: () -> Unit,
     onOpenQRScanner: () -> Unit,
@@ -41,12 +47,18 @@ fun MainScreen(
     onConfirmResult: () -> Unit,
     onCancelActiveSession: () -> Unit,
     onRefreshHistory: () -> Unit,
+    onCategorySelected: (ShopCategory) -> Unit,
+    onOpenPurchaseDialog: (ShopProduct) -> Unit,
+    onDismissPurchaseDialog: () -> Unit,
+    onConfirmPurchase: () -> Unit,
+    onDismissCouponDialog: () -> Unit,
     onShowLogoutDialog: () -> Unit,
     onDismissLogoutDialog: () -> Unit,
     onConfirmLogout: () -> Unit,
     onLogoutClick: () -> Unit,
     onErrorMessageShownHome: () -> Unit,
     onErrorMessageShownHistory: () -> Unit,
+    onErrorMessageShownShop: () -> Unit,
     onErrorMessageShownMyPage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -119,6 +131,33 @@ fun MainScreen(
                     },
                     icon = {
                         Icon(
+                            Icons.Default.ShoppingCart,
+                            contentDescription = stringResource(R.string.nav_shop)
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.nav_shop),
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Medium
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+
+                NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = {
+                        selectedTab = 3
+                    },
+                    icon = {
+                        Icon(
                             Icons.Default.Person,
                             contentDescription = stringResource(R.string.nav_mypage)
                         )
@@ -127,7 +166,7 @@ fun MainScreen(
                         Text(
                             text = stringResource(R.string.nav_mypage),
                             fontSize = 12.sp,
-                            fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Medium
+                            fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Medium
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
@@ -163,7 +202,18 @@ fun MainScreen(
                 modifier = Modifier.padding(innerPadding)
             )
 
-            2 -> MyPageScreen(
+            2 -> ShopScreen(
+                uiState = shopUiState,
+                onCategorySelected = onCategorySelected,
+                onOpenPurchaseDialog = onOpenPurchaseDialog,
+                onDismissPurchaseDialog = onDismissPurchaseDialog,
+                onConfirmPurchase = onConfirmPurchase,
+                onDismissCouponDialog = onDismissCouponDialog,
+                onErrorMessageShown = onErrorMessageShownShop,
+                modifier = Modifier.padding(innerPadding)
+            )
+
+            3 -> MyPageScreen(
                 uiState = myPageUiState,
                 onShowLogoutDialog = onShowLogoutDialog,
                 onDismissLogoutDialog = onDismissLogoutDialog,

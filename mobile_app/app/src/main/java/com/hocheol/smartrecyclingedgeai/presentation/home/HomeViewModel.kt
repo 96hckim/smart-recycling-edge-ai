@@ -1,6 +1,7 @@
 package com.hocheol.smartrecyclingedgeai.presentation.home
 
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hocheol.smartrecyclingedgeai.data.local.SessionManager
@@ -136,7 +137,7 @@ class HomeViewModel @Inject constructor(
     private fun parseBinId(rawContent: String): Int? {
         if (rawContent.startsWith("http") || rawContent.contains("://")) {
             return try {
-                val uri = Uri.parse(rawContent)
+                val uri = rawContent.toUri()
                 uri.getQueryParameter(Constants.PARAM_BIN_ID)?.toIntOrNull()
             } catch (e: Exception) {
                 null

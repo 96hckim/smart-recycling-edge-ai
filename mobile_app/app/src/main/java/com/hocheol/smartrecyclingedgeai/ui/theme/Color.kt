@@ -21,11 +21,5 @@ val SurfaceWhite = Color(0xFFFFFFFF)
 val TextDarkSlate = Color(0xFF0F172A)
 val TextMutedGray = Color(0xFF64748B)
 
-// 4 Major Category Badge Colors
-val BadgePaper = Color(0xFFF59E0B)
-val BadgeCan = Color(0xFF10B981)
-val BadgePet = Color(0xFF38BDF8)
-val BadgeVinyl = Color(0xFFA855F7)
-
 // Status
 val ErrorRed = Color(0xFFEF4444)
