@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,15 +30,19 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    private val homeViewModel: HomeViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
 
+        // 딥링크 Intent 1회만 수신
+        handleDeeplinkIntent(intent)
+
         setContent {
             SmartRecyclingEdgeAITheme {
                 val loginViewModel: LoginViewModel = hiltViewModel()
-                val homeViewModel: HomeViewModel = hiltViewModel()
                 val historyViewModel: HistoryViewModel = hiltViewModel()
                 val shopViewModel: ShopViewModel = hiltViewModel()
                 val myPageViewModel: MyPageViewModel = hiltViewModel()
@@ -47,10 +52,6 @@ class MainActivity : ComponentActivity() {
                 val historyUiState by historyViewModel.uiState.collectAsStateWithLifecycle()
                 val shopUiState by shopViewModel.uiState.collectAsStateWithLifecycle()
                 val myPageUiState by myPageViewModel.uiState.collectAsStateWithLifecycle()
-
-                intent?.data?.let { uri ->
-                    homeViewModel.handleDeeplink(uri)
-                }
 
                 when {
                     loginUiState.isCheckingAutoLogin -> {
@@ -129,6 +130,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        // intent handling
+        setIntent(intent)
+        handleDeeplinkIntent(intent)
+    }
+
+    private fun handleDeeplinkIntent(intent: Intent?) {
+        val uri = intent?.data ?: return
+        homeViewModel.handleDeeplink(uri)
+        // 딥링크 중복 호출 방지를 위한 Intent Data 소진(Consume)
+        intent.data = null
     }
 }

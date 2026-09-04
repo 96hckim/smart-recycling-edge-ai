@@ -137,6 +137,10 @@ class HomeViewModel @Inject constructor(
         if (scheme == Constants.DEEPLINK_SCHEME && host == Constants.DEEPLINK_HOST && binIdParam != null) {
             val binId = binIdParam.toIntOrNull()
             if (binId != null) {
+                // 이미 동일한 binId로 키오스크 세션이 활성화 중이거나 바인딩 중이면 중복 요청 차단
+                if (_uiState.value.isKioskActive && _uiState.value.activeBinId == binId) return
+                if (_uiState.value.isKioskBinding) return
+
                 _uiState.update { it.copy(isKioskBinding = true) }
                 bindKiosk(binId)
             }
