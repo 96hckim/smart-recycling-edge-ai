@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,6 +25,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -100,68 +102,85 @@ fun ShopScreen(
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // 1. User Point Dashboard Card
-            UserPointCard(
-                points = uiState.userPoints,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-            )
-
-            // 2. Filter Category Chips Row
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                items(ShopCategory.entries.toTypedArray(), key = { it.name }) { category ->
-                    FilterChip(
-                        selected = uiState.selectedCategory == category,
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onCategorySelected(category)
-                        },
-                        label = {
-                            Text(
-                                text = "${category.emoji} ${category.label}",
-                                fontSize = 13.sp,
-                                fontWeight = if (uiState.selectedCategory == category) FontWeight.Bold else FontWeight.Medium
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                // 1. User Point Dashboard Card
+                UserPointCard(
+                    points = uiState.userPoints,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+
+                // 2. Filter Category Chips Row
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(ShopCategory.entries.toTypedArray(), key = { it.name }) { category ->
+                        FilterChip(
+                            selected = uiState.selectedCategory == category,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onCategorySelected(category)
+                            },
+                            label = {
+                                Text(
+                                    text = "${category.emoji} ${category.label}",
+                                    fontSize = 13.sp,
+                                    fontWeight = if (uiState.selectedCategory == category) FontWeight.Bold else FontWeight.Medium
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                }
+
+                // 3. Product List (LazyColumn)
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(filteredProducts, key = { it.id }) { product ->
+                        ProductItemCard(
+                            product = product,
+                            userPoints = uiState.userPoints,
+                            onBuyClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onOpenPurchaseDialog(product)
+                            }
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
                 }
             }
 
-            // 3. Product List (LazyColumn)
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(filteredProducts, key = { it.id }) { product ->
-                    ProductItemCard(
-                        product = product,
-                        userPoints = uiState.userPoints,
-                        onBuyClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onOpenPurchaseDialog(product)
-                        }
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 3.dp
                     )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -206,7 +225,7 @@ fun ShopScreen(
             confirmButton = {
                 Button(
                     onClick = onConfirmPurchase,
-                    enabled = isEnoughPoints,
+                    enabled = isEnoughPoints && !uiState.isLoading,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )

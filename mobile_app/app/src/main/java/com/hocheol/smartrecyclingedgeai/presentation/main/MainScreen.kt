@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hocheol.smartrecyclingedgeai.R
 import com.hocheol.smartrecyclingedgeai.domain.model.ShopCategory
@@ -181,6 +182,10 @@ fun MainScreen(
         },
         modifier = modifier
     ) { innerPadding ->
+        val screenModifier = modifier
+            .padding(innerPadding)
+            .padding(bottom = 8.dp)
+
         when (selectedTab) {
             0 -> HomeScreen(
                 uiState = homeUiState,
@@ -192,14 +197,14 @@ fun MainScreen(
                 onCancelActiveSession = onCancelActiveSession,
                 onLogoutClick = onLogoutClick,
                 onErrorMessageShown = onErrorMessageShownHome,
-                modifier = Modifier.padding(innerPadding)
+                modifier = screenModifier
             )
 
             1 -> HistoryScreen(
                 uiState = historyUiState,
                 onRefresh = onRefreshHistory,
                 onErrorMessageShown = onErrorMessageShownHistory,
-                modifier = Modifier.padding(innerPadding)
+                modifier = screenModifier
             )
 
             2 -> ShopScreen(
@@ -210,7 +215,7 @@ fun MainScreen(
                 onConfirmPurchase = onConfirmPurchase,
                 onDismissCouponDialog = onDismissCouponDialog,
                 onErrorMessageShown = onErrorMessageShownShop,
-                modifier = Modifier.padding(innerPadding)
+                modifier = screenModifier
             )
 
             3 -> MyPageScreen(
@@ -219,7 +224,7 @@ fun MainScreen(
                 onDismissLogoutDialog = onDismissLogoutDialog,
                 onConfirmLogout = onConfirmLogout,
                 onErrorMessageShown = onErrorMessageShownMyPage,
-                modifier = Modifier.padding(innerPadding)
+                modifier = screenModifier
             )
         }
     }

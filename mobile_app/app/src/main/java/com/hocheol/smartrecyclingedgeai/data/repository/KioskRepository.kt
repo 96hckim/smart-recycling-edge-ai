@@ -2,12 +2,16 @@ package com.hocheol.smartrecyclingedgeai.data.repository
 
 import com.hocheol.smartrecyclingedgeai.data.local.SessionManager
 import com.hocheol.smartrecyclingedgeai.data.model.request.KioskBindRequest
+import com.hocheol.smartrecyclingedgeai.data.model.request.PointDeductRequest
 import com.hocheol.smartrecyclingedgeai.data.model.response.KioskBindResponse
+import com.hocheol.smartrecyclingedgeai.data.model.response.PointDeductResponse
 import com.hocheol.smartrecyclingedgeai.data.remote.KioskApiService
 import com.hocheol.smartrecyclingedgeai.data.remote.KioskWebSocketManager
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleLog
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleResult
 import com.hocheol.smartrecyclingedgeai.domain.model.User
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -20,6 +24,7 @@ class KioskRepository @Inject constructor(
     private val sessionManager: SessionManager
 ) {
     val userIdFlow: Flow<Int?> = sessionManager.userIdFlow
+    val userPointsFlow: Flow<Int?> = sessionManager.userPointsFlow
 
     val recycleResultFlow: Flow<RecycleResult> = webSocketManager.recycleEventFlow.map { event ->
         RecycleResult(
@@ -49,7 +54,8 @@ class KioskRepository @Inject constructor(
                 sessionManager.saveSession(
                     userId = user.id,
                     userName = user.name,
-                    phone = user.phone
+                    phone = user.phone,
+                    points = user.points
                 )
                 Result.success(user)
             } else {
@@ -100,6 +106,46 @@ class KioskRepository @Inject constructor(
             }
         } catch (e: Exception) {
             Result.failure(Exception("네트워크 통신 오류: ${e.localizedMessage}"))
+        }
+    }
+
+    suspend fun deductPoints(
+        userId: Int,
+        amount: Int,
+        description: String
+    ): Result<PointDeductResponse> {
+        return try {
+            val request = PointDeductRequest(
+                userId = userId,
+                amount = amount,
+                description = description
+            )
+            val response = apiService.deductPoints(request)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                sessionManager.updatePoints(body.remainingPoints)
+                Result.success(body)
+            } else {
+                val errorString = response.errorBody()?.string() ?: ""
+                val errorMessage = parseErrorMessage(errorString, response.code())
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("네트워크 통신 오류가 발생했습니다: ${e.localizedMessage}"))
+        }
+    }
+
+    private fun parseErrorMessage(errorString: String, statusCode: Int): String {
+        return try {
+            val moshi = Moshi.Builder()
+                .addLast(KotlinJsonAdapterFactory())
+                .build()
+            val jsonAdapter = moshi.adapter(Map::class.java)
+            val map = jsonAdapter.fromJson(errorString)
+            val detail = map?.get("detail") as? String
+            detail ?: "포인트 차감 실패 ($statusCode)"
+        } catch (e: Exception) {
+            if (errorString.isNotBlank()) errorString else "포인트 차감 실패 ($statusCode)"
         }
     }
 

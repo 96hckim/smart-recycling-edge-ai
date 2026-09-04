@@ -151,8 +151,12 @@ fun LoginScreen(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
                             focusedLabelColor = MaterialTheme.colorScheme.primary,
                             unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                alpha = 0.6f
+                            ),
+                            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                alpha = 0.6f
+                            ),
                             errorTextColor = MaterialTheme.colorScheme.error,
                             errorBorderColor = MaterialTheme.colorScheme.error
                         )

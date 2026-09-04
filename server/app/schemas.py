@@ -72,3 +72,20 @@ class RecycleLogListResponse(BaseModel):
     user_id: int
     total_count: int
     logs: list[RecycleLogItem]
+
+
+# ============================================================================
+# 5. 포인트 차감 (Point Deduct)
+# ============================================================================
+class PointDeductRequest(BaseModel):
+    user_id: int = Field(..., description="포인트를 차감할 유저 ID")
+    amount: int = Field(..., gt=0, description="차감할 포인트 (0보다 큰 정수)")
+    description: str | None = Field(default="상품 교환", description="차감 사유/상품명")
+
+
+class PointDeductResponse(BaseModel):
+    status: str = "SUCCESS"
+    user_id: int
+    deducted_amount: int
+    remaining_points: int
+    description: str

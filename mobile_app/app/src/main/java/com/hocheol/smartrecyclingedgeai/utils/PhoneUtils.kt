@@ -12,6 +12,7 @@ object PhoneUtils {
             10 -> {
                 "${cleanPhone.substring(0, 3)}-***-${cleanPhone.substring(6)}"
             }
+
             else -> phone
         }
     }

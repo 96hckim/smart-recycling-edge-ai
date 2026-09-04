@@ -140,14 +140,20 @@ fun RecycleResultDialog(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = stringResource(R.string.result_earned_points, result.earnedPoints),
+                            text = stringResource(
+                                R.string.result_earned_points,
+                                result.earnedPoints
+                            ),
                             fontSize = 24.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = stringResource(R.string.result_carbon_saved, result.carbonSavedG),
+                            text = stringResource(
+                                R.string.result_carbon_saved,
+                                result.carbonSavedG
+                            ),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

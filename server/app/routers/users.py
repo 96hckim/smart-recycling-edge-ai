@@ -4,7 +4,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.database import get_db
-from app.schemas import RecycleLogItem, RecycleLogListResponse, UserResponse
+from app.schemas import (
+    PointDeductRequest,
+    PointDeductResponse,
+    RecycleLogItem,
+    RecycleLogListResponse,
+    UserResponse,
+)
 
 DatabaseDep = Annotated[sqlite3.Connection, Depends(get_db)]
 
@@ -92,4 +98,56 @@ def get_user_recycle_logs(
         user_id=user_id,
         total_count=len(logs),
         logs=logs,
+    )
+
+
+@router.post(
+    "/deduct",
+    response_model=PointDeductResponse,
+    status_code=status.HTTP_200_OK,
+    summary="포인트 차감",
+)
+def deduct_user_points(
+    payload: PointDeductRequest,
+    db: DatabaseDep,
+) -> PointDeductResponse:
+    """앱에서 상품 구매 시 유저 포인트를 검증하고 차감."""
+    cursor = db.cursor()
+
+    # 1. 유저 존재 및 현재 포인트 조회
+    cursor.execute(
+        "SELECT id, points FROM users WHERE id = ?",
+        (payload.user_id,),
+    )
+    user = cursor.fetchone()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"ID가 {payload.user_id}인 유저를 찾을 수 없습니다.",
+        )
+
+    current_points = user["points"]
+
+    # 2. 포인트 부족 검증
+    if current_points < payload.amount:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"포인트가 부족합니다. (현재: {current_points}P, 요청: {payload.amount}P)",
+        )
+
+    # 3. 포인트 차감 및 DB 커밋
+    remaining_points = current_points - payload.amount
+    cursor.execute(
+        "UPDATE users SET points = ? WHERE id = ?",
+        (remaining_points, payload.user_id),
+    )
+    db.commit()
+
+    return PointDeductResponse(
+        status="SUCCESS",
+        user_id=payload.user_id,
+        deducted_amount=payload.amount,
+        remaining_points=remaining_points,
+        description=payload.description or "포인트 사용",
     )

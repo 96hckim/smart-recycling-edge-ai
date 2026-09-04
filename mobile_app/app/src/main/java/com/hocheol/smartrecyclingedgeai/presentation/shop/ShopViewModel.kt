@@ -24,7 +24,7 @@ class ShopViewModel @Inject constructor(
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ShopUiState( ))
+    private val _uiState = MutableStateFlow(ShopUiState())
     val uiState: StateFlow<ShopUiState> = _uiState.asStateFlow()
 
     init {
@@ -43,6 +43,13 @@ class ShopViewModel @Inject constructor(
                     fetchUserPoints(userId)
                 } else {
                     _uiState.update { it.copy(userPoints = 0) }
+                }
+            }
+        }
+        viewModelScope.launch {
+            sessionManager.userPointsFlow.collectLatest { points ->
+                if (points != null) {
+                    _uiState.update { it.copy(userPoints = points) }
                 }
             }
         }
@@ -79,32 +86,37 @@ class ShopViewModel @Inject constructor(
         val currentState = _uiState.value
         val product = currentState.selectedProductForPurchase ?: return
 
-        if (currentState.userPoints < product.requiredPoints) {
-            _uiState.update {
-                it.copy(
-                    selectedProductForPurchase = null,
-                    errorMessage = "보유 포인트가 부족합니다."
-                )
-            }
-            return
-        }
-
-        val newPoints = currentState.userPoints - product.requiredPoints
-        val couponCode = "ECO-2026-" + UUID.randomUUID().toString().take(8).uppercase()
-
-        _uiState.update {
-            it.copy(
-                userPoints = newPoints,
-                selectedProductForPurchase = null,
-                purchasedProduct = product,
-                purchasedCouponCode = couponCode
-            )
-        }
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
-            val userId = sessionManager.userIdFlow.firstOrNull()
-            if (userId != null) {
-                fetchUserPoints(userId)
+            val userId = sessionManager.userIdFlow.firstOrNull() ?: 1
+            val description = "${product.brand} ${product.name}"
+
+            val result = kioskRepository.deductPoints(
+                userId = userId,
+                amount = product.requiredPoints,
+                description = description
+            )
+
+            result.onSuccess { response ->
+                val couponCode = "ECO-2026-" + UUID.randomUUID().toString().take(8).uppercase()
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = false,
+                        userPoints = response.remainingPoints,
+                        selectedProductForPurchase = null,
+                        purchasedProduct = product,
+                        purchasedCouponCode = couponCode
+                    )
+                }
+            }.onFailure { exception ->
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = false,
+                        selectedProductForPurchase = null,
+                        errorMessage = exception.message ?: "포인트 차감 요청 중 오류가 발생했습니다."
+                    )
+                }
             }
         }
     }

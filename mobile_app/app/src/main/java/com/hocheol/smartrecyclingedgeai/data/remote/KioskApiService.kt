@@ -1,7 +1,9 @@
 package com.hocheol.smartrecyclingedgeai.data.remote
 
 import com.hocheol.smartrecyclingedgeai.data.model.request.KioskBindRequest
+import com.hocheol.smartrecyclingedgeai.data.model.request.PointDeductRequest
 import com.hocheol.smartrecyclingedgeai.data.model.response.KioskBindResponse
+import com.hocheol.smartrecyclingedgeai.data.model.response.PointDeductResponse
 import com.hocheol.smartrecyclingedgeai.data.model.response.RecycleLogListResponse
 import com.hocheol.smartrecyclingedgeai.data.model.response.UserResponse
 import com.hocheol.smartrecyclingedgeai.utils.Constants
@@ -26,4 +28,9 @@ interface KioskApiService {
     suspend fun getUserLogs(
         @Path("user_id") userId: Int
     ): Response<RecycleLogListResponse>
+
+    @POST(Constants.ENDPOINT_DEDUCT_POINTS)
+    suspend fun deductPoints(
+        @Body request: PointDeductRequest
+    ): Response<PointDeductResponse>
 }

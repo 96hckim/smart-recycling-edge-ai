@@ -41,6 +41,15 @@ class MyPageViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            sessionManager.userPointsFlow.collectLatest { points ->
+                if (points != null) {
+                    _uiState.update { state ->
+                        state.copy(user = state.user?.copy(points = points))
+                    }
+                }
+            }
+        }
     }
 
     fun loadMyPageData() {

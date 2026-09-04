@@ -22,6 +22,7 @@ class SessionManager @Inject constructor(
         private val KEY_USER_ID = intPreferencesKey("user_id")
         private val KEY_USER_NAME = stringPreferencesKey("user_name")
         private val KEY_PHONE = stringPreferencesKey("phone")
+        private val KEY_POINTS = intPreferencesKey("user_points")
     }
 
     val userIdFlow: Flow<Int?> = context.dataStore.data.map { preferences ->
@@ -36,15 +37,28 @@ class SessionManager @Inject constructor(
         preferences[KEY_PHONE]
     }
 
+    val userPointsFlow: Flow<Int?> = context.dataStore.data.map { preferences ->
+        preferences[KEY_POINTS]
+    }
+
     val isLoggedInFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[KEY_USER_ID] != null
     }
 
-    suspend fun saveSession(userId: Int, userName: String, phone: String) {
+    suspend fun saveSession(userId: Int, userName: String, phone: String, points: Int? = null) {
         context.dataStore.edit { preferences ->
             preferences[KEY_USER_ID] = userId
             preferences[KEY_USER_NAME] = userName
             preferences[KEY_PHONE] = phone
+            if (points != null) {
+                preferences[KEY_POINTS] = points
+            }
+        }
+    }
+
+    suspend fun updatePoints(newPoints: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_POINTS] = newPoints
         }
     }
 
