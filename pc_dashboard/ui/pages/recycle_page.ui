@@ -1,0 +1,699 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>RecyclePage</class>
+ <widget class="QWidget" name="RecyclePage">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1920</width>
+    <height>1052</height>
+   </rect>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+QWidget {
+    background-color: #0B0F17;
+    color: #F8FAFC;
+    font-family: 'Pretendard', 'Segoe UI', sans-serif;
+    font-size: 18px;
+}
+
+QLabel {
+    background-color: transparent;
+}
+
+/* 카드 패널 공통 */
+QFrame.kioskPanel {
+    background-color: #111827;
+    border: 2px solid #1F2937;
+    border-radius: 24px;
+}
+
+/* 좌측 비디오 뷰어 */
+QLabel#lblVideo {
+    background-color: #030712;
+    border: 2px solid #1E293B;
+    border-radius: 20px;
+    color: #64748B;
+    font-size: 26px;
+    font-weight: 800;
+}
+
+/* 실시간 하단 가이드 배너 */
+QLabel#lblGuideBanner {
+    background-color: #0D1927;
+    border: 2px solid #0284C7;
+    border-radius: 16px;
+    color: #38BDF8;
+    font-size: 22px;
+    font-weight: 800;
+    padding: 10px;
+}
+
+/* 사용자 세션 */
+QLabel#lblUserGreeting { font-size: 30px; font-weight: 900; color: #10B981; }
+QLabel#lblSessionMode { font-size: 18px; font-weight: 600; color: #94A3B8; }
+
+/* 4종 스코어보드 박스 */
+QFrame.countItemBox {
+    background-color: #0D131F;
+    border: 1.5px solid #1E293B;
+    border-radius: 16px;
+}
+QLabel.itemCountTitle { font-size: 20px; font-weight: 800; color: #CBD5E1; }
+QLabel.itemCountNum { font-size: 36px; font-weight: 900; color: #F8FAFC; }
+
+/* 총 리워드 카드 */
+QFrame#frameTotalReward {
+    background-color: #0F1D30;
+    border: 2px solid #1E40AF;
+    border-radius: 20px;
+}
+QLabel#lblRewardHeader { font-size: 19px; font-weight: 800; color: #94A3B8; }
+QLabel#lblTotalPoints { font-size: 42px; font-weight: 900; color: #38BDF8; }
+QLabel#lblTotalCarbon { font-size: 20px; font-weight: 800; color: #10B981; }
+
+/* 액션 버튼 공통 규격: 폰트 22px, 굵기 900, 테두리 반경 16px */
+QPushButton#btnFinishSession {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #10B981, stop:1 #06B6D4);
+    color: #FFFFFF;
+    font-size: 22px;
+    font-weight: 900;
+    border: none;
+    border-radius: 16px;
+}
+QPushButton#btnFinishSession:disabled {
+    background-color: #1E293B;
+    border: 1.5px solid #334155;
+    color: #64748B;
+}
+QPushButton#btnFinishSession:hover {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #059669, stop:1 #0891B2);
+}
+QPushButton#btnFinishSession:pressed { background-color: #047857; }
+
+QPushButton#btnCancelSession {
+    background-color: #1E293B;
+    color: #CBD5E1;
+    font-size: 22px;
+    font-weight: 900;
+    border: 1.5px solid #334155;
+    border-radius: 16px;
+}
+QPushButton#btnCancelSession:hover {
+    color: #EF4444;
+    border-color: #EF4444;
+    background-color: rgba(239, 68, 68, 0.12);
+}
+QPushButton#btnCancelSession:pressed { background-color: rgba(239, 68, 68, 0.2); }
+   </string>
+  </property>
+  <layout class="QHBoxLayout" name="mainHLayout">
+   <property name="spacing">
+    <number>28</number>
+   </property>
+   <property name="leftMargin">
+    <number>40</number>
+   </property>
+   <property name="topMargin">
+    <number>20</number>
+   </property>
+   <property name="rightMargin">
+    <number>40</number>
+   </property>
+   <property name="bottomMargin">
+    <number>20</number>
+   </property>
+   <item>
+    <widget class="QFrame" name="frameVideoSection">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>3</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="class" stdset="0">
+      <string>kioskPanel</string>
+     </property>
+     <layout class="QVBoxLayout" name="videoVLayout">
+      <property name="spacing">
+       <number>16</number>
+      </property>
+      <property name="leftMargin">
+       <number>24</number>
+      </property>
+      <property name="topMargin">
+       <number>24</number>
+      </property>
+      <property name="rightMargin">
+       <number>24</number>
+      </property>
+      <property name="bottomMargin">
+       <number>24</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="lblVideo">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
+          <horstretch>0</horstretch>
+          <verstretch>1</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>820</width>
+          <height>560</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Jetson AI 비전 스트림 연결 중...</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="lblGuideBanner">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>60</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>60</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>🎯 카메라 중앙 영역에 재활용품을 놓아주세요</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frameSideSection">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+       <horstretch>2</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>540</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>580</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="class" stdset="0">
+      <string>kioskPanel</string>
+     </property>
+     <layout class="QVBoxLayout" name="sideVLayout">
+      <property name="spacing">
+       <number>20</number>
+      </property>
+      <property name="leftMargin">
+       <number>28</number>
+      </property>
+      <property name="topMargin">
+       <number>24</number>
+      </property>
+      <property name="rightMargin">
+       <number>28</number>
+      </property>
+      <property name="bottomMargin">
+       <number>24</number>
+      </property>
+      <item>
+       <widget class="QFrame" name="frameUserInfo">
+        <property name="styleSheet">
+         <string notr="true">background-color: #0D131F; border: 1.5px solid #1E293B; border-radius: 18px; padding: 12px 16px;</string>
+        </property>
+        <layout class="QVBoxLayout" name="userVLayout">
+         <property name="spacing">
+          <number>6</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="lblUserGreeting">
+           <property name="text">
+            <string>👤 회원 세션 진행 중</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblSessionMode">
+           <property name="text">
+            <string>투입 완료 후 포인트가 자동 정산됩니다.</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="countsHLayout">
+        <property name="spacing">
+         <number>10</number>
+        </property>
+        <!-- 1. 종이 (PAPER) -->
+        <item>
+         <widget class="QFrame" name="boxPaper">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>96</height>
+           </size>
+          </property>
+          <property name="class" stdset="0">
+           <string>countItemBox</string>
+          </property>
+          <layout class="QVBoxLayout" name="paperVLayout">
+           <property name="spacing">
+            <number>4</number>
+           </property>
+           <property name="leftMargin">
+            <number>6</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>10</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="lblPaperTitle">
+             <property name="text">
+              <string>📦 종이</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountTitle</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lblPaperCount">
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountNum</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+
+        <!-- 2. 캔 (CAN) -->
+        <item>
+         <widget class="QFrame" name="boxCan">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>96</height>
+           </size>
+          </property>
+          <property name="class" stdset="0">
+           <string>countItemBox</string>
+          </property>
+          <layout class="QVBoxLayout" name="canVLayout">
+           <property name="spacing">
+            <number>4</number>
+           </property>
+           <property name="leftMargin">
+            <number>6</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>10</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="lblCanTitle">
+             <property name="text">
+              <string>🥫 캔</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountTitle</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lblCanCount">
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountNum</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+
+        <!-- 3. 페트 (PET) -->
+        <item>
+         <widget class="QFrame" name="boxPet">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>96</height>
+           </size>
+          </property>
+          <property name="class" stdset="0">
+           <string>countItemBox</string>
+          </property>
+          <layout class="QVBoxLayout" name="petVLayout">
+           <property name="spacing">
+            <number>4</number>
+           </property>
+           <property name="leftMargin">
+            <number>6</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>10</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="lblPetTitle">
+             <property name="text">
+              <string>🧴 페트</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountTitle</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lblPetCount">
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountNum</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+
+        <!-- 4. 비닐 (VINYL) -->
+        <item>
+         <widget class="QFrame" name="boxVinyl">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>96</height>
+           </size>
+          </property>
+          <property name="class" stdset="0">
+           <string>countItemBox</string>
+          </property>
+          <layout class="QVBoxLayout" name="vinylVLayout">
+           <property name="spacing">
+            <number>4</number>
+           </property>
+           <property name="leftMargin">
+            <number>6</number>
+           </property>
+           <property name="topMargin">
+            <number>10</number>
+           </property>
+           <property name="rightMargin">
+            <number>6</number>
+           </property>
+           <property name="bottomMargin">
+            <number>10</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="lblVinylTitle">
+             <property name="text">
+              <string>🛍️ 비닐</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountTitle</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lblVinylCount">
+             <property name="text">
+              <string>0</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignCenter</set>
+             </property>
+             <property name="class" stdset="0">
+              <string>itemCountNum</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QFrame" name="frameTotalReward">
+        <layout class="QVBoxLayout" name="rewardVLayout">
+         <property name="spacing">
+          <number>8</number>
+         </property>
+         <property name="leftMargin">
+          <number>22</number>
+         </property>
+         <property name="topMargin">
+          <number>18</number>
+         </property>
+         <property name="rightMargin">
+          <number>22</number>
+         </property>
+         <property name="bottomMargin">
+          <number>18</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="lblRewardHeader">
+           <property name="text">
+            <string>💰 현재 세션 획득 리워드</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblTotalPoints">
+           <property name="text">
+            <string>+ 0 P</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblTotalCarbon">
+           <property name="text">
+            <string>🌱 절감 탄소량: 0.0g CO2</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFrame" name="frameEcoTree">
+        <property name="styleSheet">
+         <string notr="true">
+          QFrame#frameEcoTree {
+              background-color: #0D1624;
+              border: 1.5px solid #1E293B;
+              border-radius: 20px;
+          }
+         </string>
+        </property>
+        <layout class="QVBoxLayout" name="ecoTreeVLayout">
+         <property name="spacing">
+          <number>8</number>
+         </property>
+         <property name="leftMargin">
+          <number>16</number>
+         </property>
+         <property name="topMargin">
+          <number>14</number>
+         </property>
+         <property name="rightMargin">
+          <number>16</number>
+         </property>
+         <property name="bottomMargin">
+          <number>14</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="lblEcoTreeTitle">
+           <property name="styleSheet">
+            <string notr="true">
+             font-size: 19px;
+             font-weight: 800;
+             color: #10B981;
+            </string>
+           </property>
+           <property name="text">
+            <string>🌱 나의 에코 트리</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblEcoTree">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>1</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>260</width>
+             <height>220</height>
+            </size>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblEcoTreeStatus">
+           <property name="styleSheet">
+            <string notr="true">
+             font-size: 15px;
+             font-weight: 600;
+             color: #94A3B8;
+            </string>
+           </property>
+           <property name="text">
+            <string>재활용품을 넣어 나무를 키워보세요!</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="btnGroupVLayout">
+        <property name="spacing">
+         <number>12</number>
+        </property>
+        <!-- 1. 투입 완료 버튼 (높이 68px, 폰트 22px) -->
+        <item>
+         <widget class="QPushButton" name="btnFinishSession">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>68</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>68</height>
+           </size>
+          </property>
+          <property name="cursor">
+           <cursorShape>PointingHandCursor</cursorShape>
+          </property>
+          <property name="text">
+           <string>투입 완료 (정산하기)</string>
+          </property>
+         </widget>
+        </item>
+        <!-- 2. 투입 취소 버튼 (높이 68px, 폰트 22px 동기화) -->
+        <item>
+         <widget class="QPushButton" name="btnCancelSession">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>68</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>68</height>
+           </size>
+          </property>
+          <property name="cursor">
+           <cursorShape>PointingHandCursor</cursorShape>
+          </property>
+          <property name="text">
+           <string>투입 취소 (대기화면으로)</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

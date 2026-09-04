@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1920</width>
+    <height>1080</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Smart Recycle AI Kiosk</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+QWidget {
+    background-color: #0B0F17;
+    color: #F8FAFC;
+    font-family: 'Pretendard', 'Segoe UI', sans-serif;
+    font-size: 16px;
+}
+
+/* 상단 글로벌 헤더 */
+QFrame#frameHeader {
+    background-color: #111827;
+    border-bottom: 2px solid #1F2937;
+}
+QLabel#lblTitle {
+    color: #38BDF8;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    background: transparent;
+}
+QLabel#lblConnStatus {
+    background-color: #0F172A;
+    border: 2px solid #10B981;
+    border-radius: 16px;
+    padding: 8px 22px;
+    color: #10B981;
+    font-weight: 900;
+    font-size: 16px;
+}
+QLabel#lblConnStatus[online=&quot;false&quot;] {
+    border-color: #EF4444;
+    color: #EF4444;
+}
+
+/* 하단 수거함 적재 상태 바 */
+QFrame#frameBinStatus {
+    background-color: #0F172A;
+    border-top: 2px solid #1E293B;
+    border-bottom: 1.5px solid #1E293B;
+}
+QLabel#lblStatusTitle { font-size: 24px; font-weight: 900; color: #94A3B8; background: transparent; }
+QLabel.binNameLabel { font-size: 22px; font-weight: 800; color: #F1F5F9; background: transparent; }
+
+/* 수거함 대형 게이지 */
+QProgressBar.binProgressBar {
+    background-color: #080D14;
+    border: 2px solid #334155;
+    border-radius: 10px;
+    text-align: center;
+    color: #FFFFFF;
+    font-weight: 900;
+    font-size: 16px;
+}
+QProgressBar.binProgressBar::chunk {
+    border-radius: 7px;
+    margin: 2px;
+}
+QProgressBar#progressBarPaper::chunk { background-color: #F59E0B; }
+QProgressBar#progressBarCan::chunk { background-color: #10B981; }
+QProgressBar#progressBarPet::chunk { background-color: #38BDF8; }
+QProgressBar#progressBarVinyl::chunk { background-color: #A855F7; }
+
+/* 최하단 텔레메트리 바 */
+QLabel#lblTelemetry {
+    background-color: #090D15;
+    color: #64748B;
+    font-size: 13px;
+    font-weight: 600;
+    padding-left: 24px;
+}
+   </string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="mainVLayout">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <item>
+     <widget class="QFrame" name="frameHeader">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>76</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>76</height>
+       </size>
+      </property>
+      <layout class="QHBoxLayout" name="headerHLayout">
+       <property name="leftMargin">
+        <number>36</number>
+       </property>
+       <property name="rightMargin">
+        <number>36</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="lblTitle">
+         <property name="text">
+          <string>♻ SMART RECYCLE AI KIOSK</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="headerSpacer">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblConnStatus">
+         <property name="text">
+          <string>○ AI VISION OFFLINE</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QStackedWidget" name="stackedWidgetMain"/>
+    </item>
+    <item>
+     <widget class="QFrame" name="frameBinStatus">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>96</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>96</height>
+       </size>
+      </property>
+      <layout class="QHBoxLayout" name="binHLayout">
+       <property name="spacing">
+        <number>28</number>
+       </property>
+       <property name="leftMargin">
+        <number>40</number>
+       </property>
+       <property name="rightMargin">
+        <number>40</number>
+       </property>
+       <item>
+        <spacer name="binOuterLSpacer">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblStatusTitle">
+         <property name="text">
+          <string>📊 수거함 적재 상태</string>
+         </property>
+        </widget>
+       </item>
+
+       <!-- 1. 종이 -->
+       <item>
+        <widget class="QLabel" name="lblPaperText">
+         <property name="text">
+          <string>📦 종이</string>
+         </property>
+         <property name="class" stdset="0">
+          <string>binNameLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBarPaper">
+         <property name="minimumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="value">
+          <number>15</number>
+         </property>
+         <property name="class" stdset="0">
+          <string>binProgressBar</string>
+         </property>
+        </widget>
+       </item>
+
+       <!-- 2. 캔 -->
+       <item>
+        <widget class="QLabel" name="lblCanText">
+         <property name="text">
+          <string>🥫 캔</string>
+         </property>
+         <property name="class" stdset="0">
+          <string>binNameLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBarCan">
+         <property name="minimumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="value">
+          <number>35</number>
+         </property>
+         <property name="class" stdset="0">
+          <string>binProgressBar</string>
+         </property>
+        </widget>
+       </item>
+
+       <!-- 3. 페트 -->
+       <item>
+        <widget class="QLabel" name="lblPetText">
+         <property name="text">
+          <string>🧴 페트</string>
+         </property>
+         <property name="class" stdset="0">
+          <string>binNameLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBarPet">
+         <property name="minimumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="value">
+          <number>60</number>
+         </property>
+         <property name="class" stdset="0">
+          <string>binProgressBar</string>
+         </property>
+        </widget>
+       </item>
+
+       <!-- 4. 비닐 -->
+       <item>
+        <widget class="QLabel" name="lblVinylText">
+         <property name="text">
+          <string>🛍️ 비닐</string>
+         </property>
+         <property name="class" stdset="0">
+          <string>binNameLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBarVinyl">
+         <property name="minimumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>190</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="value">
+          <number>10</number>
+         </property>
+         <property name="class" stdset="0">
+          <string>binProgressBar</string>
+         </property>
+        </widget>
+       </item>
+
+       <item>
+        <spacer name="binOuterRSpacer">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="lblTelemetry">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>30</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>30</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>FPS: 0.0 | Infer: 0.0ms | Network Latency: 0.0ms | Jetson Stream Port: 9000</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
