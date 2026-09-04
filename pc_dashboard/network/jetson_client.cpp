@@ -13,7 +13,6 @@ JetsonClient::JetsonClient(const QString& host, quint16 port, QObject* parent)
     , m_host(host)
     , m_port(port)
 {
-    // 수신 버퍼 512KB 확장
     m_socket->setSocketOption(QAbstractSocket::ReceiveBufferSizeSocketOption, Config::SOCKET_BUFFER_RESERVE);
 
     connect(m_socket, &QTcpSocket::connected, this, &JetsonClient::onSocketConnected);
@@ -21,7 +20,6 @@ JetsonClient::JetsonClient(const QString& host, quint16 port, QObject* parent)
     connect(m_socket, &QTcpSocket::readyRead, this, &JetsonClient::onReadyRead);
     connect(m_socket, &QTcpSocket::errorOccurred, this, &JetsonClient::onSocketError);
 
-    // 자동 재연결 타이머 설정
     m_reconnectTimer->setInterval(Config::AUTO_RECONNECT_INTERVAL_MS);
     connect(m_reconnectTimer, &QTimer::timeout, this, &JetsonClient::onReconnectTimeout);
 }
@@ -94,12 +92,10 @@ void JetsonClient::onReadyRead()
 void JetsonClient::parseBuffer()
 {
     while (true) {
-        // 1. 헤더(8B) 수신 확인
         if (m_rxBuffer.size() < static_cast<int>(Config::HEADER_SIZE)) {
             return;
         }
 
-        // 2. Big-Endian uint32 2개(imgSize, jsonSize) 파싱
         quint32 imgSize = 0;
         quint32 jsonSize = 0;
         QDataStream stream(m_rxBuffer.left(Config::HEADER_SIZE));
@@ -108,19 +104,15 @@ void JetsonClient::parseBuffer()
 
         const int totalPacketSize = static_cast<int>(Config::HEADER_SIZE + imgSize + jsonSize);
 
-        // 3. 페이로드 전체 도착 대기
         if (m_rxBuffer.size() < totalPacketSize) {
             return;
         }
 
-        // 4. 데이터 분리 추출
         const QByteArray imgBytes = m_rxBuffer.mid(Config::HEADER_SIZE, imgSize);
         const QByteArray jsonBytes = m_rxBuffer.mid(Config::HEADER_SIZE + imgSize, jsonSize);
 
-        // 버퍼 소비
         m_rxBuffer.remove(0, totalPacketSize);
 
-        // 5. 영상 디코딩 (JPEG)
         if (!imgBytes.isEmpty()) {
             QPixmap pixmap;
             if (pixmap.loadFromData(reinterpret_cast<const uchar*>(imgBytes.constData()), imgBytes.size(), "JPG")) {
@@ -128,7 +120,6 @@ void JetsonClient::parseBuffer()
             }
         }
 
-        // 6. JSON 메타데이터 파싱
         if (!jsonBytes.isEmpty()) {
             processJsonMeta(jsonBytes);
         }
@@ -141,34 +132,10 @@ void JetsonClient::processJsonMeta(const QByteArray& jsonData)
     if (!doc.isObject())
         return;
 
-    QJsonObject root = doc.object();
-    FrameMetadata meta;
-    meta.timestamp = root.value("timestamp").toDouble();
-    meta.fps = root.value("fps").toDouble();
-    meta.inferMs = root.value("infer_ms").toDouble();
+    FrameMetadata meta = FrameMetadata::fromJson(doc.object());
 
-    // 네트워크 레이턴시 계산 (초 단위 epoch 비교)
     const double nowSec = QDateTime::currentMSecsSinceEpoch() / 1000.0;
     const double latencyMs = qMax(0.0, (nowSec - meta.timestamp) * 1000.0);
-
-    QJsonArray detArray = root.value("detections").toArray();
-    for (const QJsonValue& val : detArray) {
-        QJsonObject dObj = val.toObject();
-        Detection d;
-        d.classId = dObj.value("class_id").toInt();
-        d.className = dObj.value("class_name").toString();
-        d.confidence = dObj.value("confidence").toDouble();
-        d.category = Config::parseCategory(d.className);
-
-        // Box 형식 파싱
-        const QJsonArray bArr = dObj.value("box").toArray();
-        if (bArr.size() >= 4) {
-            d.box = QRect(QPoint(bArr[0].toInt(), bArr[1].toInt()),
-                QPoint(bArr[2].toInt(), bArr[3].toInt()));
-        }
-
-        meta.detections.append(d);
-    }
 
     emit sigMetadataReceived(meta);
     emit sigTelemetryUpdated(meta.fps, meta.inferMs, latencyMs);

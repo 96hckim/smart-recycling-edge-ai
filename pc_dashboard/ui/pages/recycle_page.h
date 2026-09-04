@@ -30,6 +30,9 @@ public:
     void updateDetectionState(const QString& className, double confidence, int debounceCount, const QRect& box = QRect());
     void updateSessionSummary(const SessionSummary& summary);
 
+    // [추가] 도어 개폐 상태 갱신 인터페이스
+    void updateDoorState(const HardwareDoorStatus& door);
+
 signals:
     void sigFinishSessionRequested();
     void sigCancelSessionRequested();
@@ -50,6 +53,9 @@ private:
     QString m_boxLabel { };
     bool m_isMember { false };
     QString m_userName { };
+
+    // [추가] 도어 열림 상태 플래그 (배너 오버라이트 방지)
+    bool m_isDoorOpen { false };
 };
 
 #endif // RECYCLE_PAGE_H

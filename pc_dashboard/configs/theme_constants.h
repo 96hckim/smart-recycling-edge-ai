@@ -43,7 +43,9 @@ namespace Idle {
     inline constexpr qreal QR_CORNER_RADIUS = 24.0;
 }
 
+// [수정] UITheme 내부이므로 UITheme::Recycle이 아니라 그냥 Recycle입니다.
 namespace Recycle {
+
     inline constexpr int BADGE_FONT_SIZE = 22;
     inline constexpr int BOX_PEN_WIDTH = 4;
     inline constexpr int BADGE_PAD_X = 14;
@@ -56,11 +58,13 @@ namespace Recycle {
     constexpr char POINTS_GUEST[] = "font-size: 32px; font-weight: 800; color: #F59E0B; background: transparent;";
     constexpr char BANNER_TEMPLATE[] = "background-color: %1; border: 2px solid %2; border-radius: 16px; color: %3; font-size: 22px; font-weight: 800; padding: 10px;";
 
+    // 배너 타입 (DOOR_OPEN 포함)
     enum class BannerType {
         READY,
         ANALYZING,
         CONFIRMED,
-        WARNING
+        WARNING,
+        DOOR_OPEN
     };
 
     struct BannerThemeDef {
@@ -80,6 +84,8 @@ namespace Recycle {
             return { "#10B981", "#10B981", "rgba(16, 185, 129, 0.15)" };
         case BannerType::WARNING:
             return { "#F1F5F9", "#94A3B8", "rgba(148, 163, 184, 0.2)" };
+        case BannerType::DOOR_OPEN:
+            return { "#34D399", "#059669", "rgba(5, 150, 105, 0.2)" };
         }
         return { "#FFFFFF", "#334155", "transparent" };
     }
@@ -96,6 +102,7 @@ namespace Recycle {
         constexpr char GUIDE_READY[] = "🎯 카메라 중앙 영역에 재활용품을 놓아주세요";
         constexpr char GUIDE_ANALYZING_FMT[] = "⏳ %1 인식 중... 고정해 주세요";
         constexpr char GUIDE_CONFIRMED_FMT[] = "✅ %1 인식 확정! 투입구에 넣어주세요";
+        constexpr char GUIDE_DOOR_OPEN_FMT[] = "🚪 %1 투입구 개방 중! 물품을 넣어주세요";
         constexpr char GUIDE_GENERAL_WARN[] = "⚠️ 미인식 품목 감지";
         constexpr char POINTS_MEMBER_FMT[] = "+ %1 P";
         constexpr char POINTS_GUEST_FMT[] = "%1 P (미적립)";

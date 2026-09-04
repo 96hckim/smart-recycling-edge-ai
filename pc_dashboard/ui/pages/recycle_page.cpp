@@ -54,10 +54,8 @@ void RecyclePage::updateFrame(const QPixmap& pixmap)
     if (targetSize.width() <= 0 || targetSize.height() <= 0)
         return;
 
-    // 1. 원본 영상을 화면(lblVideo) 크기 비율에 맞춰 스케일링
     QPixmap frame = pixmap.scaled(targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-    // 2. 확대된 화면 위에 직접 바운딩 박스 및 배지 렌더링
     if (!m_detectionBox.isNull() && pixmap.width() > 0 && pixmap.height() > 0) {
         const double scaleX = static_cast<double>(frame.width()) / pixmap.width();
         const double scaleY = static_cast<double>(frame.height()) / pixmap.height();
@@ -72,11 +70,9 @@ void RecyclePage::updateFrame(const QPixmap& pixmap)
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.setRenderHint(QPainter::TextAntialiasing, true);
 
-        // 1) 테마 색상 테두리
         painter.setPen(QPen(m_boxColor, UITheme::Recycle::BOX_PEN_WIDTH));
         painter.drawRect(scaledBox);
 
-        // 2) 박스 상단 한글 배지
         if (!m_boxLabel.isEmpty()) {
             QFont font(UITheme::FONT_FAMILY, UITheme::Recycle::BADGE_FONT_SIZE, QFont::Bold);
             font.setStyleHint(QFont::SansSerif);
@@ -102,7 +98,6 @@ void RecyclePage::updateFrame(const QPixmap& pixmap)
         }
     }
 
-    // 3. 표출
     ui->lblVideo->setPixmap(frame);
 }
 
@@ -111,7 +106,9 @@ void RecyclePage::updateDetectionState(const QString& className, double confiden
     if (className.isEmpty() || confidence < Config::MIN_CONFIDENCE_THRESHOLD) {
         m_detectionBox = QRect();
         m_boxLabel.clear();
-        setGuideBanner(UITheme::Recycle::BannerType::READY);
+        if (!m_isDoorOpen) {
+            setGuideBanner(UITheme::Recycle::BannerType::READY);
+        }
         return;
     }
 
@@ -121,6 +118,10 @@ void RecyclePage::updateDetectionState(const QString& className, double confiden
     m_detectionBox = box;
     m_boxColor = UITheme::getCategoryColor(cat);
     m_boxLabel = displayCategoryName;
+
+    if (m_isDoorOpen) {
+        return;
+    }
 
     if (debounceCount >= Config::STABLE_FRAME_THRESHOLD) {
         if (cat != RecycleCategory::UNKNOWN) {
@@ -133,15 +134,30 @@ void RecyclePage::updateDetectionState(const QString& className, double confiden
     }
 }
 
+void RecyclePage::updateDoorState(const HardwareDoorStatus& door)
+{
+    const bool wasOpen = m_isDoorOpen;
+    m_isDoorOpen = door.isOpen;
+
+    if (m_isDoorOpen) {
+        const RecycleCategory cat = Config::parseCategory(door.item);
+        const QString displayName = (cat != RecycleCategory::UNKNOWN)
+            ? Config::getCategoryNameKo(cat)
+            : (door.item.isEmpty() || door.item == "ALL" ? "투입구" : door.item);
+
+        setGuideBanner(UITheme::Recycle::BannerType::DOOR_OPEN, displayName);
+    } else if (wasOpen && !m_isDoorOpen) {
+        setGuideBanner(UITheme::Recycle::BannerType::READY);
+    }
+}
+
 void RecyclePage::updateSessionSummary(const SessionSummary& summary)
 {
-    // 순서: 종이 -> 캔 -> 페트 -> 비닐
     ui->lblPaperCount->setText(QString::number(summary.paperCount));
     ui->lblCanCount->setText(QString::number(summary.canCount));
     ui->lblPetCount->setText(QString::number(summary.petCount));
     ui->lblVinylCount->setText(QString::number(summary.vinylCount));
 
-    // 4개 품목 모두 정식 투입 유효 아이템
     const int validItemCount = summary.paperCount + summary.canCount + summary.petCount + summary.vinylCount;
     ui->btnFinishSession->setEnabled(validItemCount > 0);
 
@@ -165,11 +181,11 @@ void RecyclePage::resetState()
 {
     m_detectionBox = QRect();
     m_boxLabel.clear();
+    m_isDoorOpen = false;
 
     ui->lblVideo->clear();
     ui->lblVideo->setText(UITheme::Recycle::Text::VIDEO_INITIALIZING);
 
-    // 순서: 종이 -> 캔 -> 페트 -> 비닐
     ui->lblPaperCount->setText(QString::number(0));
     ui->lblCanCount->setText(QString::number(0));
     ui->lblPetCount->setText(QString::number(0));
@@ -209,6 +225,9 @@ void RecyclePage::setGuideBanner(UITheme::Recycle::BannerType type, const QStrin
         break;
     case UITheme::Recycle::BannerType::WARNING:
         message = UITheme::Recycle::Text::GUIDE_GENERAL_WARN;
+        break;
+    case UITheme::Recycle::BannerType::DOOR_OPEN:
+        message = QString(UITheme::Recycle::Text::GUIDE_DOOR_OPEN_FMT).arg(customText);
         break;
     }
 

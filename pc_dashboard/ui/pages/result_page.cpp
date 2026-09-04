@@ -159,6 +159,7 @@ void ResultPage::onCountdownTick()
     m_remainingSec--;
     if (m_remainingSec <= 0) {
         m_countdownTimer->stop();
+        emit sigReturnToIdleRequested();
     } else {
         ui->btnConfirm->setText(QString(UITheme::Result::Text::COUNTDOWN_BTN_FMT).arg(m_remainingSec));
     }

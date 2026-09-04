@@ -98,32 +98,51 @@ void MainWindow::onFrameReceived(const QPixmap& pixmap)
 
 void MainWindow::onMetadataReceived(const FrameMetadata& meta)
 {
-    if (ui->stackedWidgetMain->currentWidget() != m_recyclePage)
-        return;
+    // 1. 하단 적재함 수위 게이지 실시간 갱신 (전체 화면 공통)
+    updateBinLevels(meta.binLevels.paper, meta.binLevels.can, meta.binLevels.pet, meta.binLevels.vinyl);
 
+    // 2. 투입 세션 화면(RecyclePage)이 아닐 때는 비전 카운트 중단
+    if (ui->stackedWidgetMain->currentWidget() != m_recyclePage) {
+        return;
+    }
+
+    // 3. 도어 개폐 상태 반영 (배너 제어)
+    m_recyclePage->updateDoorState(meta.door);
+
+    // 4. 카메라 앞에 물체가 없는 경우
     if (meta.detections.isEmpty()) {
-        resetDetectionState();
+        if (!meta.door.isOpen) {
+            resetDetectionState();
+        }
         m_recyclePage->updateDetectionState("", 0.0, 0);
         return;
     }
 
     const Detection& top = meta.detections.first();
 
+    // 5. 실제 도어가 열려 있는 동안에는 중복 카운트 차단
+    if (meta.door.isOpen) {
+        m_consecutiveDetections = 0;
+        m_recyclePage->updateDetectionState(top.className, top.confidence, 0, top.box);
+        return;
+    }
+
+    // 6. 유효 품목 연속 감지 디바운싱 (18프레임 누적)
     if (top.category != RecycleCategory::UNKNOWN && top.category == m_lastDetectedCategory) {
         m_consecutiveDetections++;
     } else {
         m_lastDetectedCategory = top.category;
-        m_consecutiveDetections = 1;
+        m_consecutiveDetections = (top.category != RecycleCategory::UNKNOWN) ? 1 : 0;
         m_doorOpenedForCurrentItem = false;
     }
 
     m_recyclePage->updateDetectionState(top.className, top.confidence, m_consecutiveDetections, top.box);
 
+    // 7. 확정 기준(18프레임) 도달 시 딱 1회 세션 카운트 누적
     if (m_consecutiveDetections >= Config::STABLE_FRAME_THRESHOLD && !m_doorOpenedForCurrentItem) {
         m_doorOpenedForCurrentItem = true;
         m_currentSession.addItem(top.category, 1);
         m_recyclePage->updateSessionSummary(m_currentSession);
-        openBinDoor(top.category);
     }
 }
 
@@ -144,10 +163,19 @@ void MainWindow::resetDetectionState()
 // 순서: 종이 -> 캔 -> 페트 -> 비닐
 void MainWindow::updateBinLevels(int paper, int can, int pet, int vinyl)
 {
-    ui->progressBarPaper->setValue(std::clamp(paper, 0, Config::MAX_BIN_CAPACITY));
-    ui->progressBarCan->setValue(std::clamp(can, 0, Config::MAX_BIN_CAPACITY));
-    ui->progressBarPet->setValue(std::clamp(pet, 0, Config::MAX_BIN_CAPACITY));
-    ui->progressBarVinyl->setValue(std::clamp(vinyl, 0, Config::MAX_BIN_CAPACITY));
+    const int pVal = std::clamp(paper, 0, Config::MAX_BIN_CAPACITY);
+    const int cVal = std::clamp(can, 0, Config::MAX_BIN_CAPACITY);
+    const int ptVal = std::clamp(pet, 0, Config::MAX_BIN_CAPACITY);
+    const int vVal = std::clamp(vinyl, 0, Config::MAX_BIN_CAPACITY);
+
+    if (ui->progressBarPaper->value() != pVal)
+        ui->progressBarPaper->setValue(pVal);
+    if (ui->progressBarCan->value() != cVal)
+        ui->progressBarCan->setValue(cVal);
+    if (ui->progressBarPet->value() != ptVal)
+        ui->progressBarPet->setValue(ptVal);
+    if (ui->progressBarVinyl->value() != vVal)
+        ui->progressBarVinyl->setValue(vVal);
 }
 
 void MainWindow::updateConnectionStatus(bool connected)
