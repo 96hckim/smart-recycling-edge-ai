@@ -1,27 +1,30 @@
+"""모바일 앱 인증, QR 스캔 세션 바인딩 및 실시간 정산 수신 E2E 통합 테스트 시뮬레이터."""
+
 import asyncio
 import json
 
 import httpx
 import websockets
 
-# 테스트 대상 서버 및 키오스크 ID 설정
+# 테스트 환경 접속 파라미터
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 8000
 BIN_ID = 1
 MOCK_PHONE = "010-1234-5678"
-MOCK_NAME = "Admin"  # 이름 추가
+MOCK_NAME = "Admin"
 
 HTTP_BASE_URL = f"http://{SERVER_HOST}:{SERVER_PORT}"
 WS_URL = f"ws://{SERVER_HOST}:{SERVER_PORT}/ws/kiosk/{BIN_ID}/mobile"
 
 
 async def main() -> None:
+    """HTTP 및 WebSocket 채널을 결합한 모바일-키오스크 연동 시나리오 전체 검증."""
     print("\n=======================================================")
     print(" 📱 모바일 앱 가상 시뮬레이터 (Mock Mobile Client)")
     print("=======================================================\n")
 
     async with httpx.AsyncClient(base_url=HTTP_BASE_URL) as client:
-        # [Step 1] 모바일 앱 간이 로그인 (이름 포함)
+        # 1. 회원 간이 로그인 및 프로필 획득
         print(
             f"[1단계] 회원 간이 로그인 시도 (Phone: {MOCK_PHONE}, Name: {MOCK_NAME})..."
         )
@@ -42,12 +45,12 @@ async def main() -> None:
             f"✅ 로그인 성공! (User ID: {user_id}, 이름: {user_name}, 현재 포인트: {points}P)\n"
         )
 
-        # [Step 2] 모바일 전용 WebSocket 방 입장 (키오스크 배출 완료 실시간 수신용)
+        # 2. 키오스크 1:1 대응 모바일 전용 WebSocket 채널 구독
         print(f"[2단계] 모바일 WebSocket 방 접속 중 -> {WS_URL}")
         async with websockets.connect(WS_URL) as ws:
             print(f"✅ WebSocket 방 접속 완료! (Bin ID: {BIN_ID} 대기실)\n")
 
-            # [Step 3] QR 코드 스캔 트리거
+            # 3. 키오스크 화면의 QR 코드 스캔 트리거 (바인딩 API 호출)
             input("👉 [Enter]를 누르면 키오스크 화면의 QR 코드를 스캔합니다...")
             print("\n[3단계] QR 바인딩 요청 전송 (POST /api/kiosk/bind)...")
 
@@ -67,7 +70,7 @@ async def main() -> None:
                 "⏳ 키오스크에서 품목 투입 후 [투입 완료] 버튼을 누를 때까지 대기합니다...\n"
             )
 
-            # [Step 4] 키오스크가 정산을 끝냈을 때 날아오는 RECYCLE_COMPLETE 대기
+            # 4. 키오스크 투입 완료 시 서버가 브로드캐스트하는 RECYCLE_COMPLETE 이벤트 폴링
             while True:
                 msg = await ws.recv()
                 event_data = json.loads(msg)
@@ -83,7 +86,7 @@ async def main() -> None:
                     print(f" - 누적 포인트: {event_data.get('total_points')}P")
                     break
 
-        # [Step 5] DB 저장 데이터 최종 확인
+        # 5. DB 영속성 검증 (저장된 정산 이력 REST API 조회)
         print("\n[5단계] 백엔드 DB 이력(GET /api/users/{id}/logs) 최종 확인 중...")
         logs_resp = await client.get(f"/api/users/{user_id}/logs")
         if logs_resp.status_code == 200:
