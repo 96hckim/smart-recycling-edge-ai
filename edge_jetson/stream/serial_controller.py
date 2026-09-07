@@ -1,43 +1,45 @@
 """
 stream/serial_controller.py
 
-STM32 UART 서보모터 제어 통신 모듈
+STM32 UART I/O 통신 관리 모듈 (ProtocolParser 위임 구조)
 """
 
+import threading
 import time
 
 import serial
 from serial import SerialException
 
+from stream.protocol import BinLevels, DoorAction, DoorStatus, ProtocolParser
+
 
 class SerialController:
-    """STM32로 쓰레기 분류 명령을 전송하고 모터 동작 쿨다운을 관리하는 컨트롤러"""
-
     def __init__(
         self,
         port: str = "/dev/ttyTHS1",
         baudrate: int = 115200,
         timeout: float = 0.1,
         enabled: bool = False,
-        cooldown_sec: float = 2.0,
     ):
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
         self.enabled = enabled
-        self.cooldown_sec = cooldown_sec
 
         self.ser: serial.Serial | None = None
-        self.last_trigger_time: float = 0.0
-        self.last_triggered_class: str | None = None
+        self.running: bool = False
+        self.rx_thread: threading.Thread | None = None
+
+        self._lock = threading.Lock()
+        self._bin_levels = BinLevels()
+        self._door_status = DoorStatus()
 
         if self.enabled:
             self._connect()
         else:
-            print("[SERIAL] STM32 시리얼 비활성화 모드 (콘솔 시뮬레이션 동작)")
+            print("[SERIAL] 시뮬레이션 모드로 시작합니다.")
 
     def _connect(self):
-        """시리얼 포트 연결 초기화"""
         try:
             self.ser = serial.Serial(
                 port=self.port,
@@ -45,60 +47,72 @@ class SerialController:
                 timeout=self.timeout,
                 write_timeout=self.timeout,
             )
-            print(f"[SERIAL] STM32 연결 완료 -> {self.port} ({self.baudrate} bps)")
+            self.running = True
+            self.rx_thread = threading.Thread(
+                target=self._rx_loop, name="SerialRxWorker", daemon=True
+            )
+            self.rx_thread.start()
+            print(f"[SERIAL] 연결 성공 -> {self.port} ({self.baudrate} bps)")
         except (SerialException, OSError) as e:
-            print(f"[SERIAL ERROR] STM32 포트({self.port}) 열기 실패: {e}")
+            print(f"[SERIAL ERROR] 포트 연결 실패: {e}")
             self.ser = None
             self.enabled = False
 
-    def send_command(self, class_name: str, force: bool = False) -> bool:
-        """
-        STM32로 분류 명령 전송 (대문자 + 개행문자)
+    def _rx_loop(self):
+        """프로토콜 파서를 통해 수신 라인을 객체로 변환 및 상태 갱신"""
+        while self.running and self.ser is not None:
+            try:
+                line = self.ser.readline().decode("utf-8", errors="ignore").strip()
+                if not line:
+                    continue
 
-        :param class_name: 분류 클래스명 ("can", "pet", "paper" 등)
-        :param force: 쿨다운을 무시하고 즉시 강제 전송 여부
-        """
-        curr_time = time.time()
+                packet_type, data = ProtocolParser.parse_mcu_line(line)
+                if packet_type == "BIN" and isinstance(data, BinLevels):
+                    with self._lock:
+                        self._bin_levels = data
+                elif packet_type == "DOOR" and isinstance(data, DoorStatus):
+                    with self._lock:
+                        self._door_status = data
 
-        # 모터 동작 중 중복 전송 방지 (쿨다운 검사)
-        if not force and (curr_time - self.last_trigger_time) < self.cooldown_sec:
-            return False
+            except (SerialException, OSError):
+                time.sleep(0.01)
 
-        clean_name = class_name.strip().upper()
-        payload = f"{clean_name}\n".encode()
+    def send_command(self, action: DoorAction, item_name: str | None = None) -> bool:
+        """DoorAction 열거형과 품목명을 받아 프로토콜 규격으로 전송"""
+        payload = ProtocolParser.encode_door_command(action, item_name)
+        return self._write(payload)
 
-        # 시뮬레이션 모드 (보드 미연결 시 로그 출력)
+    def _write(self, text: str) -> bool:
         if not self.enabled or self.ser is None:
-            print(f"[SERIAL SIMULATE] -> STM32 명령: {clean_name}")
-            self.last_trigger_time = curr_time
-            self.last_triggered_class = clean_name
+            print(f"[SERIAL SIMULATE TX] -> {text.strip()}")
             return True
 
-        # 실제 UART 데이터 송신
         try:
-            self.ser.write(payload)
+            self.ser.write(text.encode("utf-8"))
             self.ser.flush()
-            self.last_trigger_time = curr_time
-            self.last_triggered_class = clean_name
-            print(f"[SERIAL TX] -> STM32: {clean_name}")
+            print(f"[SERIAL TX] -> {text.strip()}")
             return True
         except (SerialException, OSError) as e:
-            print(f"[SERIAL ERROR] 데이터 송신 실패: {e}")
+            print(f"[SERIAL ERROR] 송신 실패: {e}")
             return False
 
-    def reset_cooldown(self):
-        """쿨다운 타이머 강제 초기화"""
-        self.last_trigger_time = 0.0
+    def get_latest_data(self) -> tuple[dict[str, int], dict[str, str]]:
+        """Qt 관제 전송용 딕셔너리 반환"""
+        with self._lock:
+            return self._bin_levels.to_dict(), self._door_status.to_dict()
 
     def close(self):
-        """시리얼 포트 안전 해제 (중복 호출 안전)"""
-        if self.ser is not None:
+        self.running = False
+        if self.rx_thread and self.rx_thread.is_alive():
+            self.rx_thread.join(timeout=0.5)
+            self.rx_thread = None
+
+        if self.ser and self.ser.is_open:
             try:
-                if self.ser.is_open:
-                    self.ser.close()
-                    print(f"[SERIAL] {self.port} 포트 해제 완료")
-            except (SerialException, OSError) as e:
-                print(f"[SERIAL ERROR] 포트 해제 예외: {e}")
+                self.ser.close()
+                print(f"[SERIAL] {self.port} 연결 해제 완료")
+            except (SerialException, OSError):
+                pass
             finally:
                 self.ser = None
 
