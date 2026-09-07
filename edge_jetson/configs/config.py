@@ -15,12 +15,12 @@ class CameraConfig:
     height: int = 480
     fps: int = 60
     buffer_size: int = 1  # 큐 프레임 지연(Lag) 방지용 최소 버퍼 크기
-    flip_horizontal: bool = True  # 키오스크 사용자 인터랙션용 좌우 반전
+    flip_horizontal: bool = True  # 키오스크 인터랙션용 좌우 반전
 
 
 @dataclass(frozen=True)
 class ModelConfig:
-    """YOLOv11 TensorRT 엔진 및 추론 임계값 설정."""
+    """YOLOv11 TensorRT 엔진 경로 및 추론 임계값 설정."""
 
     engine_path: Path = JETSON_ROOT_DIR / "models" / "rps_yolo11n_custom_640.engine"
     input_shape: tuple[int, int] = (640, 640)
@@ -35,17 +35,17 @@ class ModelConfig:
 
 @dataclass(frozen=True)
 class NetworkConfig:
-    """PC 관제 대시보드 연동 TCP 스트리밍 소켓 설정."""
+    """관제 PC 연동 TCP 영상 스트리밍 소켓 설정."""
 
     host: str = "0.0.0.0"
     port: int = 9000
-    jpeg_quality: int = 70  # 전송 대역폭 절감과 영상 품질 간 최적 균형값
+    jpeg_quality: int = 70  # 전송 대역폭 절감과 화질 간 최적 균형값
     socket_timeout: float = 1.0
 
 
 @dataclass(frozen=True)
 class SerialConfig:
-    """STM32 MCU UART 통신 설정."""
+    """STM32 MCU UART 시리얼 통신 설정."""
 
     port: str = "/tmp/ttyV0"  # "/dev/ttyTHS1"
     baudrate: int = 115200
@@ -55,7 +55,7 @@ class SerialConfig:
 
 @dataclass(frozen=True)
 class DoorConfig:
-    """수거함 도어 FSM 디바운스 및 안전 타이머 설정."""
+    """수거함 도어 FSM 디바운스 및 타임아웃 파라미터."""
 
     stable_frames: int = 15  # 오검출 방지용 연속 인식 프레임 수 (약 0.5초)
     min_hold_sec: float = 2.0  # 투입 안전을 위한 최소 개방 유지 시간 (초)

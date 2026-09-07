@@ -20,6 +20,7 @@ def main():
     print("[EDGE AI] 스마트 분리수거 비전 시스템 부팅 중...")
     print("=" * 60)
 
+    # 1. 하드웨어 및 파이프라인 서브시스템 초기화
     camera = CameraStream(
         device_id=cfg.cam.device_id,
         width=cfg.cam.width,
@@ -58,6 +59,7 @@ def main():
     key_reader = NonBlockingKeyReader()
     is_running = True
 
+    # SIGINT(Ctrl+C) 및 SIGTERM 수신 시 안전 종료 플래그 설정
     def handle_signal(sig, frame):
         nonlocal is_running
         print("\n[STOP] 종료 시그널 수신")
@@ -70,31 +72,37 @@ def main():
     prev_time = time.time()
 
     try:
+        # 2. 실시간 엣지 파이프라인 메인 루프
         while is_running:
+            # 논블로킹 키 입력 감지 ('q' 입력 시 종료)
             key = key_reader.get_key()
             if key and key.lower() == "q":
                 break
 
+            # 비차단 클라이언트 접속 폴링
             if not socket_server.is_connected:
                 socket_server.accept_client()
 
             ret, frame = camera.read()
             if not ret or frame is None:
-                time.sleep(0.002)  # 프레임 갱신 대기 시 CPU 과점유 방지 (2ms 대기)
+                time.sleep(0.002)  # 프레임 대기 시 CPU 과점유(Busy-wait) 방지
                 continue
 
+            # 비전 AI 추론 및 지연시간(Latency) 계측
             t0 = time.time()
             detections = detector.detect(frame)
             infer_ms = (time.time() - t0) * 1000.0
 
+            # 감지 결과 기반 수거함 도어 FSM 상태 전이
             door_ctrl.process_detections(detections)
 
+            # 파이프라인 실효 처리 속도(FPS) 계산
             curr_time = time.time()
             time_diff = curr_time - prev_time
             fps = 1.0 / time_diff if time_diff > 0 else 0.0
             prev_time = curr_time
 
-            # 소켓 클라이언트 연결 시에만 인코딩 및 바이너리 패킷 송신
+            # 관제 PC 연결 시에만 JPEG 압축 및 텔레메트리 바이너리 전송 (불필요한 연산 방지)
             if socket_server.is_connected:
                 bin_levels, door_status = serial_ctrl.get_latest_data()
                 meta = {
@@ -108,6 +116,7 @@ def main():
                 socket_server.send_frame(frame, meta)
 
     finally:
+        # 3. 종료 시 하드웨어 I/O, 네트워크 및 GPU 메모리 안전 일괄 해제
         print("\n[CLEANUP] 전체 리소스를 안전하게 해제합니다...")
         with suppress(Exception):
             key_reader.restore()

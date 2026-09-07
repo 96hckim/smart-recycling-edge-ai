@@ -5,14 +5,14 @@ from enum import Enum
 
 
 class DoorAction(str, Enum):
-    """도어 구동 요청 액션 열거형."""
+    """도어 제어 액션 규격 (OPEN / CLOSE)."""
 
     OPEN = "OPEN"
     CLOSE = "CLOSE"
 
 
 class DoorState(str, Enum):
-    """MCU 리미트 센서 기반 도어 물리 상태 열거형."""
+    """MCU 리미트 센서 기반 도어 물리 상태."""
 
     OPEN = "OPEN"
     CLOSED = "CLOSED"
@@ -29,7 +29,7 @@ class BinLevels:
     vinyl: int = 0
 
     def to_dict(self) -> dict[str, int]:
-        """대시보드 전송용 딕셔너리 변환."""
+        """관제 PC 대시보드 전송용 딕셔너리 변환."""
         return {
             "paper": self.paper,
             "can": self.can,
@@ -40,13 +40,13 @@ class BinLevels:
 
 @dataclass(frozen=True)
 class DoorStatus:
-    """도어 상태 및 제어 품목 정보 모델."""
+    """도어 현재 물리 상태 및 제어 품목 정보 모델."""
 
     item: str = "ALL"
     state: DoorState = DoorState.CLOSED
 
     def to_dict(self) -> dict[str, str]:
-        """대시보드 전송용 딕셔너리 변환."""
+        """관제 PC 대시보드 전송용 딕셔너리 변환."""
         return {"item": self.item, "state": self.state.value}
 
 

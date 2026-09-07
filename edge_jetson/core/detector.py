@@ -19,14 +19,14 @@ class YOLOv11Detector:
         iou_thresh: float = 0.45,
         class_names: tuple[str, ...] = ("paper", "rock", "scissors"),
     ):
-        """검출 파라미터 설정 및 Letterbox 캔버스 버퍼 사전 할당."""
+        """검출 하이퍼파라미터 설정 및 매 프레임 버퍼 재생성 방지용 캔버스 캐싱."""
         self.engine = engine
         self.input_shape = input_shape
         self.conf_thresh = conf_thresh
         self.iou_thresh = iou_thresh
         self.class_names = class_names
 
-        # 매 프레임 np.full 메모리 재할당 오버헤드 방지용 캔버스 캐싱
+        # 패딩 캔버스 메모리 재할당 오버헤드를 막기 위한 114 Gray 템플릿 캐싱
         target_w, target_h = self.input_shape
         self._canvas_template = np.full((target_h, target_w, 3), 114, dtype=np.uint8)
 
@@ -46,7 +46,7 @@ class YOLOv11Detector:
         pad_h = (target_h - nh) // 2
         canvas[pad_h : pad_h + nh, pad_w : pad_w + nw] = resized
 
-        # BGR->RGB 변환, 0~1 정규화, HWC->NCHW 전치를 C++ 레벨에서 단일 패스 처리
+        # BGR->RGB 변환, 0~1 정규화, HWC->NCHW 전치를 단일 C++ 루틴으로 고속 처리
         blob = cv2.dnn.blobFromImage(
             canvas,
             scalefactor=1.0 / 255.0,
@@ -66,7 +66,7 @@ class YOLOv11Detector:
         return blob, meta
 
     def detect(self, img: np.ndarray) -> list[dict[str, Any]]:
-        """전처리 -> TensorRT 추론 -> NMS 후처리 단일 파이프라인 실행."""
+        """전처리 -> TensorRT 엔진 추론 -> NMS 후처리 단일 파이프라인 실행."""
         blob, meta = self.preprocess(img)
         raw_output = self.engine.execute(blob)
         return self._postprocess(raw_output, meta)
@@ -74,7 +74,7 @@ class YOLOv11Detector:
     def _postprocess(
         self, output: np.ndarray, meta: dict[str, Any]
     ) -> list[dict[str, Any]]:
-        """추론 텐서 신뢰도 필터링, 원본 좌표 복원 및 OpenCV C++ NMS 적용."""
+        """신뢰도 벡터 마스킹, 원본 좌표계 역변환 및 OpenCV C++ NMS 적용."""
         preds = np.squeeze(output)
         if preds.shape[0] < preds.shape[1]:
             preds = preds.T
@@ -83,7 +83,7 @@ class YOLOv11Detector:
         confidences = np.max(scores, axis=1)
         class_ids = np.argmax(scores, axis=1)
 
-        # 8,400개 앵커 박스 연산 오버헤드 배제를 위한 신뢰도 1차 벡터 필터링
+        # 8,400개 앵커 박스 전체 연산 낭비를 줄이기 위한 신뢰도 1차 벡터 필터링
         mask = confidences >= self.conf_thresh
         if not np.any(mask):
             return []
@@ -96,7 +96,7 @@ class YOLOv11Detector:
         pad_w, pad_h = meta["pad_w"], meta["pad_h"]
         orig_w, orig_h = meta["orig_w"], meta["orig_h"]
 
-        # 중심 좌표계(cx, cy, w, h) -> 원본 좌표계(x1, y1, x2, y2) 일괄 복원
+        # 캔버스 중심 좌표계(cx, cy, w, h) -> 원본 영상 좌표계(x1, y1, x2, y2) 일괄 복원
         cx, cy = filtered_boxes[:, 0], filtered_boxes[:, 1]
         w, h = filtered_boxes[:, 2], filtered_boxes[:, 3]
 
@@ -111,7 +111,7 @@ class YOLOv11Detector:
         confs_list = filtered_conf.tolist()
         cls_ids_list = filtered_cls.tolist()
 
-        # Python 루프 대비 수십 배 고속인 OpenCV C++ NMS 호출
+        # Python 이중 루프 대비 수십 배 빠른 OpenCV C++ 바인딩 NMS 사용
         indices = cv2.dnn.NMSBoxes(
             boxes_for_nms, confs_list, self.conf_thresh, self.iou_thresh
         )
