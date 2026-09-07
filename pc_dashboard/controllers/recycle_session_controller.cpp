@@ -1,13 +1,16 @@
+﻿/**
+ * 연속 인식 디바운스 및 하드웨어 투입 연동 비전 카운팅 FSM 구현부.
+ */
 #include "recycle_session_controller.h"
 #include "theme_constants.h"
 #include <QDebug>
 
-RecycleSessionController::RecycleSessionController(QObject *parent)
+RecycleSessionController::RecycleSessionController(QObject* parent)
     : QObject(parent)
 {
 }
 
-void RecycleSessionController::startSession(bool isMember, const QString &userName, int userId)
+void RecycleSessionController::startSession(bool isMember, const QString& userName, int userId)
 {
     m_isActive = true;
     m_summary.reset();
@@ -41,19 +44,17 @@ void RecycleSessionController::cancelSession()
     m_userId = -1;
 }
 
-void RecycleSessionController::processFrameMetadata(const FrameMetadata &meta)
+void RecycleSessionController::processFrameMetadata(const FrameMetadata& meta)
 {
-    if (!m_isActive)
-    {
+    if (!m_isActive) {
         return;
     }
 
     const bool hasDetection = !meta.detections.isEmpty();
     const Detection top = hasDetection ? meta.detections.first() : Detection();
 
-    // 1. 도어 열림 (OPEN): 비전 카운팅 완전 중단
-    if (meta.door.isOpen)
-    {
+    // 1. 하드웨어 도어 개방 중: 투입 진행 중인 물체의 중복 카운트 방지를 위해 비전 카운팅 중단 (Interlock)
+    if (meta.door.isOpen) {
         m_consecutiveDetections = 0;
         emit sigDetectionBoxUpdated(top.className, top.confidence, 0, top.box);
 
@@ -71,9 +72,8 @@ void RecycleSessionController::processFrameMetadata(const FrameMetadata &meta)
         return;
     }
 
-    // 2. 물체 없음: 대기 상태로 리셋
-    if (!hasDetection || top.category == RecycleCategory::UNKNOWN)
-    {
+    // 2. 검출 객체 부재 또는 미분류: 대기 상태 복귀
+    if (!hasDetection || top.category == RecycleCategory::UNKNOWN) {
         m_consecutiveDetections = 0;
         m_lastCategory = RecycleCategory::UNKNOWN;
         m_itemCounted = false;
@@ -83,9 +83,8 @@ void RecycleSessionController::processFrameMetadata(const FrameMetadata &meta)
         return;
     }
 
-    // 3. 물체 변경 시 디바운스 리셋
-    if (top.category != m_lastCategory)
-    {
+    // 3. 검출 품목 변경 감지: 이전 디바운스 카운트 초기화
+    if (top.category != m_lastCategory) {
         m_lastCategory = top.category;
         m_consecutiveDetections = 0;
         m_itemCounted = false;
@@ -94,11 +93,9 @@ void RecycleSessionController::processFrameMetadata(const FrameMetadata &meta)
     m_consecutiveDetections++;
     emit sigDetectionBoxUpdated(top.className, top.confidence, m_consecutiveDetections, top.box);
 
-    // 4. 18프레임 연속 인식 시 1회 카운트 (+1)
-    if (m_consecutiveDetections >= Config::STABLE_FRAME_THRESHOLD)
-    {
-        if (!m_itemCounted)
-        {
+    // 4. 안정 프레임(18회) 연속 감지 시 단일 객체 투입으로 확정 처리 (중복 가산 방지 플래그 적용)
+    if (m_consecutiveDetections >= Config::STABLE_FRAME_THRESHOLD) {
+        if (!m_itemCounted) {
             m_itemCounted = true;
             m_summary.addItem(top.category, 1);
             emit sigSessionUpdated(m_summary);
@@ -108,11 +105,9 @@ void RecycleSessionController::processFrameMetadata(const FrameMetadata &meta)
                      << "(총" << m_summary.totalPoints << "P)";
         }
         emit sigGuideBannerRequested(static_cast<int>(UITheme::Recycle::BannerType::CONFIRMED),
-                                     Config::getCategoryNameKo(top.category));
-    }
-    else
-    {
+            Config::getCategoryNameKo(top.category));
+    } else {
         emit sigGuideBannerRequested(static_cast<int>(UITheme::Recycle::BannerType::ANALYZING),
-                                     Config::getCategoryNameKo(top.category));
+            Config::getCategoryNameKo(top.category));
     }
 }

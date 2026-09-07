@@ -1,3 +1,6 @@
+﻿/**
+ * 키오스크 최상위 윈도우, 화면 스택 라우팅 및 비전/백엔드 이벤트 오케스트레이터 헤더.
+ */
 #pragma once
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
@@ -7,9 +10,8 @@
 #include <QPixmap>
 
 QT_BEGIN_NAMESPACE
-namespace Ui
-{
-    class MainWindow;
+namespace Ui {
+class MainWindow;
 }
 QT_END_NAMESPACE
 
@@ -20,37 +22,36 @@ class JetsonClient;
 class ServerClient;
 class RecycleSessionController;
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
 
-    // 순서: 종이 -> 캔 -> 페트 -> 비닐
+    // 수거함 4개 구역 적재량 게이지 수치 갱신 (종이/캔/페트/비닐)
     void updateBinLevels(int paper, int can, int pet, int vinyl);
-    void updateBinLevels(const BinStatus &status);
+    // 값 변경 감지 캐시(`m_cachedBinLevels`)를 적용한 적재 게이지 최적화 갱신
+    void updateBinLevels(const BinStatus& status);
 
 public slots:
+    // AI 엣지 디바이스 TCP 연결 상태 인디케이터 갱신
     void updateConnectionStatus(bool connected);
+    // 상단 상태바 성능 텔레메트리(FPS, 추론시간, 지연시간) 갱신
     void updateTelemetry(double fps, double inferMs, double latencyMs);
 
 private slots:
-    // Jetson Client Slots
-    void onFrameReceived(const QPixmap &pixmap);
-    void onMetadataReceived(const FrameMetadata &meta);
+    void onFrameReceived(const QPixmap& pixmap);
+    void onMetadataReceived(const FrameMetadata& meta);
 
-    // Page Navigation Slots
-    void onMemberStartRequested(const QString &userId);
+    void onMemberStartRequested(const QString& userId);
     void onGuestStartRequested();
     void onRecycleFinished();
     void onReturnToIdle();
 
-    // FastAPI Server Client Slots
-    void onUserAuthenticated(int userId, const QString &name, const QString &phone, int currentPoints);
+    void onUserAuthenticated(int userId, const QString& name, const QString& phone, int currentPoints);
     void onSubmitCompleted(int logId, int totalPoints);
-    void onNetworkError(const QString &errorMessage);
+    void onNetworkError(const QString& errorMessage);
 
 private:
     void initPages();
@@ -59,16 +60,16 @@ private:
     void initSessionController();
 
 private:
-    Ui::MainWindow *ui;
-    IdlePage *m_idlePage{nullptr};
-    RecyclePage *m_recyclePage{nullptr};
-    ResultPage *m_resultPage{nullptr};
-    JetsonClient *m_jetsonClient{nullptr};
-    ServerClient *m_serverClient{nullptr};
-    RecycleSessionController *m_sessionController{nullptr};
+    Ui::MainWindow* ui;
+    IdlePage* m_idlePage { nullptr };
+    RecyclePage* m_recyclePage { nullptr };
+    ResultPage* m_resultPage { nullptr };
+    JetsonClient* m_jetsonClient { nullptr };
+    ServerClient* m_serverClient { nullptr };
+    RecycleSessionController* m_sessionController { nullptr };
 
-    // 적재함 레벨 변경 감지 캐시 (불필요한 리페인트 방지)
-    BinStatus m_cachedBinLevels{-1, -1, -1, -1};
+    // 매 프레임 수신되는 불필요한 UI 프로그레스바 리페인트를 방지하기 위한 상태 캐시
+    BinStatus m_cachedBinLevels { -1, -1, -1, -1 };
 };
 
 #endif // MAINWINDOW_H

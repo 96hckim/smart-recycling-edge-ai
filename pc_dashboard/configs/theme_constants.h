@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿/**
+ * 키오스크 UI 테마 색상, 동적 배너 스타일시트 및 정적 텍스트 리소스 정의 헤더.
+ */
+#pragma once
 #ifndef THEME_CONSTANTS_H
 #define THEME_CONSTANTS_H
 
@@ -14,18 +17,18 @@ constexpr char PROP_BANNER_STATUS[] = "bannerStatus";
 inline constexpr const char* PROP_ACTIVE = "active";
 inline const QString FONT_FAMILY = "Pretendard";
 
-// 품목별 테마 색상 (종이: 호박색, 캔: 에메랄드, 페트: 하늘색, 비닐: 보라색 계열)
+// 품목별 비전 BBox 및 UI 시각 피드백 테마 컬러 반환
 inline QColor getCategoryColor(RecycleCategory cat)
 {
     switch (cat) {
     case RecycleCategory::PAPER:
-        return QColor("#F59E0B");
+        return QColor("#F59E0B"); // 호박색 (Paper)
     case RecycleCategory::CAN:
-        return QColor("#10B981");
+        return QColor("#10B981"); // 에메랄드 (Can)
     case RecycleCategory::PET:
-        return QColor("#38BDF8");
+        return QColor("#38BDF8"); // 하늘색 (PET)
     case RecycleCategory::VINYL:
-        return QColor("#A855F7");
+        return QColor("#A855F7"); // 보라색 (Vinyl)
     default:
         return QColor("#10B981");
     }
@@ -43,7 +46,6 @@ namespace Idle {
     inline constexpr qreal QR_CORNER_RADIUS = 24.0;
 }
 
-// [수정] UITheme 내부이므로 UITheme::Recycle이 아니라 그냥 Recycle입니다.
 namespace Recycle {
 
     inline constexpr int BADGE_FONT_SIZE = 22;
@@ -58,7 +60,7 @@ namespace Recycle {
     constexpr char POINTS_GUEST[] = "font-size: 32px; font-weight: 800; color: #F59E0B; background: transparent;";
     constexpr char BANNER_TEMPLATE[] = "background-color: %1; border: 2px solid %2; border-radius: 16px; color: %3; font-size: 22px; font-weight: 800; padding: 10px;";
 
-    // 배너 타입 (DOOR_OPEN 포함)
+    // 비전 인식 및 하드웨어 연동 상태에 따른 동적 안내 배너 타입
     enum class BannerType {
         READY,
         ANALYZING,
@@ -73,6 +75,7 @@ namespace Recycle {
         const char* bgColor;
     };
 
+    // 배너 상태별 스타일 테마 반환
     inline BannerThemeDef getBannerTheme(BannerType type)
     {
         switch (type) {

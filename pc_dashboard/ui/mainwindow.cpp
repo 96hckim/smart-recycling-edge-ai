@@ -1,4 +1,7 @@
-﻿#include "mainwindow.h"
+﻿/**
+ * 키오스크 전체 서브시스템 결합, 시그널-슬롯 디스패칭 및 페이지 라우터 구현부.
+ */
+#include "mainwindow.h"
 #include "idle_page.h"
 #include "jetson_client.h"
 #include "recycle_page.h"
@@ -16,6 +19,7 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui->setupUi(this);
 
+    // 순차 서브시스템 의존성 주입 및 통신 채널 기동
     initPages();
     initSessionController();
     initJetsonClient();
@@ -38,12 +42,15 @@ void MainWindow::initPages()
     ui->stackedWidgetMain->addWidget(m_resultPage);
     ui->stackedWidgetMain->setCurrentWidget(m_idlePage);
 
+    // 대기 화면 -> 배출 세션 화면 진입 라우팅
     connect(m_idlePage, &IdlePage::sigMemberStartRequested, this, &MainWindow::onMemberStartRequested);
     connect(m_idlePage, &IdlePage::sigGuestStartRequested, this, &MainWindow::onGuestStartRequested);
 
+    // 배출 세션 화면 -> 결과 화면 / 세션 취소 라우팅
     connect(m_recyclePage, &RecyclePage::sigFinishSessionRequested, this, &MainWindow::onRecycleFinished);
     connect(m_recyclePage, &RecyclePage::sigCancelSessionRequested, this, &MainWindow::onReturnToIdle);
 
+    // 정산 결과 화면 -> 초기 대기 화면 복귀 라우팅
     connect(m_resultPage, &ResultPage::sigReturnToIdleRequested, this, &MainWindow::onReturnToIdle);
 }
 
@@ -51,19 +58,19 @@ void MainWindow::initSessionController()
 {
     m_sessionController = new RecycleSessionController(this);
 
-    // 세션 카운트 및 통계 갱신
+    // 투입 세션 통계 갱신 시 UI 동기화
     connect(m_sessionController, &RecycleSessionController::sigSessionUpdated,
-            m_recyclePage, &RecyclePage::updateSessionSummary);
+        m_recyclePage, &RecyclePage::updateSessionSummary);
 
-    // 카메라 바운딩 박스 오버레이
+    // 디바운스 확정 및 카메라 BBox 오버레이 좌표 전달
     connect(m_sessionController, &RecycleSessionController::sigDetectionBoxUpdated,
-            m_recyclePage, &RecyclePage::updateDetectionState);
+        m_recyclePage, &RecyclePage::updateDetectionState);
 
-    // 가이드 배너 동기화
+    // 투입 안내 배너 상태 동기화
     connect(m_sessionController, &RecycleSessionController::sigGuideBannerRequested,
-            this, [this](int type, const QString& text) {
-                m_recyclePage->setGuideBanner(static_cast<UITheme::Recycle::BannerType>(type), text);
-            });
+        this, [this](int type, const QString& text) {
+            m_recyclePage->setGuideBanner(static_cast<UITheme::Recycle::BannerType>(type), text);
+        });
 }
 
 void MainWindow::initJetsonClient()
@@ -95,6 +102,7 @@ void MainWindow::onUserAuthenticated(int userId, const QString& name, const QStr
     Q_UNUSED(currentPoints);
     qDebug() << "[MainWindow] 모바일 QR 인증 감지: ID =" << userId << ", Name =" << name;
 
+    // 대기 화면 상태일 때 모바일 앱 QR 스캔이 인입되면 즉시 사용자 맞춤 세션 개시
     if (ui->stackedWidgetMain->currentWidget() == m_idlePage) {
         m_sessionController->startSession(true, name, userId);
         m_recyclePage->startSession(true, name);
@@ -114,6 +122,7 @@ void MainWindow::onNetworkError(const QString& errorMessage)
 
 void MainWindow::onFrameReceived(const QPixmap& pixmap)
 {
+    // 불필요한 GPU/CPU 렌더링 낭비를 막기 위해 활성 배출 화면일 때만 프레임 갱신
     if (ui->stackedWidgetMain->currentWidget() == m_recyclePage) {
         m_recyclePage->updateFrame(pixmap);
     }
@@ -121,18 +130,18 @@ void MainWindow::onFrameReceived(const QPixmap& pixmap)
 
 void MainWindow::onMetadataReceived(const FrameMetadata& meta)
 {
-    // 1. 하단 적재함 수위 게이지 캐시 기반 갱신
+    // 1. 하단 물리 수거함 수위 게이지 UI 갱신 (캐시 비교 필터링)
     updateBinLevels(meta.binLevels);
 
-    // 2. 투입 세션 화면(RecyclePage)일 때만 세션 컨트롤러에 전달
+    // 2. 실시간 투입 세션 중일 때만 FSM에 비전 및 도어 텔레메트리 디스패칭
     if (ui->stackedWidgetMain->currentWidget() == m_recyclePage && m_sessionController) {
         m_sessionController->processFrameMetadata(meta);
     }
 }
 
-// 순서: 종이 -> 캔 -> 페트 -> 비닐
 void MainWindow::updateBinLevels(const BinStatus& status)
 {
+    // 수거함 적재 레벨 변동이 없을 때 위젯 리페인트(Repaint) 오버헤드 차단
     if (m_cachedBinLevels == status) {
         return;
     }
@@ -190,9 +199,11 @@ void MainWindow::onRecycleFinished()
     const SessionSummary summary = m_sessionController->sessionSummary();
     const int userId = m_sessionController->currentUserId();
 
+    // 결과 정산 페이지 전환 및 영수증 렌더링
     m_resultPage->showResult(summary);
     ui->stackedWidgetMain->setCurrentWidget(m_resultPage);
 
+    // 중앙 관제 서버로 최종 배출량 및 리워드 REST API 비동기 전송
     RecycleCounts counts;
     counts.paper = summary.paperCount;
     counts.can = summary.canCount;

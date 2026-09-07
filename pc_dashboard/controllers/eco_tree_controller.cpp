@@ -1,4 +1,7 @@
-﻿#include "eco_tree_controller.h"
+﻿/**
+ * QMovie 특정 프레임 타겟팅 및 단계별 정지 기반 동적 애니메이션 제어 구현부.
+ */
+#include "eco_tree_controller.h"
 #include "app_config.h"
 #include "theme_constants.h"
 #include <QLabel>
@@ -27,7 +30,7 @@ void EcoTreeController::initMovie()
         m_lblMovie->setMovie(m_movie);
     }
 
-    // 목표 프레임 도달 시 정지
+    // 계산된 단계별 목표 프레임 인덱스 도달 시 일시정지 (무한 루프 방지)
     connect(m_movie, &QMovie::frameChanged, this, [this](int frameNumber) {
         if (m_targetFrame > 0 && frameNumber >= m_targetFrame) {
             m_movie->setPaused(true);
@@ -54,13 +57,12 @@ void EcoTreeController::updateCount(int totalCount)
     const TreeStage newStage = calculateStage(totalCount);
     updateStatusText(newStage, totalCount);
 
-    // 0개로 리셋되는 경우 잎 없는 기본 나무 프레임으로 복귀
     if (newStage == TreeStage::BASE_TREE) {
         reset();
         return;
     }
 
-    // 동일 단계 유지 시 중복 재생 방지
+    // 동일 단계 내 추가 투입 시 불필요한 애니메이션 재시작 배제
     if (newStage == m_currentStage) {
         return;
     }
@@ -70,6 +72,7 @@ void EcoTreeController::updateCount(int totalCount)
         totalFrames = UITheme::EcoTree::DEFAULT_FRAME_COUNT;
     }
 
+    // GIF 전체 프레임 중 각 성장 단계에 해당하는 목표 지점(Ratio) 산출
     switch (newStage) {
     case TreeStage::SPROUT:
         m_targetFrame = static_cast<int>(totalFrames * Config::EcoTree::FRAME_RATIO_STAGE_1);
@@ -109,7 +112,7 @@ void EcoTreeController::showBaseTree()
         totalFrames = UITheme::EcoTree::DEFAULT_FRAME_COUNT;
     }
 
-    // 1단계(잎 없는 나무) 해당 프레임 위치로 이동 후 일시정지 상태 유지
+    // 초기 상태(잎 없는 기본 나무) 프레임 위치로 이동 후 렌더링 유지
     m_targetFrame = static_cast<int>(totalFrames * Config::EcoTree::FRAME_RATIO_BASE);
     m_movie->jumpToFrame(m_targetFrame);
 

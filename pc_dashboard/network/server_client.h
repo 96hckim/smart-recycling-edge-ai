@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿/**
+ * 중앙 관제 백엔드 연동 WebSocket 인증 이벤트 및 REST API 결과 전송 클라이언트 헤더.
+ */
+#pragma once
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -6,10 +9,11 @@
 #include <QNetworkReply>
 #include <QObject>
 #include <QString>
-#include <QTimer> // 추가
+#include <QTimer>
 #include <QUrl>
 #include <QWebSocket>
 
+// 품목별 투입 수량 모델
 struct RecycleCounts {
     int paper = 0;
     int can = 0;
@@ -24,10 +28,12 @@ public:
     explicit ServerClient(int binId, const QString& serverHost, int serverPort, QObject* parent = nullptr);
     ~ServerClient() override;
 
+    // 키오스크 전용 채널 WebSocket 연결
     void connectToKioskSocket();
     void disconnectSocket();
     bool isConnected() const;
 
+    // 배출 완료 집계 데이터 백엔드 REST API 전송 (POST /api/recycle/submit)
     void submitRecycleResult(int userId, const RecycleCounts& counts, double carbonSaved, int earnedPoints);
 
 signals:

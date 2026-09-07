@@ -1,4 +1,7 @@
-﻿#include "result_page.h"
+﻿/**
+ * OutCubic 보간 기반 숫자 롤링 및 키오스크 타임아웃 자동 복귀 구현부.
+ */
+#include "result_page.h"
 #include "theme_constants.h"
 #include "ui_result_page.h"
 #include <QEasingCurve>
@@ -32,6 +35,7 @@ void ResultPage::initConfettiOverlay()
     ui->lblConfetti->setFixedSize(UITheme::Result::CONFETTI_DISPLAY_SIZE);
     ui->lblConfetti->setScaledContents(true);
     ui->lblConfetti->setAlignment(Qt::AlignCenter);
+    // GIF 오버레이가 하단 버튼 터치 이벤트를 가로채지 않도록 투과 처리
     ui->lblConfetti->setAttribute(Qt::WA_TransparentForMouseEvents);
     ui->lblConfetti->setMovie(m_confettiMovie);
     ui->lblConfetti->lower();
@@ -45,6 +49,7 @@ void ResultPage::setupTimer()
 
 void ResultPage::setupAnimations()
 {
+    // 자연스러운 숫자 감속 효과를 위한 OutCubic 이징 곡선 적용
     m_pointsAnim->setDuration(UITheme::Result::ANIM_POINTS_DURATION_MS);
     m_pointsAnim->setEasingCurve(QEasingCurve::OutCubic);
     connect(m_pointsAnim, &QVariantAnimation::valueChanged, this, &ResultPage::onPointsAnimUpdate);
@@ -60,7 +65,7 @@ void ResultPage::showResult(const SessionSummary& summary)
     m_targetPoints = summary.totalPoints;
     m_targetCarbon = summary.totalCarbonG;
 
-    // 1. 품목별 카드 갱신 (순서: 종이 -> 캔 -> 페트 -> 비닐)
+    // 1. 4개 품목별 카드 갱신 (종이 -> 캔 -> 페트 -> 비닐)
     updateCard(ui->boxReceiptPaper, ui->lblRPaperTitle, ui->lblRPaperCount, ui->lblRPaperPoints,
         summary.paperCount, Config::getPoint(RecycleCategory::PAPER));
     updateCard(ui->boxReceiptCan, ui->lblRCanTitle, ui->lblRCanCount, ui->lblRCanPoints,
@@ -70,7 +75,7 @@ void ResultPage::showResult(const SessionSummary& summary)
     updateCard(ui->boxReceiptVinyl, ui->lblRVinylTitle, ui->lblRVinylCount, ui->lblRVinylPoints,
         summary.vinylCount, Config::getPoint(RecycleCategory::VINYL));
 
-    // 2. 사용자 알림 뱃지
+    // 2. 동적 프로퍼티 기반 회원/비회원 알림 뱃지 스타일 갱신
     ui->lblUserNotice->setProperty(UITheme::PROP_MEMBER, summary.isMember);
     if (summary.isMember) {
         const QString name = summary.userName.isEmpty() ? UITheme::Recycle::Text::DEFAULT_MEMBER_NAME : summary.userName;
@@ -81,14 +86,14 @@ void ResultPage::showResult(const SessionSummary& summary)
     ui->lblUserNotice->style()->unpolish(ui->lblUserNotice);
     ui->lblUserNotice->style()->polish(ui->lblUserNotice);
 
-    // 3. 축하 폭죽 1회 재생
+    // 3. 축하 GIF 애니메이션 첫 프레임부터 단발성 재생
     if (m_confettiMovie && m_confettiMovie->isValid()) {
         m_confettiMovie->stop();
         m_confettiMovie->jumpToFrame(0);
         m_confettiMovie->start();
     }
 
-    // 4. 숫자 롤링 애니메이션
+    // 4. 포인트 및 탄소 절감량 숫자 카운팅 시작 (비회원은 포인트 제외)
     m_pointsAnim->stop();
     m_carbonAnim->stop();
 
@@ -104,7 +109,7 @@ void ResultPage::showResult(const SessionSummary& summary)
     m_carbonAnim->setEndValue(m_targetCarbon);
     m_carbonAnim->start();
 
-    // 5. 카운트다운 타이머
+    // 5. 무인 방치 방지 카운트다운 타이머 구동
     m_remainingSec = Config::RESULT_DISPLAY_TIMEOUT_SEC;
     ui->btnConfirm->setEnabled(true);
     ui->btnConfirm->setText(QString(UITheme::Result::Text::COUNTDOWN_BTN_FMT).arg(m_remainingSec));
@@ -136,6 +141,7 @@ void ResultPage::updateCard(QFrame* box, QLabel* lblTitle, QLabel* lblCount, QLa
         lblPoints->setText(UITheme::Result::Text::EMPTY_DASH);
     }
 
+    // 투입된 품목만 시각적으로 강조하기 위한 active 상태 프로퍼티 동적 갱신
     const bool isActive = (count > 0);
     const char* prop = UITheme::PROP_ACTIVE;
 

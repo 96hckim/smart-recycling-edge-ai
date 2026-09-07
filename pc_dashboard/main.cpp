@@ -1,4 +1,5 @@
-﻿#include "mainwindow.h"
+﻿// 스마트 분리배출 키오스크 PC 대시보드 애플리케이션 진입점
+#include "mainwindow.h"
 
 #include <QApplication>
 

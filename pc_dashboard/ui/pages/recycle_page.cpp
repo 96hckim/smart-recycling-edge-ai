@@ -1,3 +1,6 @@
+﻿/**
+ * QPainter 기반 실시간 영상 비율 맞춤 BBox 렌더링 및 세션 뷰 제어 구현부.
+ */
 #include "recycle_page.h"
 #include "eco_tree_controller.h"
 #include "ui_recycle_page.h"
@@ -6,7 +9,7 @@
 #include <QStyle>
 #include <algorithm>
 
-RecyclePage::RecyclePage(QWidget *parent)
+RecyclePage::RecyclePage(QWidget* parent)
     : QWidget(parent)
     , ui(new Ui::RecyclePage)
     , m_badgeFont(UITheme::FONT_FAMILY, UITheme::Recycle::BADGE_FONT_SIZE, QFont::Bold)
@@ -27,7 +30,7 @@ RecyclePage::~RecyclePage()
     delete ui;
 }
 
-void RecyclePage::startSession(bool isMember, const QString &userName)
+void RecyclePage::startSession(bool isMember, const QString& userName)
 {
     m_isMember = isMember;
     m_userName = userName;
@@ -50,24 +53,26 @@ void RecyclePage::startSession(bool isMember, const QString &userName)
     }
 }
 
-void RecyclePage::updateFrame(const QPixmap &pixmap)
+void RecyclePage::updateFrame(const QPixmap& pixmap)
 {
-    if (pixmap.isNull()) return;
+    if (pixmap.isNull())
+        return;
 
     const QSize targetSize = ui->lblVideo->size();
-    if (targetSize.width() <= 0 || targetSize.height() <= 0) return;
+    if (targetSize.width() <= 0 || targetSize.height() <= 0)
+        return;
 
     QPixmap frame = (pixmap.size() == targetSize)
-                        ? pixmap
-                        : pixmap.scaled(targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        ? pixmap
+        : pixmap.scaled(targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-    // 감지 박스가 없으면 영상만 표시하고 종료
+    // BBox 감지 정보가 없으면 배경 비디오 프레임만 즉시 렌더링하고 탈출
     if (m_detectionBox.isNull() || pixmap.width() <= 0 || pixmap.height() <= 0) {
         ui->lblVideo->setPixmap(frame);
         return;
     }
 
-    // 1. 박스 스케일 계산
+    // 원본 영상 해상도와 화면 렌더링 라벨 해상도 간의 비율 차이를 보정하는 스케일링
     const double scaleX = static_cast<double>(frame.width()) / pixmap.width();
     const double scaleY = static_cast<double>(frame.height()) / pixmap.height();
     const QRect scaledBox(
@@ -80,11 +85,11 @@ void RecyclePage::updateFrame(const QPixmap &pixmap)
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setRenderHint(QPainter::TextAntialiasing, true);
 
-    // 2. 바운딩 박스 드로잉
+    // 1. 객체 바운딩 박스 드로잉
     painter.setPen(QPen(m_boxColor, UITheme::Recycle::BOX_PEN_WIDTH));
     painter.drawRect(scaledBox);
 
-    // 3. 품목 라벨 배지 드로잉
+    // 2. 가독성을 위한 품목명 상단 배지 드로잉 (상단 경계 초과 방지)
     if (!m_boxLabel.isEmpty()) {
         painter.setFont(m_badgeFont);
         const int badgeW = m_badgeFontMetrics.horizontalAdvance(m_boxLabel) + (UITheme::Recycle::BADGE_PAD_X * 2);
@@ -101,10 +106,11 @@ void RecyclePage::updateFrame(const QPixmap &pixmap)
     ui->lblVideo->setPixmap(frame);
 }
 
-void RecyclePage::updateDetectionState(const QString &className, double confidence, int debounceCount, const QRect &box)
+void RecyclePage::updateDetectionState(const QString& className, double confidence, int debounceCount, const QRect& box)
 {
     Q_UNUSED(debounceCount);
 
+    // 오인식 노이즈 방지를 위해 최소 신뢰도 임계치 미달 시 오버레이 초기화
     if (className.isEmpty() || confidence < Config::MIN_CONFIDENCE_THRESHOLD) {
         m_detectionBox = QRect();
         m_boxLabel.clear();
@@ -119,13 +125,14 @@ void RecyclePage::updateDetectionState(const QString &className, double confiden
     m_boxLabel = displayCategoryName;
 }
 
-void RecyclePage::updateSessionSummary(const SessionSummary &summary)
+void RecyclePage::updateSessionSummary(const SessionSummary& summary)
 {
     ui->lblPaperCount->setText(QString::number(summary.paperCount));
     ui->lblCanCount->setText(QString::number(summary.canCount));
     ui->lblPetCount->setText(QString::number(summary.petCount));
     ui->lblVinylCount->setText(QString::number(summary.vinylCount));
 
+    // 1개 이상의 품목이 투입 확정되었을 때만 세션 종료(정산) 버튼 활성화
     const int validItemCount = summary.paperCount + summary.canCount + summary.petCount + summary.vinylCount;
     ui->btnFinishSession->setEnabled(validItemCount > 0);
 
@@ -175,7 +182,7 @@ void RecyclePage::resetState()
     }
 }
 
-void RecyclePage::setGuideBanner(UITheme::Recycle::BannerType type, const QString &customText)
+void RecyclePage::setGuideBanner(UITheme::Recycle::BannerType type, const QString& customText)
 {
     const auto theme = UITheme::Recycle::getBannerTheme(type);
 
@@ -198,6 +205,7 @@ void RecyclePage::setGuideBanner(UITheme::Recycle::BannerType type, const QStrin
         break;
     }
 
+    // 동일 텍스트에 대한 불필요한 스타일시트 재연산 및 화면 깜빡임 방지
     if (ui->lblGuideBanner->text() == message)
         return;
 
@@ -206,7 +214,7 @@ void RecyclePage::setGuideBanner(UITheme::Recycle::BannerType type, const QStrin
         QString(UITheme::Recycle::BANNER_TEMPLATE).arg(theme.bgColor, theme.borderColor, theme.textColor));
 }
 
-void RecyclePage::applyDynamicProperty(QWidget *widget, const char *propName, const QVariant &value)
+void RecyclePage::applyDynamicProperty(QWidget* widget, const char* propName, const QVariant& value)
 {
     if (!widget)
         return;

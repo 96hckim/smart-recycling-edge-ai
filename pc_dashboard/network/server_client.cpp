@@ -1,4 +1,7 @@
-﻿#include "server_client.h"
+﻿/**
+ * 실시간 사용자 인증 WebSocket 수신 및 REST 결과 처리 구현부.
+ */
+#include "server_client.h"
 #include "app_config.h"
 #include <QDebug>
 
@@ -53,14 +56,14 @@ bool ServerClient::isConnected() const
 void ServerClient::onSocketConnected()
 {
     qDebug() << "[ServerClient] WebSocket Connected for Bin ID:" << m_binId;
-    m_reconnectTimer->stop(); // 연결 성공 시 재연결 타이머 중지
+    m_reconnectTimer->stop();
 }
 
 void ServerClient::onSocketDisconnected()
 {
     qWarning() << "[ServerClient] WebSocket Disconnected. 재연결 시도 대기 중...";
     if (!m_reconnectTimer->isActive()) {
-        m_reconnectTimer->start(); // 연결 끊김 감지 시 자동 재연결 시작
+        m_reconnectTimer->start();
     }
 }
 
@@ -72,7 +75,7 @@ void ServerClient::onSocketError(QAbstractSocket::SocketError error)
     emit networkErrorOccurred(errStr);
 
     if (!m_reconnectTimer->isActive()) {
-        m_reconnectTimer->start(); // 소켓 오류 시에도 재연결 시작
+        m_reconnectTimer->start();
     }
 }
 
@@ -85,6 +88,7 @@ void ServerClient::onReconnectTimeout()
 
 void ServerClient::onSocketMessageReceived(const QString& message)
 {
+    // 백엔드 푸시 이벤트(QR 모바일 인증 완료 등) 파싱
     qDebug() << "[ServerClient] WS Message Received:" << message;
 
     QJsonParseError parseErr;
@@ -97,6 +101,7 @@ void ServerClient::onSocketMessageReceived(const QString& message)
     QJsonObject obj = doc.object();
     QString eventType = obj[Key::EVENT].toString();
 
+    // 모바일 앱 QR 스캔을 통한 사용자 인증 완료 처리
     if (eventType == Event::USER_AUTHENTICATED) {
         int userId = obj[Key::USER_ID].toInt();
         QString name = obj[Key::NAME].toString(Config::Demo::MEMBER_USER_ID);
@@ -111,6 +116,7 @@ void ServerClient::onSocketMessageReceived(const QString& message)
 
 void ServerClient::submitRecycleResult(int userId, const RecycleCounts& counts, double carbonSaved, int earnedPoints)
 {
+    // 세션 종료 후 집계 통계를 백엔드에 안전하게 전송 (비회원은 userId=null)
     QUrl url(API_SUBMIT_PATH.arg(m_serverHost).arg(m_serverPort));
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
