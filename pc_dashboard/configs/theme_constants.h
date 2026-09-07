@@ -101,8 +101,8 @@ namespace Recycle {
         constexpr char VIDEO_INITIALIZING[] = "Jetson AI 비전 스트림 연결 대기 중...";
         constexpr char GUIDE_READY[] = "🎯 카메라 중앙 영역에 재활용품을 놓아주세요";
         constexpr char GUIDE_ANALYZING_FMT[] = "⏳ %1 인식 중... 고정해 주세요";
-        constexpr char GUIDE_CONFIRMED_FMT[] = "✅ %1 인식 확정! 투입구에 넣어주세요";
-        constexpr char GUIDE_DOOR_OPEN_FMT[] = "🚪 %1 투입구 개방 중! 물품을 넣어주세요";
+        constexpr char GUIDE_CONFIRMED_FMT[] = "✅ %1 확인 완료! 투입구가 자동으로 열립니다";
+        constexpr char GUIDE_DOOR_OPEN_FMT[] = "🚪 %1 투입구 개방 중 | 물품을 투입해 주세요";
         constexpr char GUIDE_GENERAL_WARN[] = "⚠️ 미인식 품목 감지";
         constexpr char POINTS_MEMBER_FMT[] = "+ %1 P";
         constexpr char POINTS_GUEST_FMT[] = "%1 P (미적립)";

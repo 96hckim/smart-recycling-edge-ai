@@ -46,6 +46,7 @@ SOURCES += \
     network/server_client.cpp \
     utils/qrcodegen.cpp \
     controllers/eco_tree_controller.cpp \
+    controllers/recycle_session_controller.cpp \
     ui/mainwindow.cpp \
     ui/pages/idle_page.cpp \
     ui/pages/recycle_page.cpp \
@@ -59,6 +60,7 @@ HEADERS += \
     network/server_client.h \
     utils/qrcodegen.hpp \
     controllers/eco_tree_controller.h \
+    controllers/recycle_session_controller.h \
     ui/mainwindow.h \
     ui/pages/idle_page.h \
     ui/pages/recycle_page.h \

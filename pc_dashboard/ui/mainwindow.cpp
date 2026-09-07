@@ -2,6 +2,7 @@
 #include "idle_page.h"
 #include "jetson_client.h"
 #include "recycle_page.h"
+#include "recycle_session_controller.h"
 #include "result_page.h"
 #include "server_client.h"
 #include "ui_mainwindow.h"
@@ -16,6 +17,7 @@ MainWindow::MainWindow(QWidget* parent)
     ui->setupUi(this);
 
     initPages();
+    initSessionController();
     initJetsonClient();
     initServerClient();
 }
@@ -45,6 +47,25 @@ void MainWindow::initPages()
     connect(m_resultPage, &ResultPage::sigReturnToIdleRequested, this, &MainWindow::onReturnToIdle);
 }
 
+void MainWindow::initSessionController()
+{
+    m_sessionController = new RecycleSessionController(this);
+
+    // 세션 카운트 및 통계 갱신
+    connect(m_sessionController, &RecycleSessionController::sigSessionUpdated,
+            m_recyclePage, &RecyclePage::updateSessionSummary);
+
+    // 카메라 바운딩 박스 오버레이
+    connect(m_sessionController, &RecycleSessionController::sigDetectionBoxUpdated,
+            m_recyclePage, &RecyclePage::updateDetectionState);
+
+    // 가이드 배너 동기화
+    connect(m_sessionController, &RecycleSessionController::sigGuideBannerRequested,
+            this, [this](int type, const QString& text) {
+                m_recyclePage->setGuideBanner(static_cast<UITheme::Recycle::BannerType>(type), text);
+            });
+}
+
 void MainWindow::initJetsonClient()
 {
     m_jetsonClient = new JetsonClient(Config::DEFAULT_JETSON_IP, Config::JETSON_PORT, this);
@@ -70,13 +91,15 @@ void MainWindow::initServerClient()
 
 void MainWindow::onUserAuthenticated(int userId, const QString& name, const QString& phone, int currentPoints)
 {
-    qDebug() << "[MainWindow] 모바일 QR 인증 감지: ID =" << userId
-             << ", Name =" << name
-             << ", Phone =" << phone
-             << ", Points =" << currentPoints;
+    Q_UNUSED(phone);
+    Q_UNUSED(currentPoints);
+    qDebug() << "[MainWindow] 모바일 QR 인증 감지: ID =" << userId << ", Name =" << name;
 
-    m_currentUserId = userId;
-    onMemberStartRequested(name);
+    if (ui->stackedWidgetMain->currentWidget() == m_idlePage) {
+        m_sessionController->startSession(true, name, userId);
+        m_recyclePage->startSession(true, name);
+        ui->stackedWidgetMain->setCurrentWidget(m_recyclePage);
+    }
 }
 
 void MainWindow::onSubmitCompleted(int logId, int totalPoints)
@@ -98,84 +121,37 @@ void MainWindow::onFrameReceived(const QPixmap& pixmap)
 
 void MainWindow::onMetadataReceived(const FrameMetadata& meta)
 {
-    // 1. 하단 적재함 수위 게이지 실시간 갱신 (전체 화면 공통)
-    updateBinLevels(meta.binLevels.paper, meta.binLevels.can, meta.binLevels.pet, meta.binLevels.vinyl);
+    // 1. 하단 적재함 수위 게이지 캐시 기반 갱신
+    updateBinLevels(meta.binLevels);
 
-    // 2. 투입 세션 화면(RecyclePage)이 아닐 때는 비전 카운트 중단
-    if (ui->stackedWidgetMain->currentWidget() != m_recyclePage) {
-        return;
+    // 2. 투입 세션 화면(RecyclePage)일 때만 세션 컨트롤러에 전달
+    if (ui->stackedWidgetMain->currentWidget() == m_recyclePage && m_sessionController) {
+        m_sessionController->processFrameMetadata(meta);
     }
-
-    // 3. 도어 개폐 상태 반영 (배너 제어)
-    m_recyclePage->updateDoorState(meta.door);
-
-    // 4. 카메라 앞에 물체가 없는 경우
-    if (meta.detections.isEmpty()) {
-        if (!meta.door.isOpen) {
-            resetDetectionState();
-        }
-        m_recyclePage->updateDetectionState("", 0.0, 0);
-        return;
-    }
-
-    const Detection& top = meta.detections.first();
-
-    // 5. 실제 도어가 열려 있는 동안에는 중복 카운트 차단
-    if (meta.door.isOpen) {
-        m_consecutiveDetections = 0;
-        m_recyclePage->updateDetectionState(top.className, top.confidence, 0, top.box);
-        return;
-    }
-
-    // 6. 유효 품목 연속 감지 디바운싱 (18프레임 누적)
-    if (top.category != RecycleCategory::UNKNOWN && top.category == m_lastDetectedCategory) {
-        m_consecutiveDetections++;
-    } else {
-        m_lastDetectedCategory = top.category;
-        m_consecutiveDetections = (top.category != RecycleCategory::UNKNOWN) ? 1 : 0;
-        m_doorOpenedForCurrentItem = false;
-    }
-
-    m_recyclePage->updateDetectionState(top.className, top.confidence, m_consecutiveDetections, top.box);
-
-    // 7. 확정 기준(18프레임) 도달 시 딱 1회 세션 카운트 누적
-    if (m_consecutiveDetections >= Config::STABLE_FRAME_THRESHOLD && !m_doorOpenedForCurrentItem) {
-        m_doorOpenedForCurrentItem = true;
-        m_currentSession.addItem(top.category, 1);
-        m_recyclePage->updateSessionSummary(m_currentSession);
-    }
-}
-
-void MainWindow::openBinDoor(RecycleCategory category)
-{
-    if (m_jetsonClient && m_jetsonClient->isConnected()) {
-        m_jetsonClient->sendOpenBinCommand(category);
-    }
-}
-
-void MainWindow::resetDetectionState()
-{
-    m_consecutiveDetections = 0;
-    m_lastDetectedCategory = RecycleCategory::UNKNOWN;
-    m_doorOpenedForCurrentItem = false;
 }
 
 // 순서: 종이 -> 캔 -> 페트 -> 비닐
+void MainWindow::updateBinLevels(const BinStatus& status)
+{
+    if (m_cachedBinLevels == status) {
+        return;
+    }
+    m_cachedBinLevels = status;
+
+    ui->progressBarPaper->setValue(std::clamp(status.paper, 0, Config::MAX_BIN_CAPACITY));
+    ui->progressBarCan->setValue(std::clamp(status.can, 0, Config::MAX_BIN_CAPACITY));
+    ui->progressBarPet->setValue(std::clamp(status.pet, 0, Config::MAX_BIN_CAPACITY));
+    ui->progressBarVinyl->setValue(std::clamp(status.vinyl, 0, Config::MAX_BIN_CAPACITY));
+}
+
 void MainWindow::updateBinLevels(int paper, int can, int pet, int vinyl)
 {
-    const int pVal = std::clamp(paper, 0, Config::MAX_BIN_CAPACITY);
-    const int cVal = std::clamp(can, 0, Config::MAX_BIN_CAPACITY);
-    const int ptVal = std::clamp(pet, 0, Config::MAX_BIN_CAPACITY);
-    const int vVal = std::clamp(vinyl, 0, Config::MAX_BIN_CAPACITY);
-
-    if (ui->progressBarPaper->value() != pVal)
-        ui->progressBarPaper->setValue(pVal);
-    if (ui->progressBarCan->value() != cVal)
-        ui->progressBarCan->setValue(cVal);
-    if (ui->progressBarPet->value() != ptVal)
-        ui->progressBarPet->setValue(ptVal);
-    if (ui->progressBarVinyl->value() != vVal)
-        ui->progressBarVinyl->setValue(vVal);
+    BinStatus status;
+    status.paper = paper;
+    status.can = can;
+    status.pet = pet;
+    status.vinyl = vinyl;
+    updateBinLevels(status);
 }
 
 void MainWindow::updateConnectionStatus(bool connected)
@@ -197,51 +173,42 @@ void MainWindow::updateTelemetry(double fps, double inferMs, double latencyMs)
 
 void MainWindow::onMemberStartRequested(const QString& userId)
 {
-    m_currentSession.reset();
-    m_currentSession.isMember = true;
-    m_currentSession.userName = userId;
-    resetDetectionState();
-
+    m_sessionController->startSession(true, userId);
     m_recyclePage->startSession(true, userId);
     ui->stackedWidgetMain->setCurrentWidget(m_recyclePage);
 }
 
 void MainWindow::onGuestStartRequested()
 {
-    m_currentUserId = -1;
-    m_currentSession.reset();
-    m_currentSession.isMember = false;
-    resetDetectionState();
-
+    m_sessionController->startSession(false);
     m_recyclePage->startSession(false);
     ui->stackedWidgetMain->setCurrentWidget(m_recyclePage);
 }
 
 void MainWindow::onRecycleFinished()
 {
-    m_resultPage->showResult(m_currentSession);
+    const SessionSummary summary = m_sessionController->sessionSummary();
+    const int userId = m_sessionController->currentUserId();
+
+    m_resultPage->showResult(summary);
     ui->stackedWidgetMain->setCurrentWidget(m_resultPage);
 
     RecycleCounts counts;
-    counts.paper = m_currentSession.paperCount;
-    counts.can = m_currentSession.canCount;
-    counts.pet = m_currentSession.petCount;
-    counts.vinyl = m_currentSession.vinylCount;
-
-    double carbonSaved = m_currentSession.totalCarbonG;
-    int earnedPoints = m_currentSession.totalPoints;
+    counts.paper = summary.paperCount;
+    counts.can = summary.canCount;
+    counts.pet = summary.petCount;
+    counts.vinyl = summary.vinylCount;
 
     if (m_serverClient) {
-        m_serverClient->submitRecycleResult(m_currentUserId, counts, carbonSaved, earnedPoints);
+        m_serverClient->submitRecycleResult(userId, counts, summary.totalCarbonG, summary.totalPoints);
     }
+
+    m_sessionController->finishSession();
 }
 
 void MainWindow::onReturnToIdle()
 {
-    m_currentUserId = -1;
-    m_currentSession.reset();
-    resetDetectionState();
-
+    m_sessionController->cancelSession();
     m_recyclePage->resetState();
     ui->stackedWidgetMain->setCurrentWidget(m_idlePage);
 }

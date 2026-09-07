@@ -1,10 +1,9 @@
-﻿#include "jetson_client.h"
-#include <QDataStream>
+#include "jetson_client.h"
 #include <QDateTime>
 #include <QDebug>
-#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QtEndian>
 
 JetsonClient::JetsonClient(const QString& host, quint16 port, QObject* parent)
     : QObject(parent)
@@ -86,51 +85,60 @@ void JetsonClient::onSocketError(QAbstractSocket::SocketError error)
 void JetsonClient::onReadyRead()
 {
     m_rxBuffer.append(m_socket->readAll());
+    if (m_rxBuffer.size() > Config::MAX_BUFFER_CAPACITY) {
+        qWarning() << "[TCP] 수신 버퍼 최대 허용량 초과 -> 버퍼 초기화";
+        m_rxBuffer.clear();
+        return;
+    }
     parseBuffer();
 }
 
 void JetsonClient::parseBuffer()
 {
-    while (true) {
-        if (m_rxBuffer.size() < static_cast<int>(Config::HEADER_SIZE)) {
+    while (m_rxBuffer.size() >= static_cast<int>(Config::HEADER_SIZE)) {
+        const uchar* buf = reinterpret_cast<const uchar*>(m_rxBuffer.constData());
+
+        // 8B Big-Endian Header: [img_len(4B)][json_len(4B)]
+        const quint32 imgSize = qFromBigEndian<quint32>(buf);
+        const quint32 jsonSize = qFromBigEndian<quint32>(buf + 4);
+
+        // 비정상 크기 감지 시 버퍼 리셋
+        if (imgSize > Config::MAX_IMAGE_SIZE || jsonSize > Config::MAX_JSON_SIZE) {
+            qWarning() << "[TCP] 비정상 패킷 헤더 -> 버퍼 초기화";
+            m_rxBuffer.clear();
             return;
         }
-
-        quint32 imgSize = 0;
-        quint32 jsonSize = 0;
-        QDataStream stream(m_rxBuffer.left(Config::HEADER_SIZE));
-        stream.setByteOrder(QDataStream::BigEndian);
-        stream >> imgSize >> jsonSize;
 
         const int totalPacketSize = static_cast<int>(Config::HEADER_SIZE + imgSize + jsonSize);
-
         if (m_rxBuffer.size() < totalPacketSize) {
-            return;
+            return; // 미완성 패킷 대기
         }
 
-        const QByteArray imgBytes = m_rxBuffer.mid(Config::HEADER_SIZE, imgSize);
-        const QByteArray jsonBytes = m_rxBuffer.mid(Config::HEADER_SIZE + imgSize, jsonSize);
-
-        m_rxBuffer.remove(0, totalPacketSize);
-
-        if (!imgBytes.isEmpty()) {
+        // 1. 영상 언패킹
+        if (imgSize > 0) {
             QPixmap pixmap;
-            if (pixmap.loadFromData(reinterpret_cast<const uchar*>(imgBytes.constData()), imgBytes.size(), "JPG")) {
+            if (pixmap.loadFromData(buf + Config::HEADER_SIZE, imgSize, "JPG")) {
                 emit sigFrameReceived(pixmap);
             }
         }
 
-        if (!jsonBytes.isEmpty()) {
-            processJsonMeta(jsonBytes);
+        // 2. 메타데이터 언패킹
+        if (jsonSize > 0) {
+            const char* jsonPtr = reinterpret_cast<const char*>(buf + Config::HEADER_SIZE + imgSize);
+            processJsonMeta(QByteArray::fromRawData(jsonPtr, static_cast<int>(jsonSize)));
         }
+
+        // 3. 소비된 패킷 바이트 제거
+        m_rxBuffer.remove(0, totalPacketSize);
     }
 }
 
 void JetsonClient::processJsonMeta(const QByteArray& jsonData)
 {
     QJsonDocument doc = QJsonDocument::fromJson(jsonData);
-    if (!doc.isObject())
+    if (!doc.isObject()) {
         return;
+    }
 
     FrameMetadata meta = FrameMetadata::fromJson(doc.object());
 
@@ -139,26 +147,4 @@ void JetsonClient::processJsonMeta(const QByteArray& jsonData)
 
     emit sigMetadataReceived(meta);
     emit sigTelemetryUpdated(meta.fps, meta.inferMs, latencyMs);
-}
-
-void JetsonClient::sendOpenBinCommand(RecycleCategory category)
-{
-    sendOpenBinCommand(Config::getCategoryNameEn(category));
-}
-
-void JetsonClient::sendOpenBinCommand(const QString& targetCategory)
-{
-    if (!isConnected()) {
-        qWarning() << "[TCP TX 실패] Jetson 미연결 상태";
-        return;
-    }
-
-    QJsonObject cmdObj;
-    cmdObj[Config::KEY_CMD] = Config::CMD_OPEN_BIN;
-    cmdObj[Config::KEY_TARGET] = targetCategory.toUpper();
-
-    const QByteArray packet = QJsonDocument(cmdObj).toJson(QJsonDocument::Compact) + "\n";
-    m_socket->write(packet);
-    m_socket->flush();
-    qDebug() << "[TCP TX -> Jetson]" << packet.trimmed();
 }
