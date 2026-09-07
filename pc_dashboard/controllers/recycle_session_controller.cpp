@@ -1,4 +1,4 @@
-﻿#include "recycle_session_controller.h"
+#include "recycle_session_controller.h"
 #include "theme_constants.h"
 #include <QDebug>
 
@@ -56,8 +56,18 @@ void RecycleSessionController::processFrameMetadata(const FrameMetadata &meta)
     {
         m_consecutiveDetections = 0;
         emit sigDetectionBoxUpdated(top.className, top.confidence, 0, top.box);
-        emit sigGuideBannerRequested(static_cast<int>(UITheme::Recycle::BannerType::DOOR_OPEN),
-                                     Config::getCategoryNameKo(m_lastCategory));
+
+        const RecycleCategory doorCat = Config::parseCategory(meta.door.item);
+        QString doorItemName;
+        if (doorCat != RecycleCategory::UNKNOWN) {
+            doorItemName = Config::getCategoryNameKo(doorCat);
+        } else if (m_lastCategory != RecycleCategory::UNKNOWN) {
+            doorItemName = Config::getCategoryNameKo(m_lastCategory);
+        } else {
+            doorItemName = (meta.door.item.isEmpty() || meta.door.item == "ALL") ? "투입구" : meta.door.item;
+        }
+
+        emit sigGuideBannerRequested(static_cast<int>(UITheme::Recycle::BannerType::DOOR_OPEN), doorItemName);
         return;
     }
 

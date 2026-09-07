@@ -33,9 +33,6 @@ public:
     void updateSessionSummary(const SessionSummary &summary);
     void setGuideBanner(UITheme::Recycle::BannerType type, const QString &customText = QString());
 
-    // [추가] 도어 개폐 상태 갱신 인터페이스
-    void updateDoorState(const HardwareDoorStatus &door);
-
 signals:
     void sigFinishSessionRequested();
     void sigCancelSessionRequested();
@@ -55,9 +52,6 @@ private:
     QString m_boxLabel{};
     bool m_isMember{false};
     QString m_userName{};
-
-    // [추가] 도어 열림 상태 플래그 (배너 오버라이트 방지)
-    bool m_isDoorOpen{false};
 
     // 렌더링 최적화용 캐시 폰트 및 메트릭스
     QFont m_badgeFont;

@@ -1,4 +1,4 @@
-﻿#include "recycle_page.h"
+#include "recycle_page.h"
 #include "eco_tree_controller.h"
 #include "ui_recycle_page.h"
 #include <QFontMetrics>
@@ -119,23 +119,6 @@ void RecyclePage::updateDetectionState(const QString &className, double confiden
     m_boxLabel = displayCategoryName;
 }
 
-void RecyclePage::updateDoorState(const HardwareDoorStatus &door)
-{
-    const bool wasOpen = m_isDoorOpen;
-    m_isDoorOpen = door.isOpen;
-
-    if (m_isDoorOpen) {
-        const RecycleCategory cat = Config::parseCategory(door.item);
-        const QString displayName = (cat != RecycleCategory::UNKNOWN)
-            ? Config::getCategoryNameKo(cat)
-            : (door.item.isEmpty() || door.item == "ALL" ? "투입구" : door.item);
-
-        setGuideBanner(UITheme::Recycle::BannerType::DOOR_OPEN, displayName);
-    } else if (wasOpen && !m_isDoorOpen) {
-        setGuideBanner(UITheme::Recycle::BannerType::READY);
-    }
-}
-
 void RecyclePage::updateSessionSummary(const SessionSummary &summary)
 {
     ui->lblPaperCount->setText(QString::number(summary.paperCount));
@@ -166,7 +149,6 @@ void RecyclePage::resetState()
 {
     m_detectionBox = QRect();
     m_boxLabel.clear();
-    m_isDoorOpen = false;
 
     ui->lblVideo->clear();
     ui->lblVideo->setText(UITheme::Recycle::Text::VIDEO_INITIALIZING);

@@ -1,4 +1,4 @@
-﻿#include "jetson_client.h"
+#include "jetson_client.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QJsonDocument>
@@ -85,6 +85,11 @@ void JetsonClient::onSocketError(QAbstractSocket::SocketError error)
 void JetsonClient::onReadyRead()
 {
     m_rxBuffer.append(m_socket->readAll());
+    if (m_rxBuffer.size() > Config::MAX_BUFFER_CAPACITY) {
+        qWarning() << "[TCP] 수신 버퍼 최대 허용량 초과 -> 버퍼 초기화";
+        m_rxBuffer.clear();
+        return;
+    }
     parseBuffer();
 }
 
