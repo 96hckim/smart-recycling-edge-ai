@@ -1,8 +1,4 @@
-"""
-core/camera.py
-
-초저지연 백그라운드 카메라 프레임 캡처 모듈
-"""
+"""V4L2 백엔드 기반 초저지연 백그라운드 카메라 프레임 캡처 모듈."""
 
 import threading
 import time
@@ -12,7 +8,7 @@ import numpy as np
 
 
 class CameraStream:
-    """백그라운드 스레드에서 최신 프레임을 실시간 갱신하는 캡처 클래스"""
+    """백그라운드 스레드에서 V4L2 캡처 큐를 소모하여 최신 프레임을 갱신하는 래퍼 클래스."""
 
     def __init__(
         self,
@@ -23,6 +19,7 @@ class CameraStream:
         buffer_size: int = 1,
         flip_horizontal: bool = True,
     ):
+        """V4L2 디바이스 초기화 및 백그라운드 캡처 스레드 기동."""
         self.device_id = device_id
         self.width = width
         self.height = height
@@ -36,13 +33,13 @@ class CameraStream:
         self.running: bool = False
         self.lock: threading.Lock = threading.Lock()
 
-        # 1. 카메라 디바이스 초기화
         self.cap = cv2.VideoCapture(device_id, cv2.CAP_V4L2)
-        # MJPG 포맷 지정 (하드웨어 대역폭 절약 및 지연 최소화)
+        # USB 대역폭 절감 및 60fps 유지를 위한 MJPG 하드웨어 압축 포맷 지정
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         self.cap.set(cv2.CAP_PROP_FPS, fps)
+        # 링 버퍼 지연 방지용 최소 버퍼 크기(1) 고정
         self.cap.set(cv2.CAP_PROP_BUFFERSIZE, buffer_size)
 
         if not self.cap.isOpened():
@@ -50,7 +47,6 @@ class CameraStream:
                 f"[CAMERA ERROR] 카메라 장치({device_id})를 열 수 없습니다."
             )
 
-        # 첫 프레임 수신 테스트
         self.ret, self.frame = self.cap.read()
         if not self.ret or self.frame is None:
             self.release()
@@ -58,7 +54,6 @@ class CameraStream:
                 f"[CAMERA ERROR] 카메라({device_id}) 초기 프레임 획득 실패"
             )
 
-        # 2. 백그라운드 캡처 스레드 시작
         self.running = True
         self.thread = threading.Thread(
             target=self._capture_loop, name="CameraWorker", daemon=True
@@ -67,7 +62,7 @@ class CameraStream:
         print(f"[CAMERA] 백그라운드 캡처 시작 ({width}x{height} @ {fps}fps)")
 
     def _capture_loop(self):
-        """백그라운드에서 최신 프레임을 주기적으로 갱신"""
+        """V4L2 드라이버 버퍼 지연(Lag) 방지용 백그라운드 프레임 폴링 루프."""
         while self.running:
             if self.cap is None:
                 break
@@ -83,17 +78,18 @@ class CameraStream:
             else:
                 with self.lock:
                     self.ret = False
+                # 프레임 획득 실패 시 CPU 점유율(Busy-wait) 폭주 방지
                 time.sleep(0.005)
 
     def read(self) -> tuple[bool, np.ndarray | None]:
-        """최신 프레임 즉시 반환 (논블로킹 초저지연 스레드 동기화)"""
+        """스레드 락 기반 최신 BGR 프레임 즉시 반환 (논블로킹)."""
         with self.lock:
             if not self.ret or self.frame is None:
                 return False, None
             return True, self.frame
 
     def release(self):
-        """스레드 종료 및 카메라 장치 해제 (중복 호출 안전)"""
+        """캡처 스레드 종료 및 V4L2 하드웨어 리소스 해제."""
         self.running = False
 
         if self.thread is not None and self.thread.is_alive():

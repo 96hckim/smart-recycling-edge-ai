@@ -1,8 +1,4 @@
-"""
-core/detector.py
-
-YOLOv11 전/후처리 및 객체 검출기 (Letterbox + C++ NMS)
-"""
+"""YOLOv11 TensorRT 입출력 전처리 및 C++ NMS 기반 객체 검출 모듈."""
 
 from typing import Any
 
@@ -13,7 +9,7 @@ from core.trt_engine import TensorRTEngine
 
 
 class YOLOv11Detector:
-    """YOLOv11 TensorRT 입출력 전처리 및 바운딩 박스 후처리 클래스"""
+    """Letterbox 전처리 및 C++ 가속 NMS 후처리를 수행하는 검출 파이프라인 클래스."""
 
     def __init__(
         self,
@@ -23,18 +19,19 @@ class YOLOv11Detector:
         iou_thresh: float = 0.45,
         class_names: tuple[str, ...] = ("paper", "rock", "scissors"),
     ):
+        """검출 파라미터 설정 및 Letterbox 캔버스 버퍼 사전 할당."""
         self.engine = engine
         self.input_shape = input_shape
         self.conf_thresh = conf_thresh
         self.iou_thresh = iou_thresh
         self.class_names = class_names
 
-        # Letterbox 캔버스 템플릿 사전 생성 (매 프레임 재할당 방지)
+        # 매 프레임 np.full 메모리 재할당 오버헤드 방지용 캔버스 캐싱
         target_w, target_h = self.input_shape
         self._canvas_template = np.full((target_h, target_w, 3), 114, dtype=np.uint8)
 
     def preprocess(self, img: np.ndarray) -> tuple[np.ndarray, dict[str, Any]]:
-        """Letterbox 패딩 및 NCHW 정규화 Blob 생성 (OpenCV C++ 가속)"""
+        """종횡비 유지 Letterbox 패딩 및 NCHW 정규화 Blob 생성."""
         orig_h, orig_w = img.shape[:2]
         target_w, target_h = self.input_shape
 
@@ -49,7 +46,7 @@ class YOLOv11Detector:
         pad_h = (target_h - nh) // 2
         canvas[pad_h : pad_h + nh, pad_w : pad_w + nw] = resized
 
-        # BGR->RGB 변환, 정규화(1/255.0), HWC->NCHW 전치를 1회에 일괄 처리
+        # BGR->RGB 변환, 0~1 정규화, HWC->NCHW 전치를 C++ 레벨에서 단일 패스 처리
         blob = cv2.dnn.blobFromImage(
             canvas,
             scalefactor=1.0 / 255.0,
@@ -69,7 +66,7 @@ class YOLOv11Detector:
         return blob, meta
 
     def detect(self, img: np.ndarray) -> list[dict[str, Any]]:
-        """전처리 -> TRT 추론 -> 후처리 단일 실행"""
+        """전처리 -> TensorRT 추론 -> NMS 후처리 단일 파이프라인 실행."""
         blob, meta = self.preprocess(img)
         raw_output = self.engine.execute(blob)
         return self._postprocess(raw_output, meta)
@@ -77,7 +74,7 @@ class YOLOv11Detector:
     def _postprocess(
         self, output: np.ndarray, meta: dict[str, Any]
     ) -> list[dict[str, Any]]:
-        """TensorRT 출력 텐서 -> 신뢰도 필터링 -> NMS 적용 -> 최종 검출 결과 생성"""
+        """추론 텐서 신뢰도 필터링, 원본 좌표 복원 및 OpenCV C++ NMS 적용."""
         preds = np.squeeze(output)
         if preds.shape[0] < preds.shape[1]:
             preds = preds.T
@@ -86,7 +83,7 @@ class YOLOv11Detector:
         confidences = np.max(scores, axis=1)
         class_ids = np.argmax(scores, axis=1)
 
-        # 1. 신뢰도 기준 1차 벡터 필터링
+        # 8,400개 앵커 박스 연산 오버헤드 배제를 위한 신뢰도 1차 벡터 필터링
         mask = confidences >= self.conf_thresh
         if not np.any(mask):
             return []
@@ -99,7 +96,7 @@ class YOLOv11Detector:
         pad_w, pad_h = meta["pad_w"], meta["pad_h"]
         orig_w, orig_h = meta["orig_w"], meta["orig_h"]
 
-        # 2. 중심 좌표계(cx, cy, w, h) -> 원본 좌표계(x1, y1, x2, y2) 일괄 복원
+        # 중심 좌표계(cx, cy, w, h) -> 원본 좌표계(x1, y1, x2, y2) 일괄 복원
         cx, cy = filtered_boxes[:, 0], filtered_boxes[:, 1]
         w, h = filtered_boxes[:, 2], filtered_boxes[:, 3]
 
@@ -114,7 +111,7 @@ class YOLOv11Detector:
         confs_list = filtered_conf.tolist()
         cls_ids_list = filtered_cls.tolist()
 
-        # 3. OpenCV C++ 고속 NMS
+        # Python 루프 대비 수십 배 고속인 OpenCV C++ NMS 호출
         indices = cv2.dnn.NMSBoxes(
             boxes_for_nms, confs_list, self.conf_thresh, self.iou_thresh
         )

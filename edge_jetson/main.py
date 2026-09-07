@@ -1,8 +1,4 @@
-"""
-edge_jetson/main.py
-
-스마트 분리수거 비전 시스템 - Jetson 최상위 이벤트 루프
-"""
+"""스마트 재활용 키오스크 엣지 파이프라인 최상위 메인 루프 모듈."""
 
 import signal
 import time
@@ -19,11 +15,11 @@ from utils.keyboard import NonBlockingKeyReader
 
 
 def main():
+    """모듈 초기화, AI 객체 검출, 도어 FSM 제어 및 관제 PC 스트리밍 파이프라인 구동."""
     print("=" * 60)
     print("[EDGE AI] 스마트 분리수거 비전 시스템 부팅 중...")
     print("=" * 60)
 
-    # 1. 모듈 초기화
     camera = CameraStream(
         device_id=cfg.cam.device_id,
         width=cfg.cam.width,
@@ -57,10 +53,8 @@ def main():
         enabled=cfg.serial.enabled,
     )
 
-    # 도어 자동 제어기 초기화
     door_ctrl = AutoDoorController(serial_ctrl=serial_ctrl, config=cfg.door)
 
-    # 2. 비차단 입력 및 시그널 핸들러
     key_reader = NonBlockingKeyReader()
     is_running = True
 
@@ -75,39 +69,32 @@ def main():
     print(f"\n[SERVER] 파이프라인 준비 완료 (TCP Port: {cfg.net.port})")
     prev_time = time.time()
 
-    # 3. 메인 이벤트 루프
     try:
         while is_running:
-            # 3-1. 종료 키 확인
             key = key_reader.get_key()
             if key and key.lower() == "q":
                 break
 
-            # 3-2. 관제 PC 대시보드 연결 수락 (논블로킹: 미연결 시에도 키오스크 독립 구동)
             if not socket_server.is_connected:
                 socket_server.accept_client()
 
-            # 3-3. 프레임 캡처
             ret, frame = camera.read()
             if not ret or frame is None:
-                time.sleep(0.002)  # 프레임 갱신 대기 시 CPU 과점 방지
+                time.sleep(0.002)  # 프레임 갱신 대기 시 CPU 과점유 방지 (2ms 대기)
                 continue
 
-            # 3-4. AI 추론 실행
             t0 = time.time()
             detections = detector.detect(frame)
             infer_ms = (time.time() - t0) * 1000.0
 
-            # 3-5. 도어 개폐 비즈니스 로직 위임 처리
             door_ctrl.process_detections(detections)
 
-            # 3-6. FPS 계산
             curr_time = time.time()
             time_diff = curr_time - prev_time
             fps = 1.0 / time_diff if time_diff > 0 else 0.0
             prev_time = curr_time
 
-            # 3-7. 최신 하드웨어 상태 수집 및 관제 클라이언트 전송 (연결된 경우에만 송신)
+            # 소켓 클라이언트 연결 시에만 인코딩 및 바이너리 패킷 송신
             if socket_server.is_connected:
                 bin_levels, door_status = serial_ctrl.get_latest_data()
                 meta = {

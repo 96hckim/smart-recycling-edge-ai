@@ -1,8 +1,4 @@
-"""
-stream/socket_server.py
-
-관제 PC 연동 고속 TCP 스트리밍 서버 (JPEG 영상 + JSON 메타데이터)
-"""
+"""관제 PC 연동 초저지연 TCP 영상/메타데이터 스트리밍 서버 모듈."""
 
 import json
 import select
@@ -15,7 +11,7 @@ import numpy as np
 
 
 class StreamSocketServer:
-    """PC 관제 화면으로 영상 프레임과 메타데이터를 바이너리 패킷으로 송신하는 TCP 서버"""
+    """8바이트 바이너리 헤더 프로토콜 기반 JPEG 영상 및 JSON 텔레메트리 송신 서버."""
 
     def __init__(
         self,
@@ -24,6 +20,7 @@ class StreamSocketServer:
         jpeg_quality: int = 70,
         timeout: float = 1.0,
     ):
+        """서버 파라미터 초기화 및 리스닝 소켓 바인딩."""
         self.host = host
         self.port = port
         self.jpeg_quality = jpeg_quality
@@ -38,12 +35,9 @@ class StreamSocketServer:
         self._init_server_socket()
 
     def _init_server_socket(self):
-        """서버 소켓 생성 및 TIME_WAIT 방지 옵션 적용"""
+        """TIME_WAIT 포트 재바인딩(SO_REUSEADDR) 설정 및 수신 대기 소켓 생성."""
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        # 소켓 종료 즉시 포트를 재사용할 수 있도록 설정
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen(1)
         self.server_socket.settimeout(self.timeout)
@@ -51,23 +45,22 @@ class StreamSocketServer:
 
     @property
     def is_connected(self) -> bool:
-        """클라이언트 연결 여부 반환"""
+        """클라이언트 소켓 연결 유지 여부 반환."""
         return self.client_socket is not None
 
     def accept_client(self) -> bool:
-        """관제 PC 클라이언트 접속 대기 (완전 비차단: 0ms 타임아웃)"""
+        """select() 기반 논블로킹(0초) 클라이언트 접속 수락 및 저지연 소켓 옵션 적용."""
         if self.is_connected or self.server_socket is None:
             return False
 
         try:
-            # 대기 중인 연결 요청이 있는지 논블로킹으로 확인 (타임아웃 0초)
             readable, _, _ = select.select([self.server_socket], [], [], 0)
             if not readable:
                 return False
 
             client, addr = self.server_socket.accept()
 
-            # Nagle 알고리즘 비활성화 (초저지연 전송), 송신 버퍼 확장 및 입출력 타임아웃 설정
+            # Nagle 알고리즘 비활성화(초저지연) 및 대용량 송신 버퍼(256KB) 설정
             client.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             client.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 256 * 1024)
             client.settimeout(self.timeout)
@@ -84,28 +77,21 @@ class StreamSocketServer:
             return False
 
     def send_frame(self, frame: np.ndarray, metadata: dict[str, Any]) -> bool:
-        """
-        [헤더(8B) + JPEG 영상 + JSON 메타데이터] 패킷 단일 전송
-
-        - 헤더 구조: [이미지 바이트 길이(4B) + JSON 바이트 길이(4B)] (Big-Endian uint32)
-        """
+        """헤더 8B(이미지 길이 4B + JSON 길이 4B, Big-Endian) 패킹 및 일괄 sendall 송신."""
         if not self.is_connected or self.client_socket is None:
             return False
 
         try:
-            # 1. 영상 JPEG 압축
             success, encimg = cv2.imencode(".jpg", frame, self._encode_params)
             if not success:
                 return False
             img_bytes = encimg.tobytes()
 
-            # 2. 메타데이터 직렬화
             json_bytes = json.dumps(metadata, ensure_ascii=False).encode("utf-8")
 
-            # 3. 8바이트 헤더 패킹
+            # Big-Endian uint32: [이미지 바이트 수(4B)] + [JSON 바이트 수(4B)]
             header = struct.pack(">II", len(img_bytes), len(json_bytes))
 
-            # 4. 일괄 전송
             self.client_socket.sendall(header + img_bytes + json_bytes)
             return True
 
@@ -119,7 +105,7 @@ class StreamSocketServer:
             return False
 
     def close_client(self):
-        """연결된 클라이언트 소켓 안전 해제 (FD 누수 방지)"""
+        """클라이언트 소켓 shutdown/close 및 FD 누수 방지."""
         if self.client_socket is not None:
             try:
                 self.client_socket.shutdown(socket.SHUT_RDWR)
@@ -135,7 +121,7 @@ class StreamSocketServer:
                 self.client_addr = None
 
     def close(self):
-        """서버 소켓 및 클라이언트 연결 전체 해제 (중복 호출 안전)"""
+        """서버 소켓 및 클라이언트 연결 안전 해제."""
         if self.server_socket is None and self.client_socket is None:
             return
 

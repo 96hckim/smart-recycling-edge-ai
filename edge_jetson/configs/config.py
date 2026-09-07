@@ -1,76 +1,71 @@
-"""
-configs/config.py
-
-스마트 분리수거 시스템 전역 불변(Frozen) 설정 정의 모듈
-"""
+"""스마트 재활용 키오스크 전역 불변(Frozen) 설정 모듈."""
 
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# 프로젝트 루트 디렉터리 경로 (edge_jetson/)
 JETSON_ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
 @dataclass(frozen=True)
 class CameraConfig:
-    """카메라 입력 스트림 설정"""
+    """V4L2 카메라 캡처 파라미터 설정."""
 
-    device_id: int = 0  # V4L2 카메라 장치 번호 (/dev/video0)
+    device_id: int = 0
     width: int = 640
     height: int = 480
     fps: int = 60
-    buffer_size: int = 1  # 딜레이 방지용 V4L2 큐 버퍼 크기
-    flip_horizontal: bool = True  # 좌우 반전(거울 모드) 활성화
+    buffer_size: int = 1  # 큐 프레임 지연(Lag) 방지용 최소 버퍼 크기
+    flip_horizontal: bool = True  # 키오스크 사용자 인터랙션용 좌우 반전
 
 
 @dataclass(frozen=True)
 class ModelConfig:
-    """TensorRT 10 및 YOLOv11 검출기 설정"""
+    """YOLOv11 TensorRT 엔진 및 추론 임계값 설정."""
 
     engine_path: Path = JETSON_ROOT_DIR / "models" / "rps_yolo11n_custom_640.engine"
     input_shape: tuple[int, int] = (640, 640)
-    conf_threshold: float = 0.50  # 신뢰도 임계값
-    iou_threshold: float = 0.45  # NMS IOU 임계값
+    conf_threshold: float = 0.50
+    iou_threshold: float = 0.45
     class_names: tuple[str, ...] = (
         "paper",
         "rock",
         "scissors",
-    )  # 추후: ("CAN", "PET", "PAPER")
+    )
 
 
 @dataclass(frozen=True)
 class NetworkConfig:
-    """PC 관제 대시보드 연동 TCP 소켓 설정"""
+    """PC 관제 대시보드 연동 TCP 스트리밍 소켓 설정."""
 
     host: str = "0.0.0.0"
-    port: int = 9000  # 충돌 방지용 커스텀 포트 (기존 8080 대체)
-    jpeg_quality: int = 70  # 전송 이미지 압축률 (1~100)
-    socket_timeout: float = 1.0  # 소켓 입출력 타임아웃(초)
+    port: int = 9000
+    jpeg_quality: int = 70  # 전송 대역폭 절감과 영상 품질 간 최적 균형값
+    socket_timeout: float = 1.0
 
 
 @dataclass(frozen=True)
 class SerialConfig:
-    """STM32 UART 서보모터 제어 통신 설정"""
+    """STM32 MCU UART 통신 설정."""
 
-    port: str = "/tmp/ttyV0"  # "/dev/ttyTHS1"  # Jetson 40Pin UART 기본 포트 (가상 테스트 시 /tmp/ttyV0 등 사용)
+    port: str = "/tmp/ttyV0"  # "/dev/ttyTHS1"
     baudrate: int = 115200
     timeout: float = 0.1
-    enabled: bool = True  # 하드웨어 보드 연결 시 True (미연결 시 자동 시뮬레이션 전환)
+    enabled: bool = True
 
 
 @dataclass(frozen=True)
 class DoorConfig:
-    """도어 제어 FSM 및 디바운스 필터 설정"""
+    """수거함 도어 FSM 디바운스 및 안전 타이머 설정."""
 
-    stable_frames: int = 15  # 문 열림 확정을 위한 연속 감지 프레임 수 (~0.5초)
-    min_hold_sec: float = 2.0  # 문 열림 최소 유지 시간(초)
-    lost_tolerance: int = 15  # 문 닫힘 판정을 위한 물체 부재 연속 프레임 수 (~0.5초)
-    max_open_sec: float = 10.0  # 도어 최장 개방 안전 타임아웃(초) - 방치 시 자동 닫힘
+    stable_frames: int = 15  # 오검출 방지용 연속 인식 프레임 수 (약 0.5초)
+    min_hold_sec: float = 2.0  # 투입 안전을 위한 최소 개방 유지 시간 (초)
+    lost_tolerance: int = 15  # 깜빡임/가림 허용 부재 프레임 수 (약 0.5초)
+    max_open_sec: float = 10.0  # 모터 보호 및 방치 방지용 최대 개방 제한 시간 (초)
 
 
 @dataclass(frozen=True)
 class AppConfig:
-    """최상위 통합 설정 컨테이너"""
+    """전체 서브시스템 통합 설정 컨테이너."""
 
     cam: CameraConfig = field(default_factory=CameraConfig)
     model: ModelConfig = field(default_factory=ModelConfig)

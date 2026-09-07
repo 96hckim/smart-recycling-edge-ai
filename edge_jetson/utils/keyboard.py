@@ -1,8 +1,4 @@
-"""
-utils/keyboard.py
-
-리눅스 터미널 비차단(Non-blocking) 단일 키 입력 감지 모듈
-"""
+"""리눅스 터미널 환경 논블로킹(Non-blocking) 단일 키 입력 감지 모듈."""
 
 import select
 import sys
@@ -11,9 +7,10 @@ import tty
 
 
 class NonBlockingKeyReader:
-    """엔터 입력 없이 키보드 입력을 즉시 감지하는 비차단 리더"""
+    """터미널 cbreak 모드 전환 및 엔터 없는 즉시 키 입력 리더."""
 
     def __init__(self):
+        """표준 입력(stdin) 터미널 속성 백업 및 cbreak 모드 활성화."""
         self.is_tty = sys.stdin.isatty()
         self._restored = False
         self.old_settings = None
@@ -23,17 +20,16 @@ class NonBlockingKeyReader:
             try:
                 self.fd = sys.stdin.fileno()
                 self.old_settings = termios.tcgetattr(self.fd)
-                # 엔터 없이 즉시 단일 문자를 읽도록 cbreak 모드로 전환
+                # 엔터 입력 대기 없이 즉각 문자를 읽도록 tty 속성 변경
                 tty.setcbreak(self.fd)
             except (termios.error, OSError):
                 self.is_tty = False
 
     def get_key(self) -> str | None:
-        """입력 대기열에 키가 있으면 즉시 반환, 없으면 None 반환"""
+        """select() 기반 0초 타임아웃 단일 문자 비차단 감지 (미입력 시 None)."""
         if not self.is_tty or self._restored:
             return None
 
-        # sys.stdin 대기 상태 확인 (타임아웃 0초 = 즉시 반환)
         try:
             if select.select([sys.stdin], [], [], 0)[0]:
                 return sys.stdin.read(1)
@@ -42,7 +38,7 @@ class NonBlockingKeyReader:
         return None
 
     def restore(self):
-        """터미널 설정을 원래 표준 모드로 복구 (중복 호출 안전)"""
+        """터미널 설정을 원래 canonical 모드로 복원 (중복 호출 안전)."""
         if (
             self.is_tty
             and not self._restored

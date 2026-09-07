@@ -1,8 +1,4 @@
-"""
-stream/serial_controller.py
-
-STM32 UART I/O 통신 관리 모듈 (ProtocolParser 위임 구조)
-"""
+"""STM32 MCU 연동 UART 시리얼 I/O 및 가상 시뮬레이션 모듈."""
 
 import threading
 import time
@@ -21,6 +17,8 @@ from stream.protocol import BinLevels, DoorAction, DoorState, DoorStatus, Protoc
 
 
 class SerialController:
+    """백그라운드 수신 스레드와 스레드 락 기반 UART 통신 관리 클래스."""
+
     def __init__(
         self,
         port: str = "/dev/ttyTHS1",
@@ -28,6 +26,7 @@ class SerialController:
         timeout: float = 0.1,
         enabled: bool = False,
     ):
+        """시리얼 통신 파라미터를 설정하고 포트 연결 또는 시뮬레이션 모드 초기화."""
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
@@ -48,6 +47,7 @@ class SerialController:
             print("[SERIAL] 시뮬레이션 모드로 시작합니다.")
 
     def _connect(self):
+        """UART 포트 오픈 및 백그라운드 수신(RX) 스레드 기동."""
         if serial is None:
             print(
                 "[SERIAL] pyserial 모듈이 설치되지 않아 시뮬레이션 모드로 동작합니다."
@@ -75,7 +75,7 @@ class SerialController:
             self.enabled = False
 
     def _rx_loop(self):
-        """프로토콜 파서를 통해 수신 라인을 객체로 변환 및 상태 갱신"""
+        """MCU 수신 패킷 파싱 및 적재율/도어 상태 갱신 백그라운드 루프."""
         while self.running and self.ser is not None:
             try:
                 line = self.ser.readline().decode("utf-8", errors="ignore").strip()
@@ -88,7 +88,6 @@ class SerialController:
                         self._bin_levels = data
                 elif packet_type == "DOOR" and isinstance(data, DoorStatus):
                     with self._lock:
-                        # 하드웨어에서 보고한 상태에 최근 명령 품목명 매핑
                         reported_item = (
                             self._last_commanded_item
                             if data.state == DoorState.OPEN
@@ -99,10 +98,11 @@ class SerialController:
                         )
 
             except (SerialException, OSError):
+                # UART I/O 예외 발생 시 CPU 과점유 방지용 대기
                 time.sleep(0.01)
 
     def send_command(self, action: DoorAction, item_name: str | None = None) -> bool:
-        """DoorAction 열거형과 품목명을 받아 프로토콜 규격으로 전송"""
+        """도어 제어 명령 패킷 인코딩 및 하위 MCU(또는 가상 상태) 송신."""
         with self._lock:
             if action == DoorAction.OPEN:
                 self._last_commanded_item = (item_name or "ALL").upper()
@@ -112,7 +112,7 @@ class SerialController:
         payload = ProtocolParser.encode_door_command(action, item_name)
         success = self._write(payload)
 
-        # 시뮬레이션 모드에서는 송신 즉시 가상 도어 상태 갱신 (대시보드 동기화)
+        # 시뮬레이션 모드 시 가상 도어 상태 즉시 동기화
         if success and (not self.enabled or self.ser is None):
             with self._lock:
                 state = (
@@ -125,6 +125,7 @@ class SerialController:
         return success
 
     def _write(self, text: str) -> bool:
+        """시리얼 포트 바이트 송신 또는 시뮬레이션 콘솔 출력."""
         if not self.enabled or self.ser is None:
             print(f"[SERIAL SIMULATE TX] -> {text.strip()}")
             return True
@@ -139,11 +140,12 @@ class SerialController:
             return False
 
     def get_latest_data(self) -> tuple[dict[str, int], dict[str, str]]:
-        """Qt 관제 전송용 딕셔너리 반환"""
+        """스레드 락 기반 최신 적재율 및 도어 상태 딕셔너리 반환."""
         with self._lock:
             return self._bin_levels.to_dict(), self._door_status.to_dict()
 
     def close(self):
+        """수신 스레드 종료 및 시리얼 포트 해제."""
         self.running = False
         if self.rx_thread and self.rx_thread.is_alive():
             self.rx_thread.join(timeout=0.5)
