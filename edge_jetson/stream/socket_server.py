@@ -118,10 +118,14 @@ class StreamSocketServer:
             return False
 
     def close_client(self):
-        """연결된 클라이언트 소켓 안전 해제"""
+        """연결된 클라이언트 소켓 안전 해제 (FD 누수 방지)"""
         if self.client_socket is not None:
             try:
                 self.client_socket.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+
+            try:
                 self.client_socket.close()
             except OSError:
                 pass

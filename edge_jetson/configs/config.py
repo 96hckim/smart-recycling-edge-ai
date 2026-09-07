@@ -67,6 +67,7 @@ class DoorConfig:
     lost_tolerance: int = (
         15  # [수정] 5 -> 15프레임 (약 0.5초간 완전히 사라져야 닫힘 판정)
     )
+    max_open_sec: float = 10.0  # 도어 최장 개방 안전 타임아웃(초) - 방치 시 자동 닫힘
 
 
 @dataclass(frozen=True)

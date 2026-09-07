@@ -70,21 +70,23 @@ class AutoDoorController:
             self.lost_count = 0
 
     def _handle_open_state(self, top_item: str | None, curr_time: float) -> None:
-        """문이 열린 상태: 최소 시간 보장 및 물체 부재 확인 후 CLOSE 전송"""
-        # 최소 홀드 시간이 지나기 전에는 닫힘 검사 유보
-        if (curr_time - self.door_open_timestamp) < self.config.min_hold_sec:
+        """문이 열린 상태: 최소 시간 보장 및 물체 부재 확인 후 CLOSE 전송 (안전 타임아웃 포함)"""
+        elapsed_open = curr_time - self.door_open_timestamp
+        is_max_timeout = elapsed_open >= self.config.max_open_sec
+
+        # 최소 홀드 시간이 지나기 전에는 닫힘 검사 유보 (최대 타임아웃 초과 시에는 즉시 진행)
+        if not is_max_timeout and elapsed_open < self.config.min_hold_sec:
             return
 
-        if top_item == self.active_item:
+        if top_item == self.active_item and not is_max_timeout:
             self.lost_count = 0
         else:
             self.lost_count += 1
 
-        # 중첩 if 제거: 허용 오차 초과 및 시리얼 전송 성공 조건을 and로 병합
+        # 허용 오차 초과 또는 최대 개방 시간 초과 시 도어 닫기
         if (
-            self.lost_count >= self.config.lost_tolerance
-            and self.serial_ctrl.send_command(DoorAction.CLOSE)
-        ):
+            self.lost_count >= self.config.lost_tolerance or is_max_timeout
+        ) and self.serial_ctrl.send_command(DoorAction.CLOSE):
             self.current_state = DoorState.CLOSED
             self.active_item = None
             self.candidate_item = None

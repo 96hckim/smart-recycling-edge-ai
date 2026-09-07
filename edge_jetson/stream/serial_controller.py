@@ -103,10 +103,11 @@ class SerialController:
 
     def send_command(self, action: DoorAction, item_name: str | None = None) -> bool:
         """DoorAction 열거형과 품목명을 받아 프로토콜 규격으로 전송"""
-        if action == DoorAction.OPEN:
-            self._last_commanded_item = (item_name or "ALL").upper()
-        else:
-            self._last_commanded_item = "ALL"
+        with self._lock:
+            if action == DoorAction.OPEN:
+                self._last_commanded_item = (item_name or "ALL").upper()
+            else:
+                self._last_commanded_item = "ALL"
 
         payload = ProtocolParser.encode_door_command(action, item_name)
         success = self._write(payload)

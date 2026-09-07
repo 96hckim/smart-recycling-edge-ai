@@ -75,6 +75,8 @@ class ProtocolParser:
 
         # 콜론(:) 기준으로 헤더와 본문 분리
         header, body = clean_line.split(":", 1)
+        header = header.strip()
+        body = body.strip()
 
         # 1. 적재함 잔여량: $BIN:45/80/20/10
         if header == "$BIN":
@@ -82,10 +84,10 @@ class ProtocolParser:
             if len(levels) == 4:
                 try:
                     bin_data = BinLevels(
-                        paper=int(levels[0]),
-                        can=int(levels[1]),
-                        pet=int(levels[2]),
-                        vinyl=int(levels[3]),
+                        paper=int(levels[0].strip()),
+                        can=int(levels[1].strip()),
+                        pet=int(levels[2].strip()),
+                        vinyl=int(levels[3].strip()),
                     )
                     return "BIN", bin_data
                 except ValueError:
@@ -94,7 +96,10 @@ class ProtocolParser:
         # 2. 도어 상태: $DOOR_STATE:OPEN / $DOOR_STATE:CLOSED
         elif header == "$DOOR_STATE":
             state_str = body.upper()
-            state = DoorState.OPEN if state_str == "OPEN" else DoorState.CLOSED
-            return "DOOR", DoorStatus(item="ALL", state=state)
+            if state_str == "OPEN":
+                return "DOOR", DoorStatus(item="ALL", state=DoorState.OPEN)
+            elif state_str == "CLOSED":
+                return "DOOR", DoorStatus(item="ALL", state=DoorState.CLOSED)
+            return "ERROR", None
 
         return "UNKNOWN", None
