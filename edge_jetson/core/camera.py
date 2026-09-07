@@ -35,10 +35,11 @@ class CameraStream:
         self.ret: bool = False
         self.running: bool = False
         self.lock: threading.Lock = threading.Lock()
-        self.new_frame_event: threading.Event = threading.Event()
 
         # 1. 카메라 디바이스 초기화
         self.cap = cv2.VideoCapture(device_id, cv2.CAP_V4L2)
+        # MJPG 포맷 지정 (하드웨어 대역폭 절약 및 지연 최소화)
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         self.cap.set(cv2.CAP_PROP_FPS, fps)
@@ -56,7 +57,6 @@ class CameraStream:
             raise RuntimeError(
                 f"[CAMERA ERROR] 카메라({device_id}) 초기 프레임 획득 실패"
             )
-        self.new_frame_event.set()
 
         # 2. 백그라운드 캡처 스레드 시작
         self.running = True
@@ -80,28 +80,21 @@ class CameraStream:
                 with self.lock:
                     self.frame = frame
                     self.ret = ret
-                self.new_frame_event.set()
             else:
                 with self.lock:
                     self.ret = False
-                self.new_frame_event.set()
                 time.sleep(0.005)
 
-    def read(self, timeout: float = 0.05) -> tuple[bool, np.ndarray | None]:
-        """새 프레임 도착 대기 후 최신 프레임 반환 (중복 추론 방지 및 CPU/GPU 과점 차단)"""
-        if self.new_frame_event.wait(timeout=timeout):
-            self.new_frame_event.clear()
-            with self.lock:
-                if not self.ret or self.frame is None:
-                    return False, None
-                return True, self.frame
-
-        return False, None
+    def read(self) -> tuple[bool, np.ndarray | None]:
+        """최신 프레임 즉시 반환 (논블로킹 초저지연 스레드 동기화)"""
+        with self.lock:
+            if not self.ret or self.frame is None:
+                return False, None
+            return True, self.frame
 
     def release(self):
         """스레드 종료 및 카메라 장치 해제 (중복 호출 안전)"""
         self.running = False
-        self.new_frame_event.set()
 
         if self.thread is not None and self.thread.is_alive():
             self.thread.join(timeout=1.0)

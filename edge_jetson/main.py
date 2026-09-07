@@ -6,6 +6,7 @@ edge_jetson/main.py
 
 import signal
 import time
+from contextlib import suppress
 
 from configs.config import cfg
 from core.camera import CameraStream
@@ -121,11 +122,16 @@ def main():
 
     finally:
         print("\n[CLEANUP] 전체 리소스를 안전하게 해제합니다...")
-        key_reader.restore()
-        socket_server.close()
-        serial_ctrl.close()
-        trt_engine.destroy()
-        camera.release()
+        with suppress(Exception):
+            key_reader.restore()
+        with suppress(Exception):
+            socket_server.close()
+        with suppress(Exception):
+            serial_ctrl.close()
+        with suppress(Exception):
+            trt_engine.destroy()
+        with suppress(Exception):
+            camera.release()
 
 
 if __name__ == "__main__":

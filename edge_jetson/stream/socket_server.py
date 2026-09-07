@@ -67,8 +67,9 @@ class StreamSocketServer:
 
             client, addr = self.server_socket.accept()
 
-            # Nagle 알고리즘 비활성화 (초저지연 전송) 및 입출력 타임아웃 설정
+            # Nagle 알고리즘 비활성화 (초저지연 전송), 송신 버퍼 확장 및 입출력 타임아웃 설정
             client.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            client.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 256 * 1024)
             client.settimeout(self.timeout)
 
             self.client_socket = client

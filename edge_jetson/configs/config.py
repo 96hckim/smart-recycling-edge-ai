@@ -64,9 +64,7 @@ class DoorConfig:
 
     stable_frames: int = 15  # 문 열림 확정을 위한 연속 감지 프레임 수 (~0.5초)
     min_hold_sec: float = 2.0  # 문 열림 최소 유지 시간(초)
-    lost_tolerance: int = (
-        15  # [수정] 5 -> 15프레임 (약 0.5초간 완전히 사라져야 닫힘 판정)
-    )
+    lost_tolerance: int = 15  # 문 닫힘 판정을 위한 물체 부재 연속 프레임 수 (~0.5초)
     max_open_sec: float = 10.0  # 도어 최장 개방 안전 타임아웃(초) - 방치 시 자동 닫힘
 
 
@@ -78,7 +76,7 @@ class AppConfig:
     model: ModelConfig = field(default_factory=ModelConfig)
     net: NetworkConfig = field(default_factory=NetworkConfig)
     serial: SerialConfig = field(default_factory=SerialConfig)
-    door: DoorConfig = field(default_factory=DoorConfig)  # [추가]
+    door: DoorConfig = field(default_factory=DoorConfig)
 
 
 # 전역 설정 싱글톤 인스턴스
