@@ -79,6 +79,8 @@ class CameraStream:
                     self.frame = frame
                     self.ret = ret
             else:
+                with self.lock:
+                    self.ret = False
                 time.sleep(0.005)
 
     def read(self) -> tuple[bool, np.ndarray | None]:
@@ -101,6 +103,12 @@ class CameraStream:
                 self.cap.release()
                 print("[CAMERA] 장치 해제 완료")
             self.cap = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
 
     def __del__(self):
         self.release()

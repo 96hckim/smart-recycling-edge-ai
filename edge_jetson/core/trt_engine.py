@@ -85,6 +85,16 @@ class TensorRTEngine:
             with suppress(cuda.Error, OSError, AttributeError):
                 self.stream.synchronize()
 
+        with suppress(cuda.Error, OSError, AttributeError):
+            if hasattr(self, "d_input") and self.d_input is not None:
+                self.d_input.free()
+                self.d_input = None
+            if hasattr(self, "d_output") and self.d_output is not None:
+                self.d_output.free()
+                self.d_output = None
+
+        self.h_input = None
+        self.h_output = None
         self.context = None
         self.engine = None
         self.stream = None

@@ -52,10 +52,10 @@ class NetworkConfig:
 class SerialConfig:
     """STM32 UART 서보모터 제어 통신 설정"""
 
-    port: str = "/tmp/ttyV0"  # Jetson 40Pin UART
+    port: str = "/tmp/ttyV0"  # "/dev/ttyTHS1"  # Jetson 40Pin UART 기본 포트 (가상 테스트 시 /tmp/ttyV0 등 사용)
     baudrate: int = 115200
     timeout: float = 0.1
-    enabled: bool = True  # 하드웨어 보드 연결 시 True로 전환
+    enabled: bool = True  # 하드웨어 보드 연결 시 True (미연결 시 자동 시뮬레이션 전환)
 
 
 @dataclass(frozen=True)

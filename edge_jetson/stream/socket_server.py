@@ -5,6 +5,7 @@ stream/socket_server.py
 """
 
 import json
+import select
 import socket
 import struct
 from typing import Any
@@ -54,14 +55,19 @@ class StreamSocketServer:
         return self.client_socket is not None
 
     def accept_client(self) -> bool:
-        """관제 PC 클라이언트 접속 대기 (논블로킹 타임아웃)"""
+        """관제 PC 클라이언트 접속 대기 (완전 비차단: 0ms 타임아웃)"""
         if self.is_connected or self.server_socket is None:
             return False
 
         try:
+            # 대기 중인 연결 요청이 있는지 논블로킹으로 확인 (타임아웃 0초)
+            readable, _, _ = select.select([self.server_socket], [], [], 0)
+            if not readable:
+                return False
+
             client, addr = self.server_socket.accept()
 
-            # Nagle 알고리즘 비활성화 (초저지연 전송) 및 타임아웃 설정
+            # Nagle 알고리즘 비활성화 (초저지연 전송) 및 입출력 타임아웃 설정
             client.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             client.settimeout(self.timeout)
 
@@ -70,7 +76,7 @@ class StreamSocketServer:
             print(f"[NET] 관제 PC 연결 수락: {addr}")
             return True
 
-        except TimeoutError:
+        except (TimeoutError, BlockingIOError):
             return False
         except OSError as e:
             print(f"[NET ERROR] 클라이언트 연결 실패: {e}")
@@ -125,6 +131,9 @@ class StreamSocketServer:
 
     def close(self):
         """서버 소켓 및 클라이언트 연결 전체 해제 (중복 호출 안전)"""
+        if self.server_socket is None and self.client_socket is None:
+            return
+
         self.close_client()
 
         if self.server_socket is not None:
@@ -134,8 +143,13 @@ class StreamSocketServer:
                 pass
             finally:
                 self.server_socket = None
+            print(f"[NET] 포트 {self.port} 소켓 정상 반환")
 
-        print(f"[NET] 포트 {self.port} 소켓 정상 반환")
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def __del__(self):
         self.close()

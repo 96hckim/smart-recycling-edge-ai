@@ -83,6 +83,7 @@ def main():
                 break
 
             # 3-2. 관제 PC 대시보드 연결 대기 (논블로킹)
+            # 3-2. 관제 PC 대시보드 연결 수락 (논블로킹: 미연결 시에도 키오스크 독립 구동)
             if not socket_server.is_connected:
                 socket_server.accept_client()
                 continue
@@ -90,6 +91,7 @@ def main():
             # 3-3. 프레임 캡처
             ret, frame = camera.read()
             if not ret or frame is None:
+                time.sleep(0.002)  # 프레임 갱신 대기 시 CPU 과점 방지
                 continue
 
             # 3-4. AI 추론 실행
@@ -117,6 +119,18 @@ def main():
                 "door": door_status,
             }
             socket_server.send_frame(frame, meta)
+            # 3-7. 최신 하드웨어 상태 수집 및 관제 클라이언트 전송 (연결된 경우에만 송신)
+            if socket_server.is_connected:
+                bin_levels, door_status = serial_ctrl.get_latest_data()
+                meta = {
+                    "timestamp": curr_time,
+                    "fps": round(fps, 1),
+                    "infer_ms": round(infer_ms, 2),
+                    "detections": detections,
+                    "bin_levels": bin_levels,
+                    "door": door_status,
+                }
+                socket_server.send_frame(frame, meta)
 
     finally:
         print("\n[CLEANUP] 전체 리소스를 안전하게 해제합니다...")
