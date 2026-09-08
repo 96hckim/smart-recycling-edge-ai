@@ -258,4 +258,9 @@ class HomeViewModel @Inject constructor(
     fun clearErrorMessage() {
         _uiState.update { it.copy(errorMessage = null) }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        kioskRepository.disconnectKioskWebSocket()
+    }
 }

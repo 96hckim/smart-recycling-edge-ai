@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -69,48 +70,57 @@ class MainActivity : ComponentActivity() {
                     }
 
                     loginUiState.isLoggedIn -> {
+                        val onConfirmResult = remember(
+                            homeViewModel,
+                            historyViewModel,
+                            shopViewModel,
+                            myPageViewModel
+                        ) {
+                            {
+                                homeViewModel.dismissRecycleResultDialog()
+                                historyViewModel.refresh()
+                                shopViewModel.refresh()
+                                myPageViewModel.loadMyPageData()
+                            }
+                        }
+                        val onConfirmPurchase = remember(shopViewModel, homeViewModel) {
+                            {
+                                shopViewModel.confirmPurchase()
+                                homeViewModel.refresh()
+                            }
+                        }
+                        val onConfirmLogout = remember(myPageViewModel, loginViewModel) {
+                            {
+                                myPageViewModel.dismissLogoutDialog()
+                                loginViewModel.logout()
+                            }
+                        }
+
                         MainScreen(
                             homeUiState = homeUiState,
                             historyUiState = historyUiState,
                             shopUiState = shopUiState,
                             myPageUiState = myPageUiState,
-                            onRefreshHome = { homeViewModel.refresh() },
-                            onOpenQRScanner = { homeViewModel.openQRScanner() },
-                            onCloseQRScanner = { homeViewModel.closeQRScanner() },
-                            onQrScanned = { rawContent ->
-                                homeViewModel.handleScannedQrContent(rawContent)
-                            },
-                            onConfirmResult = {
-                                homeViewModel.dismissRecycleResultDialog()
-                                historyViewModel.refresh()
-                                shopViewModel.refresh()
-                                myPageViewModel.loadMyPageData()
-                            },
-                            onCancelActiveSession = { homeViewModel.cancelKioskSession() },
-                            onRefreshHistory = { historyViewModel.refresh() },
-                            onCategorySelected = { category -> shopViewModel.selectCategory(category) },
-                            onOpenPurchaseDialog = { product ->
-                                shopViewModel.openPurchaseDialog(
-                                    product
-                                )
-                            },
-                            onDismissPurchaseDialog = { shopViewModel.dismissPurchaseDialog() },
-                            onConfirmPurchase = {
-                                shopViewModel.confirmPurchase()
-                                homeViewModel.refresh()
-                            },
-                            onDismissCouponDialog = { shopViewModel.dismissCouponDialog() },
-                            onShowLogoutDialog = { myPageViewModel.showLogoutDialog() },
-                            onDismissLogoutDialog = { myPageViewModel.dismissLogoutDialog() },
-                            onConfirmLogout = {
-                                myPageViewModel.dismissLogoutDialog()
-                                loginViewModel.logout()
-                            },
-                            onLogoutClick = { loginViewModel.logout() },
-                            onErrorMessageShownHome = { homeViewModel.clearErrorMessage() },
-                            onErrorMessageShownHistory = { historyViewModel.clearErrorMessage() },
-                            onErrorMessageShownShop = { shopViewModel.clearErrorMessage() },
-                            onErrorMessageShownMyPage = { myPageViewModel.clearErrorMessage() }
+                            onRefreshHome = homeViewModel::refresh,
+                            onOpenQRScanner = homeViewModel::openQRScanner,
+                            onCloseQRScanner = homeViewModel::closeQRScanner,
+                            onQrScanned = homeViewModel::handleScannedQrContent,
+                            onConfirmResult = onConfirmResult,
+                            onCancelActiveSession = homeViewModel::cancelKioskSession,
+                            onRefreshHistory = historyViewModel::refresh,
+                            onCategorySelected = shopViewModel::selectCategory,
+                            onOpenPurchaseDialog = shopViewModel::openPurchaseDialog,
+                            onDismissPurchaseDialog = shopViewModel::dismissPurchaseDialog,
+                            onConfirmPurchase = onConfirmPurchase,
+                            onDismissCouponDialog = shopViewModel::dismissCouponDialog,
+                            onShowLogoutDialog = myPageViewModel::showLogoutDialog,
+                            onDismissLogoutDialog = myPageViewModel::dismissLogoutDialog,
+                            onConfirmLogout = onConfirmLogout,
+                            onLogoutClick = loginViewModel::logout,
+                            onErrorMessageShownHome = homeViewModel::clearErrorMessage,
+                            onErrorMessageShownHistory = historyViewModel::clearErrorMessage,
+                            onErrorMessageShownShop = shopViewModel::clearErrorMessage,
+                            onErrorMessageShownMyPage = myPageViewModel::clearErrorMessage
                         )
                     }
 
@@ -118,15 +128,19 @@ class MainActivity : ComponentActivity() {
                         val displayErrorMessage =
                             loginUiState.errorMessage ?: homeUiState.errorMessage
 
-                        LoginScreen(
-                            uiState = loginUiState.copy(errorMessage = displayErrorMessage),
-                            onPhoneChanged = { loginViewModel.onPhoneChanged(it) },
-                            onNameChanged = { loginViewModel.onNameChanged(it) },
-                            onLoginClick = { loginViewModel.login() },
-                            onErrorMessageShown = {
+                        val onLoginErrorMessageShown = remember(loginViewModel, homeViewModel) {
+                            {
                                 loginViewModel.clearErrorMessage()
                                 homeViewModel.clearErrorMessage()
                             }
+                        }
+
+                        LoginScreen(
+                            uiState = loginUiState.copy(errorMessage = displayErrorMessage),
+                            onPhoneChanged = loginViewModel::onPhoneChanged,
+                            onNameChanged = loginViewModel::onNameChanged,
+                            onLoginClick = loginViewModel::login,
+                            onErrorMessageShown = onLoginErrorMessageShown
                         )
                     }
                 }

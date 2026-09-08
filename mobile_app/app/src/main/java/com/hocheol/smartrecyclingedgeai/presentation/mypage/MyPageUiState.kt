@@ -1,8 +1,10 @@
 package com.hocheol.smartrecyclingedgeai.presentation.mypage
 
+import androidx.compose.runtime.Immutable
 import com.hocheol.smartrecyclingedgeai.domain.model.EcoLevel
 import com.hocheol.smartrecyclingedgeai.domain.model.User
 
+@Immutable
 data class MyPageUiState(
     val user: User? = null,
     val totalRecycleCount: Int = 0,

@@ -1,5 +1,8 @@
 package com.hocheol.smartrecyclingedgeai.domain.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class RecycleResult(
     val userId: Int,
     val paperCount: Int,

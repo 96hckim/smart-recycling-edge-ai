@@ -8,7 +8,7 @@ data class RecycleCompleteEvent(
     @Json(name = "event")
     val event: String,
     @Json(name = "user_id")
-    val userId: Int,
+    val userId: Int? = null,
     @Json(name = "paper_count")
     val paperCount: Int = 0,
     @Json(name = "can_count")
@@ -22,5 +22,5 @@ data class RecycleCompleteEvent(
     @Json(name = "carbon_saved_g")
     val carbonSavedG: Double = 0.0,
     @Json(name = "total_points")
-    val totalPoints: Int = 0
+    val totalPoints: Int? = 0
 )

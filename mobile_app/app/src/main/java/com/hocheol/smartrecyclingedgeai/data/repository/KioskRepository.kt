@@ -10,8 +10,6 @@ import com.hocheol.smartrecyclingedgeai.data.remote.KioskWebSocketManager
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleLog
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleResult
 import com.hocheol.smartrecyclingedgeai.domain.model.User
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -28,14 +26,14 @@ class KioskRepository @Inject constructor(
 
     val recycleResultFlow: Flow<RecycleResult> = webSocketManager.recycleEventFlow.map { event ->
         RecycleResult(
-            userId = event.userId,
+            userId = event.userId ?: 0,
             paperCount = event.paperCount,
             canCount = event.canCount,
             petCount = event.petCount,
             vinylCount = event.vinylCount,
             earnedPoints = event.earnedPoints,
             carbonSavedG = event.carbonSavedG,
-            totalPoints = event.totalPoints
+            totalPoints = event.totalPoints ?: 0
         )
     }
 
@@ -44,10 +42,11 @@ class KioskRepository @Inject constructor(
             val response = apiService.getUserInfo(userId)
             val body = response.body()
             if (response.isSuccessful && body != null) {
+                val userName = body.name ?: "회원"
                 val user = User(
                     id = body.id,
                     phone = body.phone,
-                    name = body.name,
+                    name = userName,
                     points = body.points,
                     createdAt = body.createdAt
                 )
@@ -59,7 +58,9 @@ class KioskRepository @Inject constructor(
                 )
                 Result.success(user)
             } else {
-                Result.failure(Exception("유저 정보 조회 실패 (${response.code()})"))
+                val errorString = response.errorBody()?.string() ?: ""
+                val errorMessage = parseErrorMessage(errorString, response.code(), "유저 정보 조회 실패")
+                Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
             Result.failure(Exception("네트워크 통신 오류: ${e.localizedMessage}"))
@@ -74,8 +75,9 @@ class KioskRepository @Inject constructor(
             if (response.isSuccessful && body != null) {
                 Result.success(body)
             } else {
-                val errorBody = response.errorBody()?.string() ?: "키오스크 바인딩 실패"
-                Result.failure(Exception("바인딩 실패 (${response.code()}): $errorBody"))
+                val errorString = response.errorBody()?.string() ?: ""
+                val errorMessage = parseErrorMessage(errorString, response.code(), "키오스크 바인딩 실패")
+                Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
             Result.failure(Exception("네트워크 통신 오류: ${e.localizedMessage}"))
@@ -102,7 +104,9 @@ class KioskRepository @Inject constructor(
                 }
                 Result.success(logs)
             } else {
-                Result.failure(Exception("배출 내역 조회 실패 (${response.code()})"))
+                val errorString = response.errorBody()?.string() ?: ""
+                val errorMessage = parseErrorMessage(errorString, response.code(), "배출 내역 조회 실패")
+                Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
             Result.failure(Exception("네트워크 통신 오류: ${e.localizedMessage}"))
@@ -127,7 +131,7 @@ class KioskRepository @Inject constructor(
                 Result.success(body)
             } else {
                 val errorString = response.errorBody()?.string() ?: ""
-                val errorMessage = parseErrorMessage(errorString, response.code())
+                val errorMessage = parseErrorMessage(errorString, response.code(), "포인트 차감 실패")
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
@@ -135,17 +139,16 @@ class KioskRepository @Inject constructor(
         }
     }
 
-    private fun parseErrorMessage(errorString: String, statusCode: Int): String {
+    private fun parseErrorMessage(
+        errorString: String,
+        statusCode: Int,
+        defaultTitle: String = "요청 실패"
+    ): String {
         return try {
-            val moshi = Moshi.Builder()
-                .addLast(KotlinJsonAdapterFactory())
-                .build()
-            val jsonAdapter = moshi.adapter(Map::class.java)
-            val map = jsonAdapter.fromJson(errorString)
-            val detail = map?.get("detail") as? String
-            detail ?: "포인트 차감 실패 ($statusCode)"
-        } catch (e: Exception) {
-            if (errorString.isNotBlank()) errorString else "포인트 차감 실패 ($statusCode)"
+            val match = Regex("\"detail\"\\s*:\\s*\"([^\"]+)\"").find(errorString)
+            match?.groupValues?.get(1) ?: "$defaultTitle ($statusCode)"
+        } catch (_: Exception) {
+            errorString.ifBlank { "$defaultTitle ($statusCode)" }
         }
     }
 

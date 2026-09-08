@@ -10,7 +10,7 @@ data class UserResponse(
     @Json(name = "phone")
     val phone: String,
     @Json(name = "name")
-    val name: String,
+    val name: String? = "회원",
     @Json(name = "points")
     val points: Int,
     @Json(name = "created_at")

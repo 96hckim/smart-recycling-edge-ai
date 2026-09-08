@@ -1,7 +1,9 @@
 package com.hocheol.smartrecyclingedgeai.data.model.response
 
 import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 
+@JsonClass(generateAdapter = true)
 data class PointDeductResponse(
     @Json(name = "status") val status: String,
     @Json(name = "user_id") val userId: Int,

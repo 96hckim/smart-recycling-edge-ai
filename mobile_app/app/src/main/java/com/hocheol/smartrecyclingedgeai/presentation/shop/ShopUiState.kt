@@ -1,8 +1,10 @@
 package com.hocheol.smartrecyclingedgeai.presentation.shop
 
+import androidx.compose.runtime.Immutable
 import com.hocheol.smartrecyclingedgeai.domain.model.ShopCategory
 import com.hocheol.smartrecyclingedgeai.domain.model.ShopProduct
 
+@Immutable
 data class ShopUiState(
     val userPoints: Int = 0,
     val selectedCategory: ShopCategory = ShopCategory.ALL,

@@ -1,5 +1,8 @@
 package com.hocheol.smartrecyclingedgeai.presentation.login
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class LoginUiState(
     val phone: String = "",
     val name: String = "",

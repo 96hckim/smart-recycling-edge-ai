@@ -26,10 +26,11 @@ class AuthRepository @Inject constructor(
             val response = apiService.login(request)
             val body = response.body()
             if (response.isSuccessful && body != null) {
+                val userName = body.name ?: "회원"
                 val user = User(
                     id = body.id,
                     phone = body.phone,
-                    name = body.name,
+                    name = userName,
                     points = body.points,
                     createdAt = body.createdAt
                 )
@@ -40,11 +41,21 @@ class AuthRepository @Inject constructor(
                 )
                 Result.success(user)
             } else {
-                val errorMsg = response.errorBody()?.string() ?: "로그인에 실패했습니다."
-                Result.failure(Exception("로그인 실패 (${response.code()}): $errorMsg"))
+                val errorString = response.errorBody()?.string() ?: ""
+                val errorMessage = parseErrorMessage(errorString, response.code())
+                Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
             Result.failure(Exception("네트워크 통신 오류가 발생했습니다: ${e.localizedMessage}"))
+        }
+    }
+
+    private fun parseErrorMessage(errorString: String, statusCode: Int): String {
+        return try {
+            val match = Regex("\"detail\"\\s*:\\s*\"([^\"]+)\"").find(errorString)
+            match?.groupValues?.get(1) ?: "로그인 실패 ($statusCode)"
+        } catch (_: Exception) {
+            errorString.ifBlank { "로그인 실패 ($statusCode)" }
         }
     }
 

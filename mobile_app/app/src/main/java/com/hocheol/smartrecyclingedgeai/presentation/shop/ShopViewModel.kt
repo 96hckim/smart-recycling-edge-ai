@@ -2,9 +2,9 @@ package com.hocheol.smartrecyclingedgeai.presentation.shop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hocheol.smartrecyclingedgeai.data.datasource.FakeShopDataSource
 import com.hocheol.smartrecyclingedgeai.data.local.SessionManager
 import com.hocheol.smartrecyclingedgeai.data.repository.KioskRepository
-import com.hocheol.smartrecyclingedgeai.domain.model.DummyShopProducts
 import com.hocheol.smartrecyclingedgeai.domain.model.ShopCategory
 import com.hocheol.smartrecyclingedgeai.domain.model.ShopProduct
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,7 +33,7 @@ class ShopViewModel @Inject constructor(
     }
 
     private fun loadProducts() {
-        _uiState.update { it.copy(products = DummyShopProducts.sampleProducts) }
+        _uiState.update { it.copy(products = FakeShopDataSource.sampleProducts) }
     }
 
     private fun observeUserPoints() {
@@ -89,7 +89,17 @@ class ShopViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
         viewModelScope.launch {
-            val userId = sessionManager.userIdFlow.firstOrNull() ?: 1
+            val userId = sessionManager.userIdFlow.firstOrNull()
+            if (userId == null) {
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = false,
+                        selectedProductForPurchase = null,
+                        errorMessage = "상품 교환을 위해 로그인이 필요합니다."
+                    )
+                }
+                return@launch
+            }
             val description = "${product.brand} ${product.name}"
 
             val result = kioskRepository.deductPoints(

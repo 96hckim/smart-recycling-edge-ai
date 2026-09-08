@@ -1,8 +1,10 @@
 package com.hocheol.smartrecyclingedgeai.presentation.home
 
+import androidx.compose.runtime.Immutable
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleResult
 import com.hocheol.smartrecyclingedgeai.domain.model.User
 
+@Immutable
 data class HomeUiState(
     val user: User? = null,
     val isLoading: Boolean = false,
