@@ -3,15 +3,8 @@
 import threading
 import time
 
-try:
-    import serial
-    from serial import SerialException
-except ImportError:
-    serial = None  # type: ignore
-
-    class SerialException(Exception):  # type: ignore
-        pass
-
+import serial
+from serial import SerialException
 
 from stream.protocol import BinLevels, DoorAction, DoorState, DoorStatus, ProtocolParser
 
