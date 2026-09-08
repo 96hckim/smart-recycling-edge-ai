@@ -111,15 +111,16 @@ server/
 
 ### 1. REST API
 
-| Method | Endpoint                    | Description                       | Request Body                                             | Response Body                                                                     |
-| :----- | :-------------------------- | :-------------------------------- | :------------------------------------------------------- | :-------------------------------------------------------------------------------- |
-| `GET`  | `/health`                   | 서버 헬스체크                     | -                                                        | `{"status": "OK", "service": "..."}`                                              |
-| `POST` | `/api/auth/login`           | 간편 로그인 및 신규 가입 (UPSERT) | `{"phone": str, "name": str}`                            | `UserResponse` (`id`, `phone`, `name`, `points`, `created_at`)                    |
-| `POST` | `/api/kiosk/bind`           | 키오스크 QR 세션 바인딩           | `{"bin_id": int, "user_id": int}`                        | `{"status": "SUCCESS", "message": str, "bin_id": int, "user_id": int}`            |
-| `POST` | `/api/recycle/submit`       | 분리배출 정산 및 로그 기록        | `RecycleSubmitRequest` (품목별 수량, 탄소절감량, 포인트) | `{"status": "SUCCESS", "log_id": int, "earned_points": int, "total_points": int}` |
-| `GET`  | `/api/users/{user_id}`      | 사용자 단일 프로필 및 포인트 조회 | -                                                        | `UserResponse`                                                                    |
-| `GET`  | `/api/users/{user_id}/logs` | 사용자 배출 상세 이력 목록 조회   | Query params (optional)                                  | `{"user_id": int, "total_count": int, "logs": [...]}`                             |
-| `POST` | `/api/users/deduct`         | 리워드 포인트 안전 차감           | `{"user_id": int, "amount": int, "description": str}`    | `PointDeductResponse` (`deducted_amount`, `remaining_points`)                     |
+| Method | Endpoint                    | Description                         | Request Body                                             | Response Body                                                                     |
+| :----- | :-------------------------- | :---------------------------------- | :------------------------------------------------------- | :-------------------------------------------------------------------------------- |
+| `GET`  | `/health`                   | 서버 헬스체크                       | -                                                        | `{"status": "OK", "service": "..."}`                                              |
+| `POST` | `/api/auth/login`           | 간편 로그인 및 신규 가입 (UPSERT)   | `{"phone": str, "name": str}`                            | `UserResponse` (`id`, `phone`, `name`, `points`, `created_at`)                    |
+| `POST` | `/api/kiosk/bind`           | 키오스크 QR 세션 바인딩             | `{"bin_id": int, "user_id": int}`                        | `{"status": "SUCCESS", "message": str, "bin_id": int, "user_id": int}`            |
+| `POST` | `/api/kiosk/cancel`         | 키오스크/모바일 투입 세션 중도 취소 | `{"bin_id": int, "user_id": int, "reason": str}`         | `{"status": "SUCCESS", "message": str, "bin_id": int}`                            |
+| `POST` | `/api/recycle/submit`       | 분리배출 정산 및 로그 기록          | `RecycleSubmitRequest` (품목별 수량, 탄소절감량, 포인트) | `{"status": "SUCCESS", "log_id": int, "earned_points": int, "total_points": int}` |
+| `GET`  | `/api/users/{user_id}`      | 사용자 단일 프로필 및 포인트 조회   | -                                                        | `UserResponse`                                                                    |
+| `GET`  | `/api/users/{user_id}/logs` | 사용자 배출 상세 이력 목록 조회     | Query params (optional)                                  | `{"user_id": int, "total_count": int, "logs": [...]}`                             |
+| `POST` | `/api/users/deduct`         | 리워드 포인트 안전 차감             | `{"user_id": int, "amount": int, "description": str}`    | `PointDeductResponse` (`deducted_amount`, `remaining_points`)                     |
 
 ### 2. WebSocket Specification
 
@@ -135,6 +136,15 @@ server/
       "name": "홍길동",
       "phone": "010-1234-5678",
       "points": 120
+    }
+    ```
+  - **`SESSION_CANCELLED` (Server -> Kiosk & Mobile)**: 키오스크 또는 모바일에서 취소 시 양측 기기 화면 복귀 동기화.
+    ```json
+    {
+      "event": "SESSION_CANCELLED",
+      "bin_id": 1,
+      "user_id": 1,
+      "reason": "USER_CANCELLED"
     }
     ```
   - **`RECYCLE_COMPLETE` (Server -> Mobile)**: 키오스크 배출 정산 완료 시 모바일 알림 푸시.

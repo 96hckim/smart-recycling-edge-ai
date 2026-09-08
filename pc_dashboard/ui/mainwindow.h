@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 키오스크 최상위 윈도우, 화면 스택 라우팅 및 비전/백엔드 이벤트 오케스트레이터 헤더.
  */
 #pragma once
@@ -50,6 +50,7 @@ private slots:
     void onReturnToIdle();
 
     void onUserAuthenticated(int userId, const QString& name, const QString& phone, int currentPoints);
+    void onRemoteSessionCancelled();
     void onSubmitCompleted(int logId, int totalPoints);
     void onNetworkError(const QString& errorMessage);
 

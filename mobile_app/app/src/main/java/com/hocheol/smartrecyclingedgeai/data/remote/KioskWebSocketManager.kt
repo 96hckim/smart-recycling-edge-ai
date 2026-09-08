@@ -57,8 +57,13 @@ class KioskWebSocketManager @Inject constructor(
     private val _recycleEventFlow = MutableSharedFlow<RecycleCompleteEvent>(extraBufferCapacity = 1)
     val recycleEventFlow: SharedFlow<RecycleCompleteEvent> = _recycleEventFlow.asSharedFlow()
 
+    // 실시간 세션 중도 취소 이벤트 수신 파이프라인
+    private val _sessionCancelFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val sessionCancelFlow: SharedFlow<Unit> = _sessionCancelFlow.asSharedFlow()
+
     private val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     private val eventAdapter = moshi.adapter(RecycleCompleteEvent::class.java)
+
 
     /**
      * 특정 키오스크 수거함(binId)에 실시간 웹소켓 세션 연결
@@ -82,12 +87,16 @@ class KioskWebSocketManager @Inject constructor(
             override fun onMessage(webSocket: WebSocket, text: String) {
                 try {
                     val event = eventAdapter.fromJson(text)
-                    if (event != null && event.event == Constants.EVENT_RECYCLE_COMPLETE) {
-                        _recycleEventFlow.tryEmit(event)
+                    if (event != null) {
+                        when (event.event) {
+                            Constants.EVENT_RECYCLE_COMPLETE -> _recycleEventFlow.tryEmit(event)
+                            Constants.EVENT_SESSION_CANCELLED -> _sessionCancelFlow.tryEmit(Unit)
+                        }
                     }
                 } catch (_: Exception) {
                 }
             }
+
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 _connectionState.value =

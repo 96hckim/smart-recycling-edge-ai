@@ -2,8 +2,10 @@ package com.hocheol.smartrecyclingedgeai.data.repository
 
 import com.hocheol.smartrecyclingedgeai.data.local.SessionManager
 import com.hocheol.smartrecyclingedgeai.data.model.request.KioskBindRequest
+import com.hocheol.smartrecyclingedgeai.data.model.request.KioskCancelRequest
 import com.hocheol.smartrecyclingedgeai.data.model.request.PointDeductRequest
 import com.hocheol.smartrecyclingedgeai.data.model.response.KioskBindResponse
+import com.hocheol.smartrecyclingedgeai.data.model.response.KioskCancelResponse
 import com.hocheol.smartrecyclingedgeai.data.model.response.PointDeductResponse
 import com.hocheol.smartrecyclingedgeai.data.remote.KioskApiService
 import com.hocheol.smartrecyclingedgeai.data.remote.KioskWebSocketManager
@@ -27,6 +29,9 @@ class KioskRepository @Inject constructor(
     val userIdFlow: Flow<Int?> = sessionManager.userIdFlow
     val userPointsFlow: Flow<Int?> = sessionManager.userPointsFlow
 
+    // 실시간 세션 중도 취소 수신 파이프라인
+    val sessionCancelFlow: Flow<Unit> = webSocketManager.sessionCancelFlow
+
     // 실시간 웹소켓 푸시 수신 파이프라인
     val recycleResultFlow: Flow<RecycleResult> = webSocketManager.recycleEventFlow.map { event ->
         RecycleResult(
@@ -40,6 +45,7 @@ class KioskRepository @Inject constructor(
             totalPoints = event.totalPoints ?: 0
         )
     }
+
 
     /**
      * 유저 프로필 및 최신 보유 포인트 조회 (성공 시 DataStore 세션 자동 동기화)
@@ -95,8 +101,29 @@ class KioskRepository @Inject constructor(
     }
 
     /**
+     * 키오스크 수거함 세션 중도 취소 요청
+     */
+    suspend fun cancelKiosk(binId: Int, userId: Int?): Result<KioskCancelResponse> {
+        return try {
+            val request = KioskCancelRequest(binId = binId, userId = userId)
+            val response = apiService.cancelKiosk(request)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.success(body)
+            } else {
+                val errorString = response.errorBody()?.string() ?: ""
+                val errorMessage = parseErrorMessage(errorString, response.code(), "키오스크 취소 실패")
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("네트워크 통신 오류: ${e.localizedMessage}"))
+        }
+    }
+
+    /**
      * 과거 분리배출 상세 이력 목록 조회
      */
+
     suspend fun getUserLogs(userId: Int): Result<List<RecycleLog>> {
         return try {
             val response = apiService.getUserLogs(userId)

@@ -53,11 +53,12 @@ QT += core gui widgets network websockets
 
 대시보드가 정상적으로 AI 스트림 및 인증 세션을 수신하려면 아래 네트워크 엔드포인트 접근이 가능해야 합니다. (`configs/app_config.h`에서 수정 가능)
 
-| 연동 시스템          | 프로토콜   | 기본 IP / Host | 기본 포트 | 엔드포인트 / 용도                                     |
-| :------------------- | :--------- | :------------- | :-------- | :---------------------------------------------------- |
-| **Jetson Orin Nano** | TCP Socket | `10.10.15.48`  | `9000`    | 영상 프레임 및 YOLO 추론 메타데이터 스트림 수신       |
-| **FastAPI Backend**  | WebSocket  | `10.10.15.8`   | `8000`    | `ws://.../ws/kiosk/{bin_id}/kiosk` (모바일 QR 로그인) |
-| **FastAPI Backend**  | HTTP REST  | `10.10.15.8`   | `8000`    | `POST /api/recycle/submit` (배출 결과 및 포인트 정산) |
+| 연동 시스템          | 프로토콜   | 기본 IP / Host | 기본 포트 | 엔드포인트 / 용도                                                                                                                                   |
+| :------------------- | :--------- | :------------- | :-------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Jetson Orin Nano** | TCP Socket | `10.10.15.48`  | `9000`    | 영상 프레임 및 YOLO 추론 메타데이터 스트림 수신                                                                                                     |
+| **FastAPI Backend**  | WebSocket  | `10.10.15.8`   | `8000`    | `ws://.../ws/kiosk/{bin_id}/kiosk`<br>• `USER_AUTHENTICATED`: QR 로그인 화면 전환<br>• `SESSION_CANCELLED`: 모바일 원격 취소 수신 시 대기 화면 복귀 |
+| **FastAPI Backend**  | HTTP REST  | `10.10.15.8`   | `8000`    | `POST /api/recycle/submit` (배출 결과 및 포인트 정산)                                                                                               |
+| **FastAPI Backend**  | HTTP REST  | `10.10.15.8`   | `8000`    | `POST /api/kiosk/cancel` (키오스크 투입 취소 시 모바일 동기화)                                                                                      |
 
 ---
 
@@ -134,3 +135,25 @@ pc_dashboard/
 ├── pc_dashboard.pro            # Qt qmake 프로젝트 빌드 설정 파일
 └── resources.qrc               # Qt 바이너리 리소스 정의 파일
 ```
+
+---
+
+## 🔄 세션 생명주기 및 양방향 취소 연동 (Session Lifecycle & Cancellation)
+
+대시보드는 중앙 백엔드 서버(FastAPI)와 사용자 모바일 앱(Android) 간의 상태를 실시간으로 동기화합니다.
+
+1. **QR 스캔 인증 및 배출 시작 (`USER_AUTHENTICATED`)**
+   - 사용자가 모바일 앱으로 대기 화면(`IdlePage`)의 QR 코드를 스캔하면, 백엔드로부터 WebSocket `USER_AUTHENTICATED` 메시지가 수신됩니다.
+   - `ServerClient::authenticated` 시그널이 발생하여 `MainWindow`가 자동으로 배출 화면(`RecyclePage`)으로 화면을 전환하고 세션을 시작합니다.
+
+2. **키오스크 측 투입 취소 (`POST /api/kiosk/cancel`)**
+   - 배출 도중 사용자가 키오스크 화면 우측 상단의 **'취소/복귀'** 버튼을 누르면 `MainWindow::onReturnToIdle()`이 실행됩니다.
+   - `ServerClient::cancelRecycleSession(m_currentUserId)`를 통해 `POST /api/kiosk/cancel` API를 호출하고 대기 화면(`IdlePage`)으로 즉시 복귀합니다.
+   - 중앙 서버는 모바일 앱에 WebSocket `SESSION_CANCELLED` 이벤트를 전달하여 모바일의 투입 바텀시트를 자동으로 닫고 초기화합니다.
+
+3. **모바일 측 원격 취소 연동 (`SESSION_CANCELLED`)**
+   - 사용자가 모바일 앱의 바텀시트에서 **'투입 취소'**를 누르면, 중앙 서버가 키오스크 WebSocket으로 `SESSION_CANCELLED` 이벤트를 푸시합니다.
+   - `ServerClient`가 이를 수신하여 `sessionCancelled(int userId, QString reason)` 시그널을 발행하고, `MainWindow::onRemoteSessionCancelled()` 슬롯이 트리거되어 배출 화면에서 즉시 대기 화면으로 안전하게 복귀합니다.
+
+4. **투입 완료 및 포인트 정산 (`POST /api/recycle/submit`)**
+   - 투입이 완료되면 카운팅된 품목별 수량과 탄소 절감량을 서버로 전송하고 정산 결과 화면(`ResultPage`)으로 이동합니다. 모바일 앱에는 `RECYCLE_COMPLETE` 웹소켓 이벤트가 푸시되어 획득 포인트가 즉시 반영됩니다.

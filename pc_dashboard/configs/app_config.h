@@ -69,10 +69,12 @@ namespace Demo {
 namespace Backend {
     inline const QString WS_URL_FMT = "ws://%1:%2/ws/kiosk/%3/kiosk";
     inline const QString API_SUBMIT_PATH = "http://%1:%2/api/recycle/submit";
+    inline const QString API_CANCEL_PATH = "http://%1:%2/api/kiosk/cancel";
 
     namespace Event {
         inline const QString USER_AUTHENTICATED = "USER_AUTHENTICATED";
         inline const QString EMERGENCY_STOP = "EMERGENCY_STOP";
+        inline const QString SESSION_CANCELLED = "SESSION_CANCELLED";
     }
 
     namespace Key {
@@ -90,6 +92,7 @@ namespace Backend {
         inline const QString EARNED_PTS = "earned_points";
         inline const QString LOG_ID = "log_id";
         inline const QString TOTAL_POINTS = "total_points";
+        inline const QString REASON = "reason";
     }
 }
 

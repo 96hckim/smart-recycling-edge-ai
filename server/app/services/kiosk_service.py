@@ -9,6 +9,7 @@ from app.repositories.log_repository import LogRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas import (
     KioskBindResponse,
+    KioskCancelResponse,
     RecycleSubmitRequest,
     RecycleSubmitResponse,
 )
@@ -122,4 +123,46 @@ class KioskService:
             log_id=log_id,
             earned_points=payload.earned_points,
             total_points=total_user_points,
+        )
+
+    async def cancel_session(
+        self,
+        bin_id: int,
+        user_id: int | None = None,
+        reason: str | None = "USER_CANCELLED",
+    ) -> KioskCancelResponse:
+        """키오스크 투입 세션 중도 취소 및 양측 디바이스(Qt/모바일) 동기화 이벤트 브로드캐스트."""
+        kiosk = await self.kiosk_repo.get_by_id(bin_id)
+        if not kiosk:
+            raise KioskNotFoundError(bin_id)
+
+        # 키오스크 기기 상태 IDLE 복구
+        await self.kiosk_repo.update_status(bin_id, "IDLE")
+
+        # 양측 기기로 취소 동기화 이벤트 푸시
+        cancel_event = {
+            "event": "SESSION_CANCELLED",
+            "bin_id": bin_id,
+            "user_id": user_id,
+            "reason": reason or "USER_CANCELLED",
+        }
+
+        # 1. 키오스크(Qt)로 취소 이벤트 발송 (모바일에서 취소했을 때 Qt 화면 복귀용)
+        sent_kiosk = await self.ws_manager.send_to_kiosk(bin_id, cancel_event)
+        if not sent_kiosk:
+            logger.info(
+                f"[KioskService] 키오스크 미연결 또는 취소 푸시 생략 (Room {bin_id})"
+            )
+
+        # 2. 모바일 앱으로 취소 이벤트 발송 (키오스크에서 취소했을 때 모바일 바텀시트 닫기용)
+        sent_mobile = await self.ws_manager.send_to_mobile(bin_id, cancel_event)
+        if not sent_mobile:
+            logger.info(
+                f"[KioskService] 모바일 미연결 또는 취소 푸시 생략 (Room {bin_id})"
+            )
+
+        return KioskCancelResponse(
+            status="SUCCESS",
+            message="키오스크 세션이 성공적으로 취소되었습니다.",
+            bin_id=bin_id,
         )

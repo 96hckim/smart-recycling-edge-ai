@@ -109,9 +109,29 @@ void ServerClient::onSocketMessageReceived(const QString& message)
         int points = obj[Key::POINTS].toInt();
 
         emit userAuthenticated(userId, name, phone, points);
+    } else if (eventType == Event::SESSION_CANCELLED) {
+        qDebug() << "[ServerClient] Session cancelled by remote peer or server";
+        emit sessionCancelled();
     } else {
         qDebug() << "[ServerClient] Unhandled WS Event:" << eventType;
     }
+}
+
+void ServerClient::cancelRecycleSession(int userId)
+{
+    // 사용자가 키오스크에서 세션을 취소했음을 백엔드에 전송 (POST /api/kiosk/cancel)
+    QUrl url(API_CANCEL_PATH.arg(m_serverHost).arg(m_serverPort));
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QJsonObject body;
+    body[Key::BIN_ID] = m_binId;
+    body[Key::USER_ID] = (userId > 0) ? QJsonValue(userId) : QJsonValue(QJsonValue::Null);
+    body[Key::REASON] = "USER_CANCELLED";
+
+    QByteArray postData = QJsonDocument(body).toJson(QJsonDocument::Compact);
+    qDebug() << "[ServerClient] POST /api/kiosk/cancel:" << postData;
+    m_httpManager.post(request, postData);
 }
 
 void ServerClient::submitRecycleResult(int userId, const RecycleCounts& counts, double carbonSaved, int earnedPoints)

@@ -36,9 +36,13 @@ public:
     // 배출 완료 집계 데이터 백엔드 REST API 전송 (POST /api/recycle/submit)
     void submitRecycleResult(int userId, const RecycleCounts& counts, double carbonSaved, int earnedPoints);
 
+    // 세션 취소 백엔드 REST API 전송 (POST /api/kiosk/cancel)
+    void cancelRecycleSession(int userId);
+
 signals:
     void userAuthenticated(int userId, const QString& name, const QString& phone, int currentPoints);
     void submitCompleted(int logId, int totalPoints);
+    void sessionCancelled();
     void networkErrorOccurred(const QString& errorMessage);
 
 private slots:

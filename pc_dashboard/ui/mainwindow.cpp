@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 키오스크 전체 서브시스템 결합, 시그널-슬롯 디스패칭 및 페이지 라우터 구현부.
  */
 #include "mainwindow.h"
@@ -90,6 +90,7 @@ void MainWindow::initServerClient()
     m_serverClient = new ServerClient(Config::DEFAULT_BIN_ID, Config::DEFAULT_BACKEND_HOST, Config::DEFAULT_BACKEND_PORT, this);
 
     connect(m_serverClient, &ServerClient::userAuthenticated, this, &MainWindow::onUserAuthenticated);
+    connect(m_serverClient, &ServerClient::sessionCancelled, this, &MainWindow::onRemoteSessionCancelled);
     connect(m_serverClient, &ServerClient::submitCompleted, this, &MainWindow::onSubmitCompleted);
     connect(m_serverClient, &ServerClient::networkErrorOccurred, this, &MainWindow::onNetworkError);
 
@@ -107,6 +108,16 @@ void MainWindow::onUserAuthenticated(int userId, const QString& name, const QStr
         m_sessionController->startSession(true, name, userId);
         m_recyclePage->startSession(true, name);
         ui->stackedWidgetMain->setCurrentWidget(m_recyclePage);
+    }
+}
+
+void MainWindow::onRemoteSessionCancelled()
+{
+    qDebug() << "[MainWindow] 모바일 앱 또는 원격에 의한 세션 취소 수신. 대기 화면으로 복귀합니다.";
+    if (ui->stackedWidgetMain->currentWidget() == m_recyclePage) {
+        m_sessionController->cancelSession();
+        m_recyclePage->resetState();
+        ui->stackedWidgetMain->setCurrentWidget(m_idlePage);
     }
 }
 
@@ -217,6 +228,12 @@ void MainWindow::onRecycleFinished()
 
 void MainWindow::onReturnToIdle()
 {
+    // 활성 투입 화면에서 키오스크 UI를 통해 취소된 경우 백엔드에 세션 취소 통지 (모바일 동기화)
+    if (m_serverClient && ui->stackedWidgetMain->currentWidget() == m_recyclePage) {
+        int currentUserId = m_sessionController ? m_sessionController->currentUserId() : -1;
+        m_serverClient->cancelRecycleSession(currentUserId);
+    }
+
     m_sessionController->cancelSession();
     m_recyclePage->resetState();
     ui->stackedWidgetMain->setCurrentWidget(m_idlePage);

@@ -43,6 +43,31 @@ class KioskBindResponse(BaseModel):
 
 
 # ----------------------------------------------------------------------------
+# 2-1. 키오스크 세션 취소 (Cancel Session)
+# ----------------------------------------------------------------------------
+class KioskCancelRequest(BaseModel):
+    """키오스크 또는 모바일 앱의 세션 중도 취소 요청 DTO."""
+
+    bin_id: int = Field(..., description="취소할 키오스크 ID")
+    user_id: int | None = Field(
+        default=None,
+        description="취소 요청 유저 ID (키오스크에서 취소 시 null 가능)",
+    )
+    reason: str | None = Field(
+        default="USER_CANCELLED",
+        description="취소 사유 (USER_CANCELLED, TIMEOUT 등)",
+    )
+
+
+class KioskCancelResponse(BaseModel):
+    """키오스크 세션 취소 결과 응답 DTO."""
+
+    status: str = "SUCCESS"
+    message: str
+    bin_id: int
+
+
+# ----------------------------------------------------------------------------
 # 3. 분리배출 투입 정산
 # ----------------------------------------------------------------------------
 class RecycleSubmitRequest(BaseModel):

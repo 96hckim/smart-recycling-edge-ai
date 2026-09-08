@@ -12,6 +12,7 @@ object Constants {
     const val ENDPOINT_LOGIN = "api/auth/login"
     const val ENDPOINT_GET_USER = "api/users/{user_id}"
     const val ENDPOINT_BIND_KIOSK = "api/kiosk/bind"
+    const val ENDPOINT_CANCEL_KIOSK = "api/kiosk/cancel"
     const val ENDPOINT_GET_LOGS = "api/users/{user_id}/logs"
     const val ENDPOINT_DEDUCT_POINTS = "api/users/deduct"
 
@@ -27,6 +28,8 @@ object Constants {
 
     // WebSocket Event Names
     const val EVENT_RECYCLE_COMPLETE = "RECYCLE_COMPLETE"
+    const val EVENT_SESSION_CANCELLED = "SESSION_CANCELLED"
+
 
     // Network Timeouts
     const val CONNECT_TIMEOUT_SECONDS = 10L

@@ -13,6 +13,8 @@ from app.repositories.user_repository import UserRepository
 from app.schemas import (
     KioskBindRequest,
     KioskBindResponse,
+    KioskCancelRequest,
+    KioskCancelResponse,
     RecycleSubmitRequest,
     RecycleSubmitResponse,
 )
@@ -61,3 +63,23 @@ async def submit_recycle_result(
 ) -> RecycleSubmitResponse:
     """키오스크 투입 품목 정산, 포인트 원자적 가산, 이력 영속화 및 모바일 푸시 엔드포인트."""
     return await service.submit_recycle(payload)
+
+
+# ----------------------------------------------------------------------------
+# 3. 키오스크 세션 중도 취소 (양방향 연동)
+# ----------------------------------------------------------------------------
+@router.post(
+    "/api/kiosk/cancel",
+    response_model=KioskCancelResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def cancel_kiosk_session(
+    payload: KioskCancelRequest,
+    service: Annotated[KioskService, Depends(get_kiosk_service)],
+) -> KioskCancelResponse:
+    """키오스크 또는 모바일 앱에서 투입 취소 시 양측 디바이스를 동기화하고 대기 상태로 복구."""
+    return await service.cancel_session(
+        bin_id=payload.bin_id,
+        user_id=payload.user_id,
+        reason=payload.reason,
+    )

@@ -33,11 +33,13 @@ class HomeViewModel @Inject constructor(
     init {
         observeUserSession()
         observeRecycleEvents()
+        observeCancelEvents()
     }
 
     /**
      * 유저 세션 및 잔여 포인트를 반응형 관찰하여 홈 화면 UI 자동 업데이트
      */
+
     private fun observeUserSession() {
         viewModelScope.launch {
             sessionManager.userIdFlow.collectLatest { userId ->
@@ -120,7 +122,25 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 키오스크 측에서 투입 취소 시(SESSION_CANCELLED) 모바일 세션 자동 닫기
+     */
+    private fun observeCancelEvents() {
+        viewModelScope.launch {
+            kioskRepository.sessionCancelFlow.collect {
+                kioskRepository.disconnectKioskWebSocket()
+                _uiState.update {
+                    it.copy(
+                        isKioskActive = false,
+                        activeBinId = null
+                    )
+                }
+            }
+        }
+    }
+
     fun openQRScanner() {
+
         _uiState.update { it.copy(isScanningQR = true) }
     }
 
@@ -264,6 +284,13 @@ class HomeViewModel @Inject constructor(
     }
 
     fun cancelKioskSession() {
+        val binId = _uiState.value.activeBinId
+        val userId = _uiState.value.user?.id
+        if (binId != null) {
+            viewModelScope.launch {
+                kioskRepository.cancelKiosk(binId, userId)
+            }
+        }
         kioskRepository.disconnectKioskWebSocket()
         _uiState.update {
             it.copy(
@@ -272,6 +299,7 @@ class HomeViewModel @Inject constructor(
             )
         }
     }
+
 
     fun clearErrorMessage() {
         _uiState.update { it.copy(errorMessage = null) }
