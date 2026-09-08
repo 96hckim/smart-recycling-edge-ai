@@ -4,7 +4,7 @@ import signal
 import time
 from contextlib import suppress
 
-from configs.config import cfg
+from configs.config import MODEL_CLASS_MAP, cfg
 from core.camera import CameraStream
 from core.detector import YOLOv11Detector
 from core.door_controller import AutoDoorController
@@ -37,7 +37,7 @@ def main():
         input_shape=cfg.model.input_shape,
         conf_thresh=cfg.model.conf_threshold,
         iou_thresh=cfg.model.iou_threshold,
-        class_names=cfg.model.class_names,
+        class_map=MODEL_CLASS_MAP,
     )
 
     socket_server = StreamSocketServer(

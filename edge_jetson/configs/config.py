@@ -1,6 +1,7 @@
 """스마트 재활용 키오스크 전역 불변(Frozen) 설정 모듈."""
 
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 
 JETSON_ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -18,19 +19,44 @@ class CameraConfig:
     flip_horizontal: bool = True  # 키오스크 인터랙션용 좌우 반전
 
 
+class Category(str, Enum):
+    """재활용 대상 4종 품목 열거형."""
+
+    PET = "PET"
+    CAN = "CAN"
+    PAPER = "PAPER"
+    VINYL = "VINYL"
+
+
+@dataclass(frozen=True)
+class ModelClassMeta:
+    """YOLO 모델 출력 인덱스와 도메인 품목 정보 간의 1:1 매핑 메타데이터."""
+
+    class_id: int
+    name_en: str
+    name_ko: str
+    category: Category
+
+
+# YOLO 모델 학습 순서 기준 인덱스 1:1 매핑 테이블 (0: 페트, 1: 캔, 2: 종이, 3: 비닐)
+MODEL_CLASS_MAP: tuple[ModelClassMeta, ...] = (
+    ModelClassMeta(0, "pet", "페트", Category.PET),
+    ModelClassMeta(1, "can", "캔", Category.CAN),
+    ModelClassMeta(2, "paper", "종이", Category.PAPER),
+    ModelClassMeta(3, "vinyl", "비닐", Category.VINYL),
+)
+
+
 @dataclass(frozen=True)
 class ModelConfig:
     """YOLOv11 TensorRT 엔진 경로 및 추론 임계값 설정."""
 
-    engine_path: Path = JETSON_ROOT_DIR / "models" / "rps_yolo11n_custom_640.engine"
+    engine_path: Path = JETSON_ROOT_DIR / "models" / "recycle_yolo11n_640.engine"
     input_shape: tuple[int, int] = (640, 640)
     conf_threshold: float = 0.50
     iou_threshold: float = 0.45
-    class_names: tuple[str, ...] = (
-        "paper",
-        "rock",
-        "scissors",
-    )
+    # YOLO 모델 학습 클래스 순서 (0: 페트, 1: 캔, 2: 종이, 3: 비닐)
+    class_names: tuple[str, ...] = tuple(meta.name_en for meta in MODEL_CLASS_MAP)
 
 
 @dataclass(frozen=True)

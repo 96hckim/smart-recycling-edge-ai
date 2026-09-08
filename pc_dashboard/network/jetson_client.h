@@ -43,7 +43,7 @@ private slots:
 private:
     // TCP 스트림 청크 누적 버퍼 검사 및 패킷 단위 언패킹 루프
     void parseBuffer();
-    // JSON 메타데이터 역직렬화 및 종단 간 네트워크 지연(Latency) 계산
+    // JSON 메타데이터 역직렬화 및 엣지 텔레메트리 디스패칭
     void processJsonMeta(const QByteArray& jsonData);
 
     QTcpSocket* m_socket { nullptr };

@@ -35,11 +35,12 @@ class AutoDoorController:
             self._handle_open_state(top_item, curr_time)
 
     def _extract_top_item(self, detections: list[dict[str, Any]]) -> str | None:
-        """프레임 내 검출 객체 중 최고 신뢰도를 가진 클래스명(대문자) 반환."""
+        """프레임 내 검출 객체 중 최고 신뢰도를 가진 품목 카테고리명(대문자) 반환."""
         if not detections:
             return None
         best_det = max(detections, key=lambda x: x.get("confidence", 0.0))
-        return best_det.get("class_name", "").upper() or None
+        item = best_det.get("category") or best_det.get("class_name", "")
+        return item.upper() or None
 
     def _handle_closed_state(self, top_item: str | None, curr_time: float) -> None:
         """닫힘 상태: 연속 인식 카운트(안정 감지) 충족 시 OPEN 명령 송신 및 상태 전이."""

@@ -4,6 +4,7 @@ from typing import Any
 
 import cv2
 import numpy as np
+from configs.config import MODEL_CLASS_MAP, ModelClassMeta
 
 from core.trt_engine import TensorRTEngine
 
@@ -17,14 +18,16 @@ class YOLOv11Detector:
         input_shape: tuple[int, int] = (640, 640),
         conf_thresh: float = 0.50,
         iou_thresh: float = 0.45,
-        class_names: tuple[str, ...] = ("paper", "rock", "scissors"),
+        class_map: tuple[ModelClassMeta, ...] = MODEL_CLASS_MAP,
+        class_names: tuple[str, ...] | None = None,
     ):
         """검출 하이퍼파라미터 설정 및 매 프레임 버퍼 재생성 방지용 캔버스 캐싱."""
         self.engine = engine
         self.input_shape = input_shape
         self.conf_thresh = conf_thresh
         self.iou_thresh = iou_thresh
-        self.class_names = class_names
+        self.class_map = class_map
+        self.class_names = class_names or tuple(m.name_en for m in class_map)
 
         # 패딩 캔버스 메모리 재할당 오버헤드를 막기 위한 114 Gray 템플릿 캐싱
         target_w, target_h = self.input_shape
@@ -121,16 +124,19 @@ class YOLOv11Detector:
             for idx in np.array(indices).flatten():
                 bx, by, bw, bh = boxes_for_nms[idx]
                 cid = int(cls_ids_list[idx])
-                cname = (
-                    self.class_names[cid]
-                    if cid < len(self.class_names)
-                    else f"class_{cid}"
-                )
+                if 0 <= cid < len(self.class_map):
+                    meta = self.class_map[cid]
+                    cname = meta.name_en
+                    category = meta.category.value
+                else:
+                    cname = f"class_{cid}"
+                    category = "UNKNOWN"
 
                 detections.append(
                     {
                         "class_id": cid,
                         "class_name": cname,
+                        "category": category,
                         "confidence": round(confs_list[idx], 3),
                         "box": [bx, by, bx + bw, by + bh],
                     }

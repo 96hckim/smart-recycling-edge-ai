@@ -108,6 +108,21 @@ nmake
 
 ---
 
+## 🎮 Kiosk Presentation & Demo Mode (시연 및 단축키 안내)
+
+키오스크 장비 시연 및 발표(포트폴리오 데모) 환경을 위해 **전체화면 모드**와 **글로벌 제어 단축키**를 기본 제공합니다.
+
+- **기본 실행 모드**: 애플리케이션 기동 시 실제 하드웨어 키오스크 단말기처럼 작업표시줄 및 윈도우 프레임을 숨긴 **전체화면(FullScreen)**으로 자동 실행됩니다.
+- **조작 단축키 (Global Shortcuts)**:
+  | 단축키 | 동작 | 설명 |
+  | :--- | :--- | :--- |
+  | **`F11`** | **전체화면 토글** | 전체화면(FullScreen) ↔ 기본 창 모드(Windowed) 상호 전환 |
+  | **`Esc`** | **창 모드 복귀** | 전체화면 상태일 때 즉시 기본 윈도우 창 모드로 안전하게 복귀 |
+
+> 💡 **시연 팁**: 전체화면 상태에서 `F11` 또는 `Esc`를 눌러 일반 창 모드로 복귀하면, 시연 도중 다른 발표 자료(PPT)나 Jetson 터미널 로그 창과 나란히 분할 배치하여 모니터링할 수 있습니다.
+
+---
+
 ## 📂 Project Architecture
 
 ```plaintext
@@ -122,7 +137,7 @@ pc_dashboard/
 │   ├── jetson_client.h/.cpp    # Jetson TCP 8B 빅엔디안 헤더 언패킹 및 0-Copy 프레임 디코더
 │   └── server_client.h/.cpp    # 중앙 서버 WebSocket 인증 리스너 및 REST API 정산 전송
 ├── ui/
-│   ├── mainwindow.h/.cpp/.ui   # 상단 텔레메트리 바, 적재함 수위 캐시 및 화면 전환 중계
+│   ├── mainwindow.h/.cpp/.ui   # 상단 텔레메트리 바(FPS/추론시간), 단축키(F11/Esc) 기반 전체화면 제어 및 화면 전환 중계
 │   └── pages/
 │       ├── idle_page.h/.cpp/.ui      # 대기 화면 (QPainter 기반 동적 딥링크 QR 렌더링)
 │       ├── recycle_page.h/.cpp/.ui   # 배출 화면 (영상 비율 보정, BBox 및 안내 배너 표시)
@@ -131,7 +146,7 @@ pc_dashboard/
 │   └── qrcodegen.hpp/.cpp      # Nayuki QR Code Generation Engine (내장 C++ 라이브러리)
 ├── resources/
 │   └── images/                 # GIF 애니메이션 및 이미지 리소스
-├── main.cpp                    # 애플리케이션 진입점
+├── main.cpp                    # 애플리케이션 진입점 (시연용 전체화면 기동)
 ├── pc_dashboard.pro            # Qt qmake 프로젝트 빌드 설정 파일
 └── resources.qrc               # Qt 바이너리 리소스 정의 파일
 ```

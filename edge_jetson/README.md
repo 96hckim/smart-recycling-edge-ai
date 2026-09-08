@@ -134,8 +134,8 @@ edge_jetson/
 │   ├── door_controller.py     # 디바운스 & 안전 타이머 기반 도어 제어 FSM
 │   └── trt_engine.py          # TensorRT 10 V3 비동기 Host Pinned Zero-Alloc 엔진
 ├── models/
-│   ├── rps_yolo11n_custom_640.engine  # Jetson Orin 최적화 TensorRT 엔진 파일
-│   └── rps_yolo11n_custom_640.onnx    # 원본 ONNX 모델 (FP16/INT8 변환용)
+│   ├── recycle_yolo11n_640.engine    # Jetson Orin 최적화 TensorRT 엔진 (4종: 페트, 캔, 종이, 비닐)
+│   └── recycle_yolo11n_640.onnx      # 원본 ONNX 모델 (FP16/INT8 변환용)
 ├── stream/
 │   ├── __init__.py
 │   ├── protocol.py            # Jetson-STM32 UART ASCII 프로토콜 파서
@@ -187,6 +187,9 @@ edge_jetson/
       "class_id": 0,
       "class_name": "paper",
       "confidence": 0.892,
+      "class_name": "pet",
+      "category": "PET",
+      "confidence": 0.942,
       "box": [120, 85, 450, 410]
     }
   ],
@@ -198,6 +201,7 @@ edge_jetson/
   },
   "door": {
     "item": "PAPER",
+    "item": "PET",
     "state": "OPEN"
   }
 }
@@ -241,12 +245,12 @@ pip install -r requirements.txt
 
 ### 4. TensorRT 엔진 빌드 (신규 모델 적용 시)
 
-제공된 `rps_yolo11n_custom_640.onnx`로부터 TensorRT 10.x 직렬화 엔진을 직접 빌드할 수 있습니다.
+제공된 `recycle_yolo11n_640.onnx`로부터 TensorRT 10.x 직렬화 엔진을 직접 빌드할 수 있습니다.
 
 ```bash
 /usr/src/tensorrt/bin/trtexec \
-    --onnx=models/rps_yolo11n_custom_640.onnx \
-    --saveEngine=models/rps_yolo11n_custom_640.engine \
+    --onnx=models/recycle_yolo11n_640.onnx \
+    --saveEngine=models/recycle_yolo11n_640.engine \
     --fp16
 ```
 
@@ -267,6 +271,15 @@ python3 main.py
 
 ```python
 # configs/config.py 주요 항목 예시
+@dataclass(frozen=True)
+class ModelConfig:
+    engine_path: Path = JETSON_ROOT_DIR / "models" / "recycle_yolo11n_640.engine"
+    input_shape: tuple[int, int] = (640, 640)
+    conf_threshold: float = 0.50
+    iou_threshold: float = 0.45
+    # YOLO 학습 모델 인덱스 순서 (0: 페트, 1: 캔, 2: 종이, 3: 비닐)
+    class_names: tuple[str, ...] = ("pet", "can", "paper", "vinyl")
+
 @dataclass(frozen=True)
 class CameraConfig:
     device_id: int = 0         # V4L2 카메라 장치 인덱스 (/dev/video0)

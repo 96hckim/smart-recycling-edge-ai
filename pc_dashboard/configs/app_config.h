@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 스마트 재활용 키오스크 전역 상수, 네트워크 프로토콜 및 데이터 모델 정의 헤더.
  */
 #pragma once
@@ -35,7 +35,6 @@ enum class RecycleCategory {
 namespace Config {
 
 constexpr int CATEGORY_COUNT = 4;
-constexpr bool USE_MOCK_RPS_MODEL = true;
 
 // Jetson 엣지 디바이스 TCP 소켓 스트리밍 및 버퍼링 제약
 constexpr char DEFAULT_JETSON_IP[] = "10.10.15.48";
@@ -153,29 +152,43 @@ inline const char* getCategoryNameKo(RecycleCategory cat)
     return (idx >= 0 && idx < CATEGORY_COUNT) ? ITEM_METAS[idx].nameKo : "미확인";
 }
 
-// 비전 모델 출력 문자열을 시스템 내부 도메인 카테고리로 매핑 (RPS 모의 모델 호환)
+// YOLO 모델 출력 인덱스(0: 페트, 1: 캔, 2: 종이, 3: 비닐) 메타데이터 구조체
+struct ModelClassMeta {
+    int classId;
+    RecycleCategory category;
+    const char* nameEn;
+    const char* nameKo;
+};
+
+inline constexpr ModelClassMeta MODEL_CLASS_METAS[CATEGORY_COUNT] = {
+    { 0, RecycleCategory::PET,   "PET",   "페트" },
+    { 1, RecycleCategory::CAN,   "CAN",   "캔" },
+    { 2, RecycleCategory::PAPER, "PAPER", "종이" },
+    { 3, RecycleCategory::VINYL, "VINYL", "비닐" }
+};
+
+// 모델 인덱스(0~3) -> 도메인 카테고리 1:1 직접 변환
+inline RecycleCategory modelIndexToCategory(int classId)
+{
+    if (classId >= 0 && classId < CATEGORY_COUNT) {
+        return MODEL_CLASS_METAS[classId].category;
+    }
+    return RecycleCategory::UNKNOWN;
+}
+
+// 수신된 품목 문자열("PET", "CAN" 등)을 메타데이터 테이블과 1:1 정확히 비교 매핑
 inline RecycleCategory parseCategory(const QString& name)
 {
     const QString upper = name.toUpper().trimmed();
-
-    if constexpr (USE_MOCK_RPS_MODEL) {
-        if (upper.contains("PAPER") || upper.contains("보"))
-            return RecycleCategory::PAPER;
-        if (upper.contains("ROCK") || upper.contains("주먹") || upper.contains("바위"))
-            return RecycleCategory::CAN;
-        if (upper.contains("SCISSOR") || upper.contains("가위"))
-            return RecycleCategory::PET;
+    if (upper.isEmpty()) {
+        return RecycleCategory::UNKNOWN;
     }
 
-    if (upper.contains("PAPER") || upper.contains("종이") || upper.contains("BOX"))
-        return RecycleCategory::PAPER;
-    if (upper.contains("CAN") || upper.contains("캔"))
-        return RecycleCategory::CAN;
-    if (upper.contains("PET") || upper.contains("PLASTIC") || upper.contains("페트"))
-        return RecycleCategory::PET;
-    if (upper.contains("VINYL") || upper.contains("비닐") || upper.contains("PLASTIC_BAG") || upper.contains("WRAP"))
-        return RecycleCategory::VINYL;
-
+    for (const auto& meta : MODEL_CLASS_METAS) {
+        if (upper == meta.nameEn || upper == meta.nameKo) {
+            return meta.category;
+        }
+    }
     return RecycleCategory::UNKNOWN;
 }
 
@@ -266,6 +279,13 @@ struct Detection {
         d.className = obj.value(KEY_CLASS_NAME).toString();
         d.confidence = obj.value(KEY_CONFIDENCE).toDouble();
         d.category = Config::parseCategory(d.className);
+        // 1차: YOLO 모델 출력 인덱스(0: 페트, 1: 캔, 2: 종이, 3: 비닐) 기반 직접 매핑
+        d.category = Config::modelIndexToCategory(d.classId);
+
+        // 2차: 인덱스 매핑 실패 시 클래스명 문자열 기반 폴백 매핑
+        if (d.category == RecycleCategory::UNKNOWN) {
+            d.category = Config::parseCategory(d.className);
+        }
 
         const QJsonArray bArr = obj.value(KEY_BOX).toArray();
         if (bArr.size() >= 4) {
