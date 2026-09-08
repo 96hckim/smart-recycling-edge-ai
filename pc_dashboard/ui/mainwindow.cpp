@@ -10,6 +10,7 @@
 #include "server_client.h"
 #include "ui_mainwindow.h"
 #include <QDebug>
+#include <QShortcut>
 #include <QStyle>
 #include <algorithm>
 
@@ -20,6 +21,7 @@ MainWindow::MainWindow(QWidget* parent)
     ui->setupUi(this);
 
     // 순차 서브시스템 의존성 주입 및 통신 채널 기동
+    initShortcuts();
     initPages();
     initSessionController();
     initJetsonClient();
@@ -29,6 +31,19 @@ MainWindow::MainWindow(QWidget* parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::initShortcuts()
+{
+    auto* f11Shortcut = new QShortcut(QKeySequence(Qt::Key_F11), this);
+    connect(f11Shortcut, &QShortcut::activated, this, &MainWindow::toggleFullScreen);
+
+    auto* escShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+    connect(escShortcut, &QShortcut::activated, this, [this]() {
+        if (isFullScreen()) {
+            showNormal();
+        }
+    });
 }
 
 void MainWindow::initPages()
@@ -187,6 +202,15 @@ void MainWindow::updateTelemetry(double fps, double inferMs)
     ui->lblTelemetry->setText(QString(UITheme::Header::TELEMETRY_FMT)
             .arg(QString::number(fps, 'f', 1))
             .arg(QString::number(inferMs, 'f', 1)));
+}
+
+void MainWindow::toggleFullScreen()
+{
+    if (isFullScreen()) {
+        showNormal();
+    } else {
+        showFullScreen();
+    }
 }
 
 void MainWindow::onMemberStartRequested(const QString& userId)

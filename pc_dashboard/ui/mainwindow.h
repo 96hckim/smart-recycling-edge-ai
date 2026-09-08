@@ -39,6 +39,8 @@ public slots:
     void updateConnectionStatus(bool connected);
     // 상단 상태바 성능 텔레메트리(FPS, 추론시간) 갱신
     void updateTelemetry(double fps, double inferMs);
+    // 전체화면 및 창 모드 상호 전환
+    void toggleFullScreen();
 
 private slots:
     void onFrameReceived(const QPixmap& pixmap);
@@ -55,6 +57,7 @@ private slots:
     void onNetworkError(const QString& errorMessage);
 
 private:
+    void initShortcuts();
     void initPages();
     void initJetsonClient();
     void initServerClient();
