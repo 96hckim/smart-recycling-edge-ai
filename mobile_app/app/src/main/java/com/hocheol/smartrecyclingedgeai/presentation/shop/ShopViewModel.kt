@@ -18,6 +18,10 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 
+/**
+ * 포인트 상점(Eco Store) 뷰모델
+ * 카테고리 필터링, 포인트 교환 백엔드 API 연동 및 쿠폰 발급 시뮬레이션을 관리합니다.
+ */
 @HiltViewModel
 class ShopViewModel @Inject constructor(
     private val kioskRepository: KioskRepository,
@@ -82,6 +86,9 @@ class ShopViewModel @Inject constructor(
         _uiState.update { it.copy(selectedProductForPurchase = null) }
     }
 
+    /**
+     * 포인트 차감 백엔드 API(POST /api/users/deduct) 연동 및 기프티콘 발급 시뮬레이션
+     */
     fun confirmPurchase() {
         val currentState = _uiState.value
         val product = currentState.selectedProductForPurchase ?: return

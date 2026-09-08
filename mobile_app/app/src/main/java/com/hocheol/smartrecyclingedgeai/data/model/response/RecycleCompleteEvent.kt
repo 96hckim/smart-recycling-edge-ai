@@ -3,6 +3,9 @@ package com.hocheol.smartrecyclingedgeai.data.model.response
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
+/**
+ * WebSocket 수거함 분리배출 정산 완결 이벤트 푸시 DTO (RECYCLE_COMPLETE)
+ */
 @JsonClass(generateAdapter = true)
 data class RecycleCompleteEvent(
     @Json(name = "event")

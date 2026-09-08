@@ -2,6 +2,9 @@ package com.hocheol.smartrecyclingedgeai.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+/**
+ * 앱 디자인 시스템 컬러 팔레트 (Eco Forest Emerald 기반 시맨틱 컬러 스펙)
+ */
 // Eco Theme Primary Colors (Forest Emerald)
 val ForestEmerald = Color(0xFF10B981)
 val ForestEmeraldDark = Color(0xFF059669)

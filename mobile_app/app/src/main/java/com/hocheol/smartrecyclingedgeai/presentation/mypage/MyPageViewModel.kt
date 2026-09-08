@@ -17,6 +17,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * 마이페이지 뷰모델
+ * 사용자 프로필, 누적 배출 횟수 기반 에코 등급 및 소나무 심은 효과(탄소 절감) 게이미피케이션 연산을 수행합니다.
+ */
 @HiltViewModel
 class MyPageViewModel @Inject constructor(
     private val kioskRepository: KioskRepository,

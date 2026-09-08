@@ -9,6 +9,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/**
+ * 로컬 영속성 스토리지(DataStore) 관련 Hilt 싱글톤 DI 모듈
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object StorageModule {

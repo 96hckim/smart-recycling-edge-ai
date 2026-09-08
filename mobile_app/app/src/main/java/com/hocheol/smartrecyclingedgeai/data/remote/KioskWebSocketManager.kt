@@ -24,6 +24,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * WebSocket 연결 상태 모니터링을 위한 Sealed Interface
+ */
 sealed interface WebSocketConnectionState {
     object Disconnected : WebSocketConnectionState
     object Connecting : WebSocketConnectionState
@@ -31,6 +34,10 @@ sealed interface WebSocketConnectionState {
     data class Error(val message: String) : WebSocketConnectionState
 }
 
+/**
+ * 키오스크 실시간 투입 완결 이벤트를 수신하는 OkHttp WebSocket 매니저
+ * 네트워크 흔들림 시 Exponential Backoff 기반 자동 재연결 알고리즘을 수행합니다.
+ */
 @Singleton
 class KioskWebSocketManager @Inject constructor(
     private val okHttpClient: OkHttpClient
@@ -46,12 +53,16 @@ class KioskWebSocketManager @Inject constructor(
         MutableStateFlow<WebSocketConnectionState>(WebSocketConnectionState.Disconnected)
     val connectionState: StateFlow<WebSocketConnectionState> = _connectionState.asStateFlow()
 
+    // 실시간 분리배출 완결 이벤트 수신 파이프라인
     private val _recycleEventFlow = MutableSharedFlow<RecycleCompleteEvent>(extraBufferCapacity = 1)
     val recycleEventFlow: SharedFlow<RecycleCompleteEvent> = _recycleEventFlow.asSharedFlow()
 
     private val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     private val eventAdapter = moshi.adapter(RecycleCompleteEvent::class.java)
 
+    /**
+     * 특정 키오스크 수거함(binId)에 실시간 웹소켓 세션 연결
+     */
     fun connect(binId: Int) {
         isUserDisconnect = false
         currentBinId = binId
@@ -74,8 +85,7 @@ class KioskWebSocketManager @Inject constructor(
                     if (event != null && event.event == Constants.EVENT_RECYCLE_COMPLETE) {
                         _recycleEventFlow.tryEmit(event)
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                } catch (_: Exception) {
                 }
             }
 
@@ -94,6 +104,9 @@ class KioskWebSocketManager @Inject constructor(
         })
     }
 
+    /**
+     * 연결 예외 단절 시 Exponential Backoff 기반 지수 재연결 지연시도 (1s, 2s, 4s...)
+     */
     private fun scheduleReconnect() {
         if (isUserDisconnect) return
         val binId = currentBinId ?: return
@@ -101,7 +114,7 @@ class KioskWebSocketManager @Inject constructor(
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
             var delayMs = 1000L
-            repeat(3) { attempt ->
+            repeat(3) {
                 if (isUserDisconnect) return@launch
                 delay(delayMs.milliseconds)
                 _connectionState.value = WebSocketConnectionState.Connecting
@@ -111,6 +124,9 @@ class KioskWebSocketManager @Inject constructor(
         }
     }
 
+    /**
+     * 세션 완결 또는 사용자에 의한 명시적 웹소켓 연결 해제
+     */
     fun disconnect() {
         isUserDisconnect = true
         reconnectJob?.cancel()

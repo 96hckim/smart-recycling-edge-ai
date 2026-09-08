@@ -4,6 +4,9 @@ import androidx.compose.runtime.Immutable
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleResult
 import com.hocheol.smartrecyclingedgeai.domain.model.User
 
+/**
+ * 대시보드 메인 화면 불변(Immutable) UI 상태
+ */
 @Immutable
 data class HomeUiState(
     val user: User? = null,

@@ -17,6 +17,10 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
+/**
+ * 네트워크 통신 인프라 관련 Dagger-Hilt 싱글톤 DI 모듈
+ * OkHttpClient, Retrofit2, Moshi 및 REST ApiService/WebSocketManager 의존성을 주입합니다.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {

@@ -69,6 +69,10 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * CameraX + ML Kit BarcodeScanner 기반 키오스크 QR 코드 스캐너 다이얼로그
+ * ResolutionSelector 최신 API 및 DisposableEffect 수명주기 메모리 소멸 처리가 적용되어 있습니다.
+ */
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun QRScannerDialog(

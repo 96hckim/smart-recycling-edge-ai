@@ -13,6 +13,9 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 
+/**
+ * 키오스크 수거함 바인딩, 사용자 조회, 이력 및 포인트 차감 REST API 서비스
+ */
 interface KioskApiService {
     @GET(Constants.ENDPOINT_GET_USER)
     suspend fun getUserInfo(

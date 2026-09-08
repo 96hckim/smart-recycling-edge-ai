@@ -3,6 +3,9 @@ package com.hocheol.smartrecyclingedgeai.data.datasource
 import com.hocheol.smartrecyclingedgeai.domain.model.ShopCategory
 import com.hocheol.smartrecyclingedgeai.domain.model.ShopProduct
 
+/**
+ * 포인트 상점(Eco Store) 로컬 카탈로그 데이터 소스
+ */
 object FakeShopDataSource {
     val sampleProducts = listOf(
         ShopProduct(

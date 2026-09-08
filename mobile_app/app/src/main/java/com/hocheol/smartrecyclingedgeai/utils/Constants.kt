@@ -1,5 +1,8 @@
 package com.hocheol.smartrecyclingedgeai.utils
 
+/**
+ * 앱 네트워크, 딥링크, 게이미피케이션 관련 전역 상수
+ */
 object Constants {
     // Network Base URLs
     const val BASE_URL = "http://100.72.78.11:8000/"

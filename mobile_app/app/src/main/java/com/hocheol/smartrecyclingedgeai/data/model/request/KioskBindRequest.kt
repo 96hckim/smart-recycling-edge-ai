@@ -3,6 +3,9 @@ package com.hocheol.smartrecyclingedgeai.data.model.request
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
+/**
+ * 키오스크 수거함 세션 연결(바인딩) 요청 DTO
+ */
 @JsonClass(generateAdapter = true)
 data class KioskBindRequest(
     @Json(name = "bin_id")

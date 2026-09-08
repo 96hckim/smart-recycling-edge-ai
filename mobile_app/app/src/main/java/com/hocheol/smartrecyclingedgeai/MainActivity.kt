@@ -28,9 +28,14 @@ import com.hocheol.smartrecyclingedgeai.presentation.shop.ShopViewModel
 import com.hocheol.smartrecyclingedgeai.ui.theme.SmartRecyclingEdgeAITheme
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * 스마트 재활용수거 앱의 단일 액티비티(Single Activity)
+ * 딥링크 진입, 세션 기반 화면 분기 및 ViewModel 의존성을 바인딩합니다.
+ */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    // Activity 수명주기와 연동되는 HomeViewModel (딥링크 수신 및 세션 관리)
     private val homeViewModel: HomeViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +43,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
-        // 딥링크 Intent 1회만 수신
+        // 앱 실행 시 딥링크(QR 스캔 진입) 1회성 수신 처리
         handleDeeplinkIntent(intent)
 
         setContent {
@@ -48,6 +53,7 @@ class MainActivity : ComponentActivity() {
                 val shopViewModel: ShopViewModel = hiltViewModel()
                 val myPageViewModel: MyPageViewModel = hiltViewModel()
 
+                // 생명주기 안전 상태 수집 (백그라운드 리소스 고갈 방지)
                 val loginUiState by loginViewModel.uiState.collectAsStateWithLifecycle()
                 val homeUiState by homeViewModel.uiState.collectAsStateWithLifecycle()
                 val historyUiState by historyViewModel.uiState.collectAsStateWithLifecycle()
@@ -55,6 +61,7 @@ class MainActivity : ComponentActivity() {
                 val myPageUiState by myPageViewModel.uiState.collectAsStateWithLifecycle()
 
                 when {
+                    // 1. 자동 로그인 체크 중 로딩 상태
                     loginUiState.isCheckingAutoLogin -> {
                         Box(
                             modifier = Modifier
@@ -69,6 +76,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    // 2. 로그인 완료: 메인 화면 표시 및 이벤트 핸들러 바인딩
                     loginUiState.isLoggedIn -> {
                         val onConfirmResult = remember(
                             homeViewModel,
@@ -124,6 +132,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    // 3. 비로그인 상태: 로그인 화면 및 외부 딥링크 메세지 수신
                     else -> {
                         val displayErrorMessage =
                             loginUiState.errorMessage ?: homeUiState.errorMessage
@@ -154,10 +163,13 @@ class MainActivity : ComponentActivity() {
         handleDeeplinkIntent(intent)
     }
 
+    /**
+     * 외부 QR 카메라 및 딥링크 진입 처리
+     * 딥링크 중복 및 무한 Recomposition 방지를 위해 Intent data를 1회 처리 후 소진(Consume)합니다.
+     */
     private fun handleDeeplinkIntent(intent: Intent?) {
         val uri = intent?.data ?: return
         homeViewModel.handleDeeplink(uri)
-        // 딥링크 중복 호출 방지를 위한 Intent Data 소진(Consume)
         intent.data = null
     }
 }

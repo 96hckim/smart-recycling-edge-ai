@@ -47,6 +47,10 @@ import com.hocheol.smartrecyclingedgeai.R
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleLog
 import com.hocheol.smartrecyclingedgeai.ui.theme.AppTheme
 
+/**
+ * 분리배출 상세 이력 화면 컴포저블
+ * 과거 배출 수량, 획득 포인트 및 CO2 절감 기여도를 4대 품목 시맨틱 뱃지와 함께 보여줍니다.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(

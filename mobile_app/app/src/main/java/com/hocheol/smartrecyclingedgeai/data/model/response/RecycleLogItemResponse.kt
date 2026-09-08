@@ -3,6 +3,9 @@ package com.hocheol.smartrecyclingedgeai.data.model.response
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
+/**
+ * 과거 분리배출 이력 단일 항목 DTO
+ */
 @JsonClass(generateAdapter = true)
 data class RecycleLogItemResponse(
     @Json(name = "id")

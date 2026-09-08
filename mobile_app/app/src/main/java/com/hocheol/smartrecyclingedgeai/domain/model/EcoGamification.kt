@@ -2,6 +2,9 @@ package com.hocheol.smartrecyclingedgeai.domain.model
 
 import com.hocheol.smartrecyclingedgeai.utils.Constants
 
+/**
+ * 사용자 배출 누적 횟수 기반 친환경 등급
+ */
 enum class EcoLevel(
     val levelName: String,
     val emoji: String,
@@ -22,6 +25,9 @@ enum class EcoLevel(
     }
 }
 
+/**
+ * CO2 절감량 기반 소나무 심은 효과 환산 연산기
+ */
 object EcoCalculator {
     fun calculatePineTrees(carbonSavedG: Double): Double {
         if (carbonSavedG <= 0.0) return 0.0

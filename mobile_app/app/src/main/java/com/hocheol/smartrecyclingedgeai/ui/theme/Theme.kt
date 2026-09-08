@@ -74,7 +74,9 @@ private val DarkColorScheme = darkColorScheme(
     onError = Color.White
 )
 
-// 4대 분리수거 카테고리 뱃지 전용 디자인 시스템 색상 스펙
+/**
+ * 4대 분리수거 카테고리 뱃지 전용 시맨틱 디자인 시스템 색상 스펙
+ */
 data class BadgeColorScheme(
     val paperBg: Color,
     val paperText: Color,
@@ -102,6 +104,9 @@ private val DarkBadgeColorScheme = BadgeColorScheme(
 
 val LocalBadgeColorScheme = staticCompositionLocalOf { LightBadgeColorScheme }
 
+/**
+ * CompositionLocal 기반 커스텀 테마 색상 접근자 (ex: AppTheme.badgeColors.paperBg)
+ */
 object AppTheme {
     val badgeColors: BadgeColorScheme
         @Composable
@@ -109,6 +114,10 @@ object AppTheme {
         get() = LocalBadgeColorScheme.current
 }
 
+/**
+ * 앱 전체 커스텀 Material 3 테마 컴포저블
+ * 시스템 다크 테마 상태바/내비게이션바 인셋 컨트롤 및 CompositionLocal 디자인 시스템을 주입합니다.
+ */
 @Composable
 fun SmartRecyclingEdgeAITheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

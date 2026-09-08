@@ -2,6 +2,9 @@ package com.hocheol.smartrecyclingedgeai.presentation.login
 
 import androidx.compose.runtime.Immutable
 
+/**
+ * 로그인 화면 불변(Immutable) UI 상태
+ */
 @Immutable
 data class LoginUiState(
     val phone: String = "",

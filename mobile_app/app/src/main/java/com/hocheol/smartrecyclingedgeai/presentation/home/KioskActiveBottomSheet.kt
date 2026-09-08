@@ -33,6 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hocheol.smartrecyclingedgeai.R
 
+/**
+ * 키오스크 수거함 바인딩 후 실시간 투입 대기 상태를 나타내는 무한 펄스 애니메이션 바텀시트
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun KioskActiveBottomSheet(
@@ -45,16 +48,15 @@ fun KioskActiveBottomSheet(
         initialValue = 1f,
         targetValue = 1.25f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "pulseScale"
+        label = "scale"
     )
 
     ModalBottomSheet(
         onDismissRequest = onCancelClick,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         containerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
@@ -65,7 +67,7 @@ fun KioskActiveBottomSheet(
         ) {
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(90.dp)
                     .scale(pulseScale)
                     .background(
                         color = MaterialTheme.colorScheme.primaryContainer,
@@ -73,10 +75,20 @@ fun KioskActiveBottomSheet(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "🌿", fontSize = 40.sp)
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "♻️", fontSize = 32.sp)
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = stringResource(R.string.kiosk_active_title),
@@ -85,7 +97,7 @@ fun KioskActiveBottomSheet(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
                 text = stringResource(R.string.kiosk_active_subtitle),
@@ -97,21 +109,23 @@ fun KioskActiveBottomSheet(
 
             Text(
                 text = stringResource(R.string.kiosk_active_waiting_hint),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             OutlinedButton(
                 onClick = onCancelClick,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .height(50.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.common_close),
+                    text = stringResource(R.string.mypage_logout_btn_cancel),
+                    fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

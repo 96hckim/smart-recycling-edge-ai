@@ -12,6 +12,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/**
+ * 데이터 계층 리포지토리 관련 Hilt 싱글톤 DI 모듈
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {

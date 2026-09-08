@@ -3,6 +3,9 @@ package com.hocheol.smartrecyclingedgeai.data.model.response
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
+/**
+ * 키오스크 수거함 바인딩 응답 DTO
+ */
 @JsonClass(generateAdapter = true)
 data class KioskBindResponse(
     @Json(name = "status")

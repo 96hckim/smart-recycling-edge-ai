@@ -51,6 +51,10 @@ import androidx.compose.ui.unit.sp
 import com.hocheol.smartrecyclingedgeai.R
 import com.hocheol.smartrecyclingedgeai.utils.PhoneUtils
 
+/**
+ * 대시보드 메인 화면 컴포저블
+ * 유저 잔여 포인트, 탄소 절감 기여도 및 QR 스캐너/펄스 수거 세션 바텀시트/완결 정산 다이얼로그를 제공합니다.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(

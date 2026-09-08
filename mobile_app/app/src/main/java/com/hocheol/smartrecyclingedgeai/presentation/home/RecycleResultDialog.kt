@@ -33,6 +33,10 @@ import com.hocheol.smartrecyclingedgeai.R
 import com.hocheol.smartrecyclingedgeai.domain.model.RecycleResult
 import com.hocheol.smartrecyclingedgeai.ui.theme.AppTheme
 
+/**
+ * 실시간 분리배출 정산 완결 결과 축하 팝업 다이얼로그
+ * 4대 품목별 배출 수량 1:1 정사이즈 정사각형 칩 및 획득 포인트/CO2 절감량을 보여줍니다.
+ */
 @Composable
 fun RecycleResultDialog(
     result: RecycleResult,

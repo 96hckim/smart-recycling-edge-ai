@@ -8,6 +8,10 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * 인증 및 회원 관리 리포지토리
+ * 로그인, 세션 상태 및 사용자 자격 증명 관련 처리를 담당합니다.
+ */
 @Singleton
 class AuthRepository @Inject constructor(
     private val apiService: AuthApiService,
@@ -17,6 +21,9 @@ class AuthRepository @Inject constructor(
     val phoneFlow: Flow<String?> = sessionManager.phoneFlow
     val isLoggedInFlow: Flow<Boolean> = sessionManager.isLoggedInFlow
 
+    /**
+     * 간편 로그인 처리 및 성공 시 세션 저장소(DataStore)에 자동 세션 보관
+     */
     suspend fun login(phone: String, name: String?): Result<User> {
         return try {
             val request = LoginRequest(
@@ -50,6 +57,9 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    /**
+     * 백엔드 API 에러 응답(JSON "detail") 메시지 안전 추출
+     */
     private fun parseErrorMessage(errorString: String, statusCode: Int): String {
         return try {
             val match = Regex("\"detail\"\\s*:\\s*\"([^\"]+)\"").find(errorString)

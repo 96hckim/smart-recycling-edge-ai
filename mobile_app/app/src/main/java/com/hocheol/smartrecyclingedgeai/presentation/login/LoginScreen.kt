@@ -46,6 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hocheol.smartrecyclingedgeai.R
 
+/**
+ * 휴대폰 번호 기반 간편 로그인 화면 컴포저블
+ * Soft Keyboard IME 패딩 연동, 번호 유효성 검증 및 스낵바 에러 처리를 제공합니다.
+ */
 @Composable
 fun LoginScreen(
     uiState: LoginUiState,

@@ -3,6 +3,9 @@ package com.hocheol.smartrecyclingedgeai.data.model.response
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
+/**
+ * 유저 프로필 및 보유 포인트 정보 응답 DTO
+ */
 @JsonClass(generateAdapter = true)
 data class UserResponse(
     @Json(name = "id")

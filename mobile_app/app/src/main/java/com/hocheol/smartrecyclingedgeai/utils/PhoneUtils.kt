@@ -1,5 +1,8 @@
 package com.hocheol.smartrecyclingedgeai.utils
 
+/**
+ * 개인정보 보호를 위한 휴대폰 번호 마스킹 유틸리티 (ex: 010-****-5678)
+ */
 object PhoneUtils {
     fun maskPhoneNumber(phone: String?): String {
         if (phone.isNullOrBlank()) return ""

@@ -1,5 +1,6 @@
 package com.hocheol.smartrecyclingedgeai.presentation.main
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -35,6 +36,10 @@ import com.hocheol.smartrecyclingedgeai.presentation.mypage.MyPageUiState
 import com.hocheol.smartrecyclingedgeai.presentation.shop.ShopScreen
 import com.hocheol.smartrecyclingedgeai.presentation.shop.ShopUiState
 
+/**
+ * 앱의 메인 하단 내비게이션 바 컴포저블 컨테이너
+ * 홈, 배출 이력, 상점, 마이페이지 4개 탭을 전환하며 인셋 패딩 조화를 관리합니다.
+ */
 @Composable
 fun MainScreen(
     homeUiState: HomeUiState,
@@ -180,8 +185,10 @@ fun MainScreen(
                 )
             }
         },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         modifier = modifier
     ) { innerPadding ->
+        // 내비게이션 바 위쪽 8dp 공통 여백으로 하위 스크린 시각적 밸런스 일률 유지
         val screenModifier = modifier
             .padding(innerPadding)
             .padding(bottom = 8.dp)

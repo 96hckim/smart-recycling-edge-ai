@@ -44,6 +44,10 @@ import androidx.compose.ui.unit.sp
 import com.hocheol.smartrecyclingedgeai.R
 import com.hocheol.smartrecyclingedgeai.utils.PhoneUtils
 
+/**
+ * 마이페이지 화면 컴포저블
+ * 프로필, 배출 횟수 기반 에코 등급 뱃지, 소나무 환산 효과 및 안전한 로그아웃 기능을 제공합니다.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyPageScreen(

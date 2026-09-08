@@ -54,6 +54,10 @@ import com.hocheol.smartrecyclingedgeai.R
 import com.hocheol.smartrecyclingedgeai.domain.model.ShopCategory
 import com.hocheol.smartrecyclingedgeai.domain.model.ShopProduct
 
+/**
+ * 포인트 상점(Eco Store) 화면 컴포저블
+ * FilterChip 카테고리 필터링, 교환 확인 팝업 및 가상 쿠폰 발급 시뮬레이션을 제공합니다.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShopScreen(

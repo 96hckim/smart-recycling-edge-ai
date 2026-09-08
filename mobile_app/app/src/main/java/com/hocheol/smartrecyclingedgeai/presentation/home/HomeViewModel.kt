@@ -17,6 +17,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * 대시보드 메인 화면 뷰모델
+ * 수거함 QR 스캔, 외부 딥링크 처리, 실시간 웹소켓 배출 완결 이벤트 수신을 관장합니다.
+ */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val kioskRepository: KioskRepository,
@@ -31,12 +35,15 @@ class HomeViewModel @Inject constructor(
         observeRecycleEvents()
     }
 
+    /**
+     * 유저 세션 및 잔여 포인트를 반응형 관찰하여 홈 화면 UI 자동 업데이트
+     */
     private fun observeUserSession() {
         viewModelScope.launch {
             sessionManager.userIdFlow.collectLatest { userId ->
                 if (userId != null) {
                     fetchUserInfo(userId)
-                    // 로그아웃 상태에서 들어왔던 대기 중인 딥링크가 있는 경우, 로그인 완료 시 즉시 키오스크 바인딩 수행!
+                    // 로그아웃 상태에서 들어왔던 대기 딥링크가 존재하는 경우 로그인 완료 시 즉시 키오스크 연결
                     val pendingBinId = _uiState.value.pendingDeeplinkBinId
                     if (pendingBinId != null) {
                         _uiState.update {
@@ -94,6 +101,9 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 웹소켓을 통한 실시간 분리배출 정산 완결 이벤트(RECYCLE_COMPLETE) 수신
+     */
     private fun observeRecycleEvents() {
         viewModelScope.launch {
             kioskRepository.recycleResultFlow.collect { result ->
@@ -118,6 +128,9 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(isScanningQR = false) }
     }
 
+    /**
+     * 앱 내 카메라로 QR 스캔 성공 시 키오스크 바인딩 실행
+     */
     fun handleScannedQrContent(rawContent: String) {
         val binId = parseBinId(rawContent)
         if (binId == null) {
@@ -153,6 +166,9 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 기본 카메라 앱 딥링크(smartrecycle://kiosk/auth?bin_id=1) 진입 처리
+     */
     fun handleDeeplink(uri: Uri) {
         val scheme = uri.scheme
         val host = uri.host
@@ -164,14 +180,14 @@ class HomeViewModel @Inject constructor(
                 viewModelScope.launch {
                     val userId = sessionManager.userIdFlow.firstOrNull()
                     if (userId != null) {
-                        // 로그인 상태: 즉시 키오스크 바인딩
+                        // 이미 동일 수거함 세션이 연결 중인 경우 중복 연사 방지
                         if (_uiState.value.isKioskActive && _uiState.value.activeBinId == binId) return@launch
                         if (_uiState.value.isKioskBinding) return@launch
 
                         _uiState.update { it.copy(isKioskBinding = true) }
                         bindKiosk(binId = binId, userId = userId)
                     } else {
-                        // 로그아웃 상태: 가짜 바인딩 API 절대 호출 금지! 대기 binId 세팅 및 안내 메시지 표출
+                        // 로그아웃 상태 진입 시 가짜 바인딩 차단 및 대기 세션 세팅
                         _uiState.update {
                             it.copy(
                                 pendingDeeplinkBinId = binId,
@@ -189,18 +205,20 @@ class HomeViewModel @Inject constructor(
             return try {
                 val uri = rawContent.toUri()
                 uri.getQueryParameter(Constants.PARAM_BIN_ID)?.toIntOrNull()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }
         return rawContent.toIntOrNull()
     }
 
+    /**
+     * 키오스크 수거함 바인딩 API 호출 및 실시간 웹소켓 파이프라인 개설
+     */
     private fun bindKiosk(binId: Int, userId: Int? = null) {
         viewModelScope.launch {
             val actualUserId = userId ?: sessionManager.userIdFlow.firstOrNull()
             if (actualUserId == null) {
-                // 로그인 안 된 상태에서는 가짜 바인딩 금지!
                 _uiState.update {
                     it.copy(
                         isKioskBinding = false,

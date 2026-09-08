@@ -14,6 +14,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * 분리배출 상세 이력 뷰모델
+ * 사용자별 과거 분리배출 기록 목록 조회 및 PullToRefresh 새로고침을 관리합니다.
+ */
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val kioskRepository: KioskRepository,

@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * 로그인 뷰모델
+ * 자동 로그인 상태 확인 및 휴대폰 번호 유효성 검증 기반 로그인 처리를 관리합니다.
+ */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val repository: AuthRepository
