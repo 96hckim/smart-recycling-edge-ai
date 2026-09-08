@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 키오스크 최상위 윈도우, 화면 스택 라우팅 및 비전/백엔드 이벤트 오케스트레이터 헤더.
  */
 #pragma once
@@ -37,8 +37,8 @@ public:
 public slots:
     // AI 엣지 디바이스 TCP 연결 상태 인디케이터 갱신
     void updateConnectionStatus(bool connected);
-    // 상단 상태바 성능 텔레메트리(FPS, 추론시간, 지연시간) 갱신
-    void updateTelemetry(double fps, double inferMs, double latencyMs);
+    // 상단 상태바 성능 텔레메트리(FPS, 추론시간) 갱신
+    void updateTelemetry(double fps, double inferMs);
 
 private slots:
     void onFrameReceived(const QPixmap& pixmap);

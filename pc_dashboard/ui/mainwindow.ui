@@ -369,7 +369,7 @@ QLabel#lblTelemetry {
        </size>
       </property>
       <property name="text">
-       <string>FPS: 0.0 | Infer: 0.0ms | Network Latency: 0.0ms | Jetson Stream Port: 9000</string>
+       <string>FPS: 0.0 | Infer: 0.0ms</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>

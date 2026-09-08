@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 키오스크 전체 서브시스템 결합, 시그널-슬롯 디스패칭 및 페이지 라우터 구현부.
  */
 #include "mainwindow.h"
@@ -171,13 +171,11 @@ void MainWindow::updateConnectionStatus(bool connected)
     ui->lblConnStatus->style()->polish(ui->lblConnStatus);
 }
 
-void MainWindow::updateTelemetry(double fps, double inferMs, double latencyMs)
+void MainWindow::updateTelemetry(double fps, double inferMs)
 {
     ui->lblTelemetry->setText(QString(UITheme::Header::TELEMETRY_FMT)
             .arg(QString::number(fps, 'f', 1))
-            .arg(QString::number(inferMs, 'f', 1))
-            .arg(QString::number(latencyMs, 'f', 1))
-            .arg(Config::JETSON_PORT));
+            .arg(QString::number(inferMs, 'f', 1)));
 }
 
 void MainWindow::onMemberStartRequested(const QString& userId)

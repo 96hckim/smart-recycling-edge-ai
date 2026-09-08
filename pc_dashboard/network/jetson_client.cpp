@@ -1,8 +1,7 @@
-﻿/**
+/**
  * Jetson TCP 이진 패킷 스트림 파싱 및 0-Copy 기반 텔레메트리 처리 구현부.
  */
 #include "jetson_client.h"
-#include <QDateTime>
 #include <QDebug>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -148,10 +147,6 @@ void JetsonClient::processJsonMeta(const QByteArray& jsonData)
 
     FrameMetadata meta = FrameMetadata::fromJson(doc.object());
 
-    // 엣지 추론 시점 타임스탬프와 UI 수신 시점 간의 종단 지연(Latency) 계산
-    const double nowSec = QDateTime::currentMSecsSinceEpoch() / 1000.0;
-    const double latencyMs = qMax(0.0, (nowSec - meta.timestamp) * 1000.0);
-
     emit sigMetadataReceived(meta);
-    emit sigTelemetryUpdated(meta.fps, meta.inferMs, latencyMs);
+    emit sigTelemetryUpdated(meta.fps, meta.inferMs);
 }

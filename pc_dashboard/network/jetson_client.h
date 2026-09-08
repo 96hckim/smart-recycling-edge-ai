@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Jetson Orin Nano TCP 비전 스트림 및 하드웨어 텔레메트리 수신 클라이언트 헤더.
  */
 #pragma once
@@ -31,7 +31,7 @@ signals:
     void sigConnectionChanged(bool connected);
     void sigFrameReceived(const QPixmap& pixmap);
     void sigMetadataReceived(const FrameMetadata& meta);
-    void sigTelemetryUpdated(double fps, double inferMs, double latencyMs);
+    void sigTelemetryUpdated(double fps, double inferMs);
 
 private slots:
     void onSocketConnected();

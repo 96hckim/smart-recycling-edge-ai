@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 키오스크 UI 테마 색상, 동적 배너 스타일시트 및 정적 텍스트 리소스 정의 헤더.
  */
 #pragma once
@@ -37,7 +37,7 @@ inline QColor getCategoryColor(RecycleCategory cat)
 namespace Header {
     inline const QString STATUS_ONLINE = "● AI VISION ONLINE";
     inline const QString STATUS_OFFLINE = "○ AI VISION OFFLINE";
-    inline const QString TELEMETRY_FMT = "FPS: %1 | Infer: %2ms | Network Latency: %3ms | Jetson Stream Port: %4";
+    inline const QString TELEMETRY_FMT = "FPS: %1 | Infer: %2ms";
 }
 
 namespace Idle {
