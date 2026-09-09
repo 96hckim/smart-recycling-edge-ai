@@ -18,6 +18,7 @@ void SysTick_1ms_Init(void)
 }
 
 // 서보는 20ms(50Hz) 주기마다 0.5~2.5ms 펄스 폭으로 각도를 받는 규격이라 그 PWM을 만든다
+// 실사용 서보가 3개(PC6~PC8)뿐이라 CH4(PC9)는 세팅하지 않음
 void TIM3_PWM4_Init(void)
 {
 	Macro_Set_Bit(RCC->AHB1ENR, 2U);
@@ -25,12 +26,10 @@ void TIM3_PWM4_Init(void)
 	Macro_Write_Block(GPIOC->MODER, 0x3, 0x2, 12U);
 	Macro_Write_Block(GPIOC->MODER, 0x3, 0x2, 14U);
 	Macro_Write_Block(GPIOC->MODER, 0x3, 0x2, 16U);
-	Macro_Write_Block(GPIOC->MODER, 0x3, 0x2, 18U);
 
 	Macro_Write_Block(GPIOC->AFR[0], 0xF, 0x2, 24U);
 	Macro_Write_Block(GPIOC->AFR[0], 0xF, 0x2, 28U);
 	Macro_Write_Block(GPIOC->AFR[1], 0xF, 0x2, 0U);
-	Macro_Write_Block(GPIOC->AFR[1], 0xF, 0x2, 4U);
 
 	Macro_Set_Bit(RCC->APB1ENR, 1U);
 
@@ -45,13 +44,10 @@ void TIM3_PWM4_Init(void)
 	Macro_Set_Bit(TIM3->CCMR1, 11U);
 	Macro_Write_Block(TIM3->CCMR2, 0x7, 0x6, 4U);
 	Macro_Set_Bit(TIM3->CCMR2, 3U);
-	Macro_Write_Block(TIM3->CCMR2, 0x7, 0x6, 12U);
-	Macro_Set_Bit(TIM3->CCMR2, 11U);
 
 	Macro_Set_Bit(TIM3->CCER, 0U);
 	Macro_Set_Bit(TIM3->CCER, 4U);
 	Macro_Set_Bit(TIM3->CCER, 8U);
-	Macro_Set_Bit(TIM3->CCER, 12U);
 
 	// 위 설정값들은 섀도우 레지스터에 있어 강제 업데이트 이벤트로 즉시 반영시켜야 함
 	Macro_Set_Bit(TIM3->EGR, 0U);
@@ -61,7 +57,7 @@ void TIM3_PWM4_Init(void)
 	Macro_Set_Bit(TIM3->CR1, 0U);
 }
 
-// PSC가 1틱=1us라 CCRx에 pulse_us를 그대로 넣으면 됨 (servo4.c가 각도->펄스 변환 후 호출)
+// PSC가 1틱=1us라 CCRx에 pulse_us를 그대로 넣으면 됨 (servo.c가 각도->펄스 변환 후 호출)
 void TIM3_PWM_Set_Pulse(unsigned char ch, unsigned short pulse_us)
 {
 	switch (ch)
@@ -69,7 +65,6 @@ void TIM3_PWM_Set_Pulse(unsigned char ch, unsigned short pulse_us)
 	case 0: TIM3->CCR1 = pulse_us; break;
 	case 1: TIM3->CCR2 = pulse_us; break;
 	case 2: TIM3->CCR3 = pulse_us; break;
-	case 3: TIM3->CCR4 = pulse_us; break;
 	default: break;
 	}
 }

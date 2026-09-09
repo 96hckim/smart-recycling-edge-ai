@@ -1,5 +1,5 @@
-// servo4.c 위에 얹은 재활용 게이트 제어: Jetson이 넘긴 재질에 맞춰 분류 서보를 돌리고
-// 게이트를 열며, 이후 자동 닫힘(타임아웃/비움 감지)까지 담당한다.
+// servo.c 위에 얹은 재활용 분류 트리 제어: Jetson이 넘긴 재질에 맞춰 3모터(TOP/LEFT/RIGHT)로
+// 경로를 잡고, 이후 자동 닫힘(DOOR_CLOSE 명령/최대개방 타임아웃)까지 담당한다.
 #ifndef RECYCLE_H
 #define RECYCLE_H
 
@@ -24,14 +24,15 @@ RecycleType Recycle_Type_From_String(const char *s);
 
 void Recycle_Door_Open(RecycleType type);
 
-void Recycle_Door_Close(void);
+// Jetson이 $DOOR_CLOSE를 보냈을 때 호출 - 최소 개방시간을 지키며 닫는다
+void Recycle_Door_Close_Request(void);
 
 GateState Recycle_Get_Gate_State(void);
 
 int Recycle_Gate_State_Changed(void);
 
-// main 루프에서 주기적으로 호출: 0=유지, 1=비움 감지로 닫음, 2=최대개방 타임아웃으로 닫음
-int Recycle_Auto_Close_Update(float dist_cm);
+// main 루프에서 주기적으로 호출: 0=유지, 1=DOOR_CLOSE 명령으로 닫음, 2=최대개방 타임아웃으로 닫음
+int Recycle_Auto_Close_Update(void);
 
 RecycleType Recycle_Get_Open_Type(void);
 

@@ -1,91 +1,78 @@
 #include "device_driver.h"
 #include "recycle.h"
-#include "servo4.h"
+#include "servo.h"
 #include <string.h>
 
-// Jetson이 판별한 재질(PET/CAN/PAPER/VINYL)을 받아 게이트+분류 서보를 구동하는 상위 로직.
+// Jetson이 판별한 재질(PET/CAN/PAPER/VINYL)을 받아 3단 분류 트리(모터 3개)를 구동하는 상위 로직.
+// TOP(투입구)이 먼저 PET/CAN 그룹 vs PAPER/VINYL 그룹으로 가르고,
+// 그 아래 LEFT/RIGHT 모터가 각자 맡은 그룹을 다시 2개로 갈라 최종 4분류를 완성한다.
 extern volatile unsigned long g_sys_tick;
 
-// 분류 방향이 4가지인데 모터는 2개뿐 -> Set_Sort_Position에서 LEFT/RIGHT 조합으로 4방향 표현
-#define GATE_CH  SERVO4_CH0
-#define SORT1_CH SERVO4_CH1
-#define SORT2_CH SERVO4_CH2
+#define TOP_CH   SERVO_CH0  // 투입구: LEFT->PET/CAN 그룹, RIGHT->PAPER/VINYL 그룹
+#define LEFT_CH  SERVO_CH1  // PET/CAN 그룹 세부분류: LEFT->PET, RIGHT->CAN
+#define RIGHT_CH SERVO_CH2  // PAPER/VINYL 그룹 세부분류: LEFT->PAPER, RIGHT->VINYL
 
-#define GATE_CLOSE_ANGLE 0
-#define GATE_OPEN_ANGLE  90
-
-#define SORT_LEFT_ANGLE  0
-#define SORT_MID_ANGLE   90
-#define SORT_RIGHT_ANGLE 180
-
-// timer.c가 1ms마다 올려주는 g_sys_tick 차이를 재는 busy-wait (별도 딜레이 타이머 불필요)
-static void Delay_ms(unsigned long ms)
-{
-    unsigned long start = g_sys_tick;
-    while ((g_sys_tick - start) < ms)
-        ;
-}
+#define ANGLE_LEFT  0
+#define ANGLE_MID   90   // 중립/대기 각도 - 어느 쪽으로도 열려있지 않은 상태
+#define ANGLE_RIGHT 180
 
 static volatile GateState s_gate_state = GATE_CLOSED;
 static volatile GateState s_gate_state_prev = GATE_CLOSED;
 
-// MIN_OPEN: 열자마자 거리센서가 "비었음"으로 오판해 바로 닫히는 것 방지 (투입 시간 최소 보장)
-// EMPTY_DEBOUNCE: 센서 노이즈로 순간적으로 비어 보이는 것과 실제 비움을 구분하기 위한 유예 시간
-// MAX_OPEN: 사람이 안 던지고 방치해도 무한정 열려있지 않도록 하는 failsafe
-#define DOOR_MIN_OPEN_MS       2000
-#define DOOR_EMPTY_DEBOUNCE_MS 1200
-#define DOOR_MAX_OPEN_MS       10000
-#define DOOR_CLEAR_CM          25.0f
+// MIN_OPEN: Jetson이 DOOR_CLOSE를 너무 일찍 보내도 최소 이 시간까지는 경로를 유지 (투입 시간 보장)
+// MAX_OPEN: Jetson이 DOOR_CLOSE를 못 보내는 상황(오탐/통신 유실) 대비 failsafe
+#define DOOR_MIN_OPEN_MS 2000
+#define DOOR_MAX_OPEN_MS 10000
 
 static RecycleType s_open_type = RECYCLE_NONE;
 static unsigned long s_gate_open_tick = 0;
-static unsigned long s_clear_since_tick = 0;
+static volatile unsigned char s_close_requested = 0;
 
-// 게이트 서보 이동과 상태값 갱신을 한곳에 묶어, 상태 변경 지점을 여기 하나로 고정
-static void Set_Gate_State(GateState state)
-{
-    Servo4_Set_Angle(GATE_CH, (state == GATE_OPEN) ? GATE_OPEN_ANGLE : GATE_CLOSE_ANGLE);
-    s_gate_state = state;
-}
-
-// 전원 인가 직후 게이트/분류 서보를 알려진 초기 위치로 맞춰 상태 불일치를 방지
-void Recycle_Init(void)
-{
-    Servo4_Init();
-
-    Set_Gate_State(GATE_CLOSED);
-    Servo4_Set_Angle(SORT1_CH, SORT_MID_ANGLE);
-    Servo4_Set_Angle(SORT2_CH, SORT_MID_ANGLE);
-
-    s_gate_state_prev = s_gate_state;
-}
-
-// SORT1/SORT2를 LEFT/RIGHT로 조합 = 2비트로 4가지 재질 방향을 표현
-static void Set_Sort_Position(RecycleType type)
+// 품목별 3모터 목표각 - 해당 없는 쪽 모터는 중립을 유지해 경로를 막아둔다
+static void Set_Route(RecycleType type)
 {
     switch (type)
     {
     case RECYCLE_PET:
-        Servo4_Set_Angle(SORT1_CH, SORT_LEFT_ANGLE);
-        Servo4_Set_Angle(SORT2_CH, SORT_LEFT_ANGLE);
+        Servo_Set_Angle(TOP_CH, ANGLE_LEFT);
+        Servo_Set_Angle(LEFT_CH, ANGLE_LEFT);
+        Servo_Set_Angle(RIGHT_CH, ANGLE_MID);
         break;
     case RECYCLE_CAN:
-        Servo4_Set_Angle(SORT1_CH, SORT_LEFT_ANGLE);
-        Servo4_Set_Angle(SORT2_CH, SORT_RIGHT_ANGLE);
+        Servo_Set_Angle(TOP_CH, ANGLE_LEFT);
+        Servo_Set_Angle(LEFT_CH, ANGLE_RIGHT);
+        Servo_Set_Angle(RIGHT_CH, ANGLE_MID);
         break;
     case RECYCLE_PAPER:
-        Servo4_Set_Angle(SORT1_CH, SORT_RIGHT_ANGLE);
-        Servo4_Set_Angle(SORT2_CH, SORT_LEFT_ANGLE);
+        Servo_Set_Angle(TOP_CH, ANGLE_RIGHT);
+        Servo_Set_Angle(RIGHT_CH, ANGLE_LEFT);
+        Servo_Set_Angle(LEFT_CH, ANGLE_MID);
         break;
     case RECYCLE_VINYL:
-        Servo4_Set_Angle(SORT1_CH, SORT_RIGHT_ANGLE);
-        Servo4_Set_Angle(SORT2_CH, SORT_RIGHT_ANGLE);
+        Servo_Set_Angle(TOP_CH, ANGLE_RIGHT);
+        Servo_Set_Angle(RIGHT_CH, ANGLE_RIGHT);
+        Servo_Set_Angle(LEFT_CH, ANGLE_MID);
         break;
     default:
-        Servo4_Set_Angle(SORT1_CH, SORT_RIGHT_ANGLE);
-        Servo4_Set_Angle(SORT2_CH, SORT_RIGHT_ANGLE);
         break;
     }
+}
+
+static void Set_Neutral(void)
+{
+    Servo_Set_Angle(TOP_CH, ANGLE_MID);
+    Servo_Set_Angle(LEFT_CH, ANGLE_MID);
+    Servo_Set_Angle(RIGHT_CH, ANGLE_MID);
+}
+
+// 전원 인가 직후 3모터를 중립 위치로 맞춰 상태 불일치를 방지
+void Recycle_Init(void)
+{
+    Servo_Init();
+
+    Set_Neutral();
+    s_gate_state = GATE_CLOSED;
+    s_gate_state_prev = s_gate_state;
 }
 
 // Jetson이 UART로 보내는 문자열 프로토콜과 내부 enum 사이의 경계 지점
@@ -98,8 +85,7 @@ RecycleType Recycle_Type_From_String(const char *s)
     return RECYCLE_NONE;
 }
 
-// 분류부터 개방까지 한 번에 처리: 쓰레기가 잘못된 방향으로 떨어지지 않도록
-// 분류 모터가 자리를 잡을 시간(Delay_ms)을 준 뒤에야 게이트를 연다
+// 품목에 맞는 경로로 3모터를 즉시 이동 - 물리적 게이트가 따로 없어 이 각도 자체가 "열림"
 void Recycle_Door_Open(RecycleType type)
 {
     if (type == RECYCLE_NONE)
@@ -107,24 +93,27 @@ void Recycle_Door_Open(RecycleType type)
         return;
     }
 
-    Set_Sort_Position(type);
-    Delay_ms(300);
-    Set_Gate_State(GATE_OPEN);
+    Set_Route(type);
 
+    s_gate_state = GATE_OPEN;
     s_open_type = type;
     s_gate_open_tick = g_sys_tick;
-    s_clear_since_tick = 0;
+    s_close_requested = 0;
 }
 
-// 수동/자동 닫힘 경로가 모두 여기로 모이도록 해 상태 리셋 누락을 방지
-void Recycle_Door_Close(void)
+static void Do_Close(void)
 {
-    Set_Gate_State(GATE_CLOSED);
-    Servo4_Set_Angle(SORT1_CH, SORT_MID_ANGLE);
-    Servo4_Set_Angle(SORT2_CH, SORT_MID_ANGLE);
-
+    Set_Neutral();
+    s_gate_state = GATE_CLOSED;
     s_open_type = RECYCLE_NONE;
-    s_clear_since_tick = 0;
+    s_close_requested = 0;
+}
+
+// Jetson이 $DOOR_CLOSE(카메라에서 물체 사라짐)를 보냈을 때 호출.
+// 최소 개방시간을 못 채웠으면 바로 닫지 않고 플래그만 세워 Recycle_Auto_Close_Update가 나중에 닫는다.
+void Recycle_Door_Close_Request(void)
+{
+    s_close_requested = 1;
 }
 
 GateState Recycle_Get_Gate_State(void)
@@ -143,12 +132,11 @@ int Recycle_Gate_State_Changed(void)
     return 0;
 }
 
-// 반환값 0: 유지, 1: 비움 감지로 닫음, 2: 최대개방 타임아웃으로 닫음 (main.c가 로그 구분에 사용)
-int Recycle_Auto_Close_Update(float dist_cm)
+// main 루프가 주기적으로 호출: 0=유지, 1=DOOR_CLOSE 명령으로 닫음, 2=최대개방 타임아웃으로 닫음
+int Recycle_Auto_Close_Update(void)
 {
     if (s_gate_state != GATE_OPEN)
     {
-        s_clear_since_tick = 0;
         return 0;
     }
 
@@ -156,33 +144,13 @@ int Recycle_Auto_Close_Update(float dist_cm)
 
     if (elapsed_open >= DOOR_MAX_OPEN_MS)
     {
-        Recycle_Door_Close();
+        Do_Close();
         return 2;
     }
 
-    if (elapsed_open < DOOR_MIN_OPEN_MS)
+    if (s_close_requested && elapsed_open >= DOOR_MIN_OPEN_MS)
     {
-        s_clear_since_tick = 0;
-        return 0;
-    }
-
-    if (dist_cm < 0.0f || dist_cm < DOOR_CLEAR_CM)
-    {
-        // 측정 실패(음수) 또는 아직 물체 감지 -> 비움 판정 취소하고 다시 기다림
-        s_clear_since_tick = 0;
-        return 0;
-    }
-
-    if (s_clear_since_tick == 0)
-    {
-        // 방금 처음 "비어 보임"을 감지한 시점 기록 -> 디바운스 타이머 시작
-        s_clear_since_tick = g_sys_tick;
-        return 0;
-    }
-
-    if ((g_sys_tick - s_clear_since_tick) >= DOOR_EMPTY_DEBOUNCE_MS)
-    {
-        Recycle_Door_Close();
+        Do_Close();
         return 1;
     }
 

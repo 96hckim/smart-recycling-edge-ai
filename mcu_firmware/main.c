@@ -3,7 +3,7 @@
 #include "device_driver.h"
 #include "timer.h"
 #include "ultrasonic.h"
-#include "servo4.h"
+#include "servo.h"
 #include "recycle.h"
 #include <stdio.h>
 #include <string.h>
@@ -40,7 +40,7 @@ static void Handle_Servo_Command(const char *line)
         return;
     }
 
-    // 1~3만 받는 이유: CH0~CH2가 실제 게이트/분류 모터에 배선돼 있음(servo4.h)
+    // 1~3만 받는 이유: CH0~CH2가 실제 분류 트리 모터(투입구/좌/우)에 배선돼 있음(recycle.c)
     if (servo_num < 1 || servo_num > 3)
     {
         printf("Invalid servo number: %d (1~3만 가능)\n", servo_num);
@@ -59,8 +59,8 @@ static void Handle_Servo_Command(const char *line)
         return;
     }
 
-    Servo4_Ch ch = (Servo4_Ch)(servo_num - 1);
-    Servo4_Set_Angle_Speed(ch, (unsigned char)angle, (unsigned short)speed);
+    Servo_Ch ch = (Servo_Ch)(servo_num - 1);
+    Servo_Set_Angle_Speed(ch, (unsigned char)angle, (unsigned short)speed);
 
     if (speed > 0)
         printf("Servo%d -> %d deg (speed %d deg/s)\n", servo_num, angle, speed);
@@ -69,19 +69,6 @@ static void Handle_Servo_Command(const char *line)
 }
 
 static const Ultra_Ch BIN_ULTRA_CH[4] = { ULTRA_CH0, ULTRA_CH1, ULTRA_CH2, ULTRA_CH3 };
-
-// RecycleType 열거 순서와 초음파 채널 배열 순서가 별개라 둘을 이어주는 매핑이 필요
-static int Recycle_Type_To_Bin_Index(RecycleType type)
-{
-    switch (type)
-    {
-    case RECYCLE_PAPER: return 0;
-    case RECYCLE_CAN:   return 1;
-    case RECYCLE_PET:   return 2;
-    case RECYCLE_VINYL: return 3;
-    default:            return -1;
-    }
-}
 
 // 초음파-바닥 거리 기준 캘리브레이션 값(빈 통/꽉 찬 통) - 통 내부 실측으로 잡은 값
 #define BIN_EMPTY_CM 30.0f
@@ -138,8 +125,9 @@ static void Handle_Jetson_Command(const char *line)
     }
     else if (strcmp(line, "$DOOR_CLOSE") == 0)
     {
-        // 닫힘은 항상 보드가 자동으로 판단(Recycle_Auto_Close_Update)하므로 수동 명령은 무시
-        printf("$DOOR_CLOSE received (ignored - auto-close mode)\n");
+        // Jetson 카메라에 물체가 더 이상 안 보인다는 판단 - 최소개방시간을 지키며 실제로 닫음
+        Recycle_Door_Close_Request();
+        printf("$DOOR_CLOSE received\n");
     }
     else
     {
@@ -151,7 +139,6 @@ static void Handle_Jetson_Command(const char *line)
 void Main(void)
 {
     unsigned long last_tick = 0L;
-    unsigned long last_auto_close_tick = 0L;
 
     Sys_Init(115200);
     printf("\n=== Ultrasonic + Servo Control ===\n");
@@ -181,24 +168,16 @@ void Main(void)
             Report_Door_State();
         }
 
-        Servo4_Update();
+        Servo_Update();
 
-        // 열린 문이 있을 때만 그 통의 거리를 재서 자동 닫힘 조건을 체크(불필요한 측정 방지)
-        if ((g_sys_tick - last_auto_close_tick) >= 150)
+        // 시간 조건(최소개방/최대개방)만 보는 가벼운 체크라 매 루프 호출해도 부담 없음
         {
-            last_auto_close_tick = g_sys_tick;
+            int reason = Recycle_Auto_Close_Update();
 
-            int bin_idx = Recycle_Type_To_Bin_Index(Recycle_Get_Open_Type());
-            if (bin_idx >= 0)
-            {
-                float dist = Ultra_Read_cm(BIN_ULTRA_CH[bin_idx]);
-                int reason = Recycle_Auto_Close_Update(dist);
-
-                if (reason == 1)
-                    printf("Auto door close: empty debounce (dist=%.1fcm)\n", dist);
-                else if (reason == 2)
-                    printf("Auto door close: max open timeout (10s)\n");
-            }
+            if (reason == 1)
+                printf("Door close: DOOR_CLOSE command\n");
+            else if (reason == 2)
+                printf("Door close: max open timeout (10s)\n");
         }
 
         if ((g_sys_tick - last_tick) >= 1000)
@@ -206,7 +185,7 @@ void Main(void)
             last_tick = g_sys_tick;
 
             Report_Door_State();
-            Report_Bin_Fill();
+            //Report_Bin_Fill();
         }
     }
 }
