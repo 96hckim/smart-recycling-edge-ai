@@ -4,7 +4,7 @@ import signal
 import time
 from contextlib import suppress
 
-from configs.config import MODEL_CLASS_MAP, cfg
+from configs.config import MODEL_CLASS_MAP, ProtocolKey, cfg
 from core.camera import CameraStream
 from core.detector import YOLOv11Detector
 from core.door_controller import AutoDoorController
@@ -106,12 +106,12 @@ def main():
             if socket_server.is_connected:
                 bin_levels, door_status = serial_ctrl.get_latest_data()
                 meta = {
-                    "timestamp": curr_time,
-                    "fps": round(fps, 1),
-                    "infer_ms": round(infer_ms, 2),
-                    "detections": detections,
-                    "bin_levels": bin_levels,
-                    "door": door_status,
+                    ProtocolKey.TIMESTAMP.value: curr_time,
+                    ProtocolKey.FPS.value: round(fps, 1),
+                    ProtocolKey.INFER_MS.value: round(infer_ms, 2),
+                    ProtocolKey.DETECTIONS.value: detections,
+                    ProtocolKey.BIN_LEVELS.value: bin_levels,
+                    ProtocolKey.DOOR.value: door_status,
                 }
                 socket_server.send_frame(frame, meta)
 

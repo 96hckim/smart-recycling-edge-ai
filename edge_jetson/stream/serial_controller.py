@@ -6,7 +6,15 @@ import time
 import serial
 from serial import SerialException
 
-from stream.protocol import BinLevels, DoorAction, DoorState, DoorStatus, ProtocolParser
+from stream.protocol import (
+    DEFAULT_DOOR_ITEM,
+    BinLevels,
+    DoorAction,
+    DoorState,
+    DoorStatus,
+    McuPacketType,
+    ProtocolParser,
+)
 
 
 class SerialController:
@@ -32,7 +40,7 @@ class SerialController:
         self._lock = threading.Lock()
         self._bin_levels = BinLevels()
         self._door_status = DoorStatus()
-        self._last_commanded_item: str = "ALL"
+        self._last_commanded_item: str = DEFAULT_DOOR_ITEM
 
         if self.enabled:
             self._connect()
@@ -76,16 +84,16 @@ class SerialController:
                     continue
 
                 packet_type, data = ProtocolParser.parse_mcu_line(line)
-                if packet_type == "BIN" and isinstance(data, BinLevels):
+                if packet_type == McuPacketType.BIN and isinstance(data, BinLevels):
                     with self._lock:
                         self._bin_levels = data
-                elif packet_type == "DOOR" and isinstance(data, DoorStatus):
+                elif packet_type == McuPacketType.DOOR and isinstance(data, DoorStatus):
                     with self._lock:
                         # 물리 센서 닫힘 완료 시 제어 품목을 기본값(ALL)으로 리셋
                         reported_item = (
                             self._last_commanded_item
                             if data.state == DoorState.OPEN
-                            else "ALL"
+                            else DEFAULT_DOOR_ITEM
                         )
                         self._door_status = DoorStatus(
                             item=reported_item, state=data.state
@@ -98,9 +106,9 @@ class SerialController:
         """도어 제어 패킷 생성 및 전송 (가상 모드 시 내부 상태 동기화)."""
         with self._lock:
             if action == DoorAction.OPEN:
-                self._last_commanded_item = (item_name or "ALL").upper()
+                self._last_commanded_item = (item_name or DEFAULT_DOOR_ITEM).upper()
             else:
-                self._last_commanded_item = "ALL"
+                self._last_commanded_item = DEFAULT_DOOR_ITEM
 
         payload = ProtocolParser.encode_door_command(action, item_name)
         success = self._write(payload)

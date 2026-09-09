@@ -3,7 +3,7 @@
 import time
 from typing import Any
 
-from configs.config import DoorConfig
+from configs.config import DetectionKey, DoorConfig
 from stream.protocol import DoorAction, DoorState
 from stream.serial_controller import SerialController
 
@@ -38,8 +38,10 @@ class AutoDoorController:
         """프레임 내 검출 객체 중 최고 신뢰도를 가진 품목 카테고리명(대문자) 반환."""
         if not detections:
             return None
-        best_det = max(detections, key=lambda x: x.get("confidence", 0.0))
-        item = best_det.get("category") or best_det.get("class_name", "")
+        best_det = max(detections, key=lambda x: x.get(DetectionKey.CONFIDENCE, 0.0))
+        item = best_det.get(DetectionKey.CATEGORY) or best_det.get(
+            DetectionKey.CLASS_NAME, ""
+        )
         return item.upper() or None
 
     def _handle_closed_state(self, top_item: str | None, curr_time: float) -> None:

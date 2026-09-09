@@ -4,9 +4,17 @@ from typing import Any
 
 import cv2
 import numpy as np
-from configs.config import MODEL_CLASS_MAP, ModelClassMeta
+from configs.config import (
+    MODEL_CLASS_MAP,
+    Category,
+    DetectionKey,
+    ModelClassMeta,
+)
 
 from core.trt_engine import TensorRTEngine
+
+# YOLO 텐서 바운딩 박스 중심좌표 및 크기(cx, cy, w, h) 채널 수
+NUM_BBOX_COORDS = 4
 
 
 class YOLOv11Detector:
@@ -82,7 +90,7 @@ class YOLOv11Detector:
         if preds.shape[0] < preds.shape[1]:
             preds = preds.T
 
-        scores = preds[:, 4:]
+        scores = preds[:, NUM_BBOX_COORDS:]
         confidences = np.max(scores, axis=1)
         class_ids = np.argmax(scores, axis=1)
 
@@ -91,7 +99,7 @@ class YOLOv11Detector:
         if not np.any(mask):
             return []
 
-        filtered_boxes = preds[mask, :4]
+        filtered_boxes = preds[mask, :NUM_BBOX_COORDS]
         filtered_conf = confidences[mask]
         filtered_cls = class_ids[mask]
 
@@ -130,15 +138,15 @@ class YOLOv11Detector:
                     category = meta.category.value
                 else:
                     cname = f"class_{cid}"
-                    category = "UNKNOWN"
+                    category = Category.UNKNOWN.value
 
                 detections.append(
                     {
-                        "class_id": cid,
-                        "class_name": cname,
-                        "category": category,
-                        "confidence": round(confs_list[idx], 3),
-                        "box": [bx, by, bx + bw, by + bh],
+                        DetectionKey.CLASS_ID.value: cid,
+                        DetectionKey.CLASS_NAME.value: cname,
+                        DetectionKey.CATEGORY.value: category,
+                        DetectionKey.CONFIDENCE.value: round(confs_list[idx], 3),
+                        DetectionKey.BOX.value: [bx, by, bx + bw, by + bh],
                     }
                 )
 

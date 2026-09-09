@@ -22,10 +22,32 @@ class CameraConfig:
 class Category(str, Enum):
     """재활용 대상 4종 품목 열거형."""
 
+    UNKNOWN = "UNKNOWN"
     PET = "PET"
     CAN = "CAN"
     PAPER = "PAPER"
     VINYL = "VINYL"
+
+
+class ProtocolKey(str, Enum):
+    """관제 PC 연동 텔레메트리 패킷 JSON 키 규격 (Qt Config::JetsonProtocol과 1:1 대칭)."""
+
+    TIMESTAMP = "timestamp"
+    FPS = "fps"
+    INFER_MS = "infer_ms"
+    DETECTIONS = "detections"
+    BIN_LEVELS = "bin_levels"
+    DOOR = "door"
+
+
+class DetectionKey(str, Enum):
+    """객체 검출 결과 딕셔너리 키 규격."""
+
+    CLASS_ID = "class_id"
+    CLASS_NAME = "class_name"
+    CATEGORY = "category"
+    CONFIDENCE = "confidence"
+    BOX = "box"
 
 
 @dataclass(frozen=True)
@@ -51,9 +73,10 @@ MODEL_CLASS_MAP: tuple[ModelClassMeta, ...] = (
 class ModelConfig:
     """YOLOv11 TensorRT 엔진 경로 및 추론 임계값 설정."""
 
-    engine_path: Path = JETSON_ROOT_DIR / "models" / "recycle_yolo11n_640.engine"
+    # "rps_yolo11n_custom_640.engine"
+    engine_path: Path = JETSON_ROOT_DIR / "models" / "recycle_yolo11_final.engine"
     input_shape: tuple[int, int] = (640, 640)
-    conf_threshold: float = 0.50
+    conf_threshold: float = 0.20
     iou_threshold: float = 0.45
     # YOLO 모델 학습 클래스 순서 (0: 페트, 1: 캔, 2: 종이, 3: 비닐)
     class_names: tuple[str, ...] = tuple(meta.name_en for meta in MODEL_CLASS_MAP)
@@ -65,7 +88,7 @@ class NetworkConfig:
 
     host: str = "0.0.0.0"
     port: int = 9000
-    jpeg_quality: int = 70  # 전송 대역폭 절감과 화질 간 최적 균형값
+    jpeg_quality: int = 100  # 전송 대역폭 절감과 화질 간 최적 균형값
     socket_timeout: float = 1.0
 
 
