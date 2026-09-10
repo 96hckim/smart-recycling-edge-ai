@@ -152,7 +152,7 @@ inline const char* getCategoryNameKo(RecycleCategory cat)
     return (idx >= 0 && idx < CATEGORY_COUNT) ? ITEM_METAS[idx].nameKo : "미확인";
 }
 
-// YOLO 모델 출력 인덱스(0: 페트, 1: 캔, 2: 종이, 3: 비닐) 메타데이터 구조체
+// YOLO 모델 출력 인덱스(0: 종이, 1: 캔, 2: 페트, 3: 비닐) 1:1 직결 메타데이터 구조체
 struct ModelClassMeta {
     int classId;
     RecycleCategory category;
@@ -161,9 +161,9 @@ struct ModelClassMeta {
 };
 
 inline constexpr ModelClassMeta MODEL_CLASS_METAS[CATEGORY_COUNT] = {
-    { 0, RecycleCategory::PET,   "PET",   "페트" },
+    { 0, RecycleCategory::PAPER, "PAPER", "종이" },
     { 1, RecycleCategory::CAN,   "CAN",   "캔" },
-    { 2, RecycleCategory::PAPER, "PAPER", "종이" },
+    { 2, RecycleCategory::PET,   "PET",   "페트" },
     { 3, RecycleCategory::VINYL, "VINYL", "비닐" }
 };
 
@@ -176,7 +176,7 @@ inline RecycleCategory modelIndexToCategory(int classId)
     return RecycleCategory::UNKNOWN;
 }
 
-// 수신된 품목 문자열("PET", "CAN" 등)을 메타데이터 테이블과 1:1 정확히 비교 매핑
+// 수신된 품목 문자열("PAPER", "CAN" 등)을 메타데이터 테이블과 비교 매핑
 inline RecycleCategory parseCategory(const QString& name)
 {
     const QString upper = name.toUpper().trimmed();

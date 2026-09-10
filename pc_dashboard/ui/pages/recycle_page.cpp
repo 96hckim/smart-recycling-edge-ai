@@ -110,8 +110,7 @@ void RecyclePage::updateDetectionState(const QString& className, double confiden
 {
     Q_UNUSED(debounceCount);
 
-    // 오인식 노이즈 방지를 위해 최소 신뢰도 임계치 미달 시 오버레이 초기화
-    if (className.isEmpty() || confidence < Config::MIN_CONFIDENCE_THRESHOLD) {
+    if (className.isEmpty() || box.isNull()) {
         m_detectionBox = QRect();
         m_boxLabel.clear();
         return;

@@ -20,12 +20,12 @@ class CameraConfig:
 
 
 class Category(str, Enum):
-    """재활용 대상 4종 품목 열거형."""
+    """재활용 대상 4종 품목 열거형 (시스템 표준 순서)."""
 
     UNKNOWN = "UNKNOWN"
-    PET = "PET"
-    CAN = "CAN"
     PAPER = "PAPER"
+    CAN = "CAN"
+    PET = "PET"
     VINYL = "VINYL"
 
 
@@ -60,11 +60,11 @@ class ModelClassMeta:
     category: Category
 
 
-# YOLO 모델 학습 순서 기준 인덱스 1:1 매핑 테이블 (0: 페트, 1: 캔, 2: 종이, 3: 비닐)
+# YOLO 모델 학습 순서(0: 종이, 1: 캔, 2: 페트, 3: 비닐) 1:1 직결 매핑
 MODEL_CLASS_MAP: tuple[ModelClassMeta, ...] = (
-    ModelClassMeta(0, "pet", "페트", Category.PET),
+    ModelClassMeta(0, "paper", "종이", Category.PAPER),
     ModelClassMeta(1, "can", "캔", Category.CAN),
-    ModelClassMeta(2, "paper", "종이", Category.PAPER),
+    ModelClassMeta(2, "pet", "페트", Category.PET),
     ModelClassMeta(3, "vinyl", "비닐", Category.VINYL),
 )
 
@@ -78,7 +78,7 @@ class ModelConfig:
     input_shape: tuple[int, int] = (640, 640)
     conf_threshold: float = 0.20
     iou_threshold: float = 0.45
-    # YOLO 모델 학습 클래스 순서 (0: 페트, 1: 캔, 2: 종이, 3: 비닐)
+    # YOLO 모델 학습 클래스 순서 (0: 종이, 1: 캔, 2: 페트, 3: 비닐)
     class_names: tuple[str, ...] = tuple(meta.name_en for meta in MODEL_CLASS_MAP)
 
 
@@ -96,7 +96,7 @@ class NetworkConfig:
 class SerialConfig:
     """STM32 MCU UART 시리얼 통신 설정."""
 
-    port: str = "/tmp/ttyV0"  # "/dev/ttyTHS1"
+    port: str = "/dev/ttyTHS1"  # Jetson 40핀 헤더 UART (Pin 8:TX, Pin 10:RX)
     baudrate: int = 115200
     timeout: float = 0.1
     enabled: bool = True
