@@ -21,7 +21,7 @@ LDS_FILE_NAME	= rom_0x08000000.lds
 
 # Compiler & Linker Option: Cortex-M4 with Hardware FPU (FPv4-SP-D16 Hard-ABI)
 CFLAGS  		= -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -DSTM32F411xE
-CFLAGS 			+= -std=gnu99 -O1 -Wall -g -c -fno-builtin -funsigned-char -fno-strict-aliasing -fno-common
+CFLAGS 			+= -std=gnu99 -O0 -Wall -g -c -fno-builtin -funsigned-char -fno-strict-aliasing -fno-common
 LDFLAGS 		= -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 LDFLAGS    		+= --specs=nano.specs --specs=nosys.specs -u _printf_float -u _scanf_float -nostartfiles -ffreestanding
 LDFLAGS    		+= -Wl,-Map=$(OUT_FILE_NAME).map -Wl,--cref -Wl,-EL -T $(LDS_FILE_NAME)

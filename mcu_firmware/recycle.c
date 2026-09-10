@@ -2,7 +2,7 @@
 #include "recycle.h"
 #include "servo.h"
 #include <string.h>
-#include <stdio.h>
+
 // Jetson이 판별한 재질(PET/CAN/PAPER/VINYL)을 받아 3단 분류 트리(모터 3개)를 구동하는 상위 로직.
 // TOP(투입구)이 먼저 (종이,캔) 그룹 vs (페트,비닐) 그룹으로 가르고,
 // 그 아래 PETVINYL_CH/PAPERCAN_CH 모터가 각자 맡은 그룹을 다시 2개로 갈라 최종 4분류를 완성한다.
@@ -25,6 +25,10 @@ extern volatile unsigned long g_sys_tick;
 #define PAPERCAN_ANGLE_DEFAULT_PAPER  150
 #define PAPERCAN_ANGLE_CAN             50
 
+// 도어 서보 회전 속도(초당 각도) - 너무 빠르면 기구가 부러지는 문제로 낮춤.
+// 원래 "무제한 최고속"이었던 걸 체감상 60% 정도로 낮춘 값. 더 느리게/빠르게 원하면 이 숫자만 조절하면 됨.
+#define DOOR_SERVO_SPEED_DEG_PER_SEC 120
+
 static volatile GateState s_gate_state = GATE_CLOSED;
 static volatile GateState s_gate_state_prev = GATE_CLOSED;
 
@@ -38,33 +42,31 @@ static unsigned long s_gate_open_tick = 0;
 static volatile unsigned char s_close_requested = 0;
 
 // 품목별 3모터 목표각 - 해당 없는 그룹의 세부모터는 그 그룹의 기본(default) 각도를 유지
+// Servo_Set_Angle_Speed로 램프 이동시킴 (DOOR_SERVO_SPEED_DEG_PER_SEC로 부드럽게)
+// -> Main() 루프에서 Servo_Update()가 계속 불려야 실제로 움직임이 진행됨
 static void Set_Route(RecycleType type)
 {
     switch (type)
     {
     case RECYCLE_PAPER:
-        Servo_Set_Angle(TOP_CH, TOP_ANGLE_PAPER_CAN);
-        Servo_Set_Angle(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER);
-        Servo_Set_Angle(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET);
-        printf("paper\n");
+        Servo_Set_Angle_Speed(TOP_CH, TOP_ANGLE_PAPER_CAN, DOOR_SERVO_SPEED_DEG_PER_SEC);
+        Servo_Set_Angle_Speed(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER, DOOR_SERVO_SPEED_DEG_PER_SEC);
+        Servo_Set_Angle_Speed(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET, DOOR_SERVO_SPEED_DEG_PER_SEC);
         break;
     case RECYCLE_CAN:
-        Servo_Set_Angle(TOP_CH, TOP_ANGLE_PAPER_CAN);
-        Servo_Set_Angle(PAPERCAN_CH, PAPERCAN_ANGLE_CAN);
-        Servo_Set_Angle(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET);
-        printf("can\n");
+        Servo_Set_Angle_Speed(TOP_CH, TOP_ANGLE_PAPER_CAN, DOOR_SERVO_SPEED_DEG_PER_SEC);
+        Servo_Set_Angle_Speed(PAPERCAN_CH, PAPERCAN_ANGLE_CAN, DOOR_SERVO_SPEED_DEG_PER_SEC);
+        Servo_Set_Angle_Speed(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET, DOOR_SERVO_SPEED_DEG_PER_SEC);
         break;
     case RECYCLE_PET:
-        Servo_Set_Angle(TOP_CH, TOP_ANGLE_PET_VINYL);
-        Servo_Set_Angle(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET);
-        Servo_Set_Angle(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER);
-        printf("pet\n");
+        Servo_Set_Angle_Speed(TOP_CH, TOP_ANGLE_PET_VINYL, DOOR_SERVO_SPEED_DEG_PER_SEC);
+        Servo_Set_Angle_Speed(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET, DOOR_SERVO_SPEED_DEG_PER_SEC);
+        Servo_Set_Angle_Speed(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER, DOOR_SERVO_SPEED_DEG_PER_SEC);
         break;
     case RECYCLE_VINYL:
-        Servo_Set_Angle(TOP_CH, TOP_ANGLE_PET_VINYL);
-        Servo_Set_Angle(PETVINYL_CH, PETVINYL_ANGLE_VINYL);
-        Servo_Set_Angle(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER);
-        printf("vinyl\n");
+        Servo_Set_Angle_Speed(TOP_CH, TOP_ANGLE_PET_VINYL, DOOR_SERVO_SPEED_DEG_PER_SEC);
+        Servo_Set_Angle_Speed(PETVINYL_CH, PETVINYL_ANGLE_VINYL, DOOR_SERVO_SPEED_DEG_PER_SEC);
+        Servo_Set_Angle_Speed(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER, DOOR_SERVO_SPEED_DEG_PER_SEC);
         break;
     default:
         break;
@@ -73,17 +75,17 @@ static void Set_Route(RecycleType type)
 
 static void Set_Neutral(void)
 {
-    Servo_Set_Angle(TOP_CH, TOP_ANGLE_NEUTRAL);
-    Servo_Set_Angle(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET);
-    Servo_Set_Angle(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER);
+    Servo_Set_Angle_Speed(TOP_CH, TOP_ANGLE_NEUTRAL, DOOR_SERVO_SPEED_DEG_PER_SEC);
+    Servo_Set_Angle_Speed(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET, DOOR_SERVO_SPEED_DEG_PER_SEC);
+    Servo_Set_Angle_Speed(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER, DOOR_SERVO_SPEED_DEG_PER_SEC);
 }
 
 // 전원 인가 직후 3모터를 기본 위치로 맞춰 상태 불일치를 방지
+// (부팅 시 초기 위치잡기는 굳이 천천히 갈 필요 없어 즉시이동 그대로 둠)
 void Recycle_Init(void)
 {
     Servo_Init();
 
-    Set_Neutral();
     s_gate_state = GATE_CLOSED;
     s_gate_state_prev = s_gate_state;
 }
@@ -98,7 +100,7 @@ RecycleType Recycle_Type_From_String(const char *s)
     return RECYCLE_NONE;
 }
 
-// 품목에 맞는 경로로 3모터를 즉시 이동 - 물리적 게이트가 따로 없어 이 각도 자체가 "열림"
+// 품목에 맞는 경로로 3모터를 이동(DOOR_SERVO_SPEED_DEG_PER_SEC로 부드럽게) - 물리적 게이트가 따로 없어 이 각도 자체가 "열림"
 void Recycle_Door_Open(RecycleType type)
 {
     if (type == RECYCLE_NONE)
