@@ -1,10 +1,12 @@
 // RTOS 없이 super loop 구조: 매 반복마다 (1) UART 명령 처리 (2) 서보 램프 진행
 // (3) 주기적 도어/적재량 보고를 블로킹 없이 번갈아 확인
+// 적재율 계산은 bin_filter.c(블랭킹->중앙값->비대칭EMA 3단계 필터)에 위임한다.
 #include "device_driver.h"
 #include "timer.h"
 #include "ultrasonic.h"
 #include "servo.h"
 #include "recycle.h"
+#include "bin_filter.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -16,13 +18,12 @@ extern volatile unsigned char g_rx_line_ready;
 // 부팅 직후 한 번만 필요한 설정(FPU/클럭/UART)을 모음 - 주변장치별 Init과 분리
 static void Sys_Init(int baud)
 {
-    // CP10/CP11(FPU) Full Access - Ultra_Read_cm 등 float 연산을 쓰려면 필수
+    // CP10/CP11(FPU) Full Access - 필터의 float 연산을 쓰려면 필수
     SCB->CPACR |= (0x3 << 10 * 2) | (0x3 << 11 * 2);
     Clock_Init();
     Uart2_Init(baud);
     // unbuffered: printf가 줄 끊김 없이 UART로 즉시 나가야 명령 응답이 안 밀림
     setvbuf(stdout, NULL, _IONBF, 0);
-
 }
 
 // 사람이 ComPortMaster 등으로 직접 서보를 테스트할 때 쓰는 디버그 명령 경로
@@ -68,42 +69,30 @@ static void Handle_Servo_Command(const char *line)
         printf("Servo%d -> %d deg (instant)\n", servo_num, angle);
 }
 
-static const Ultra_Ch BIN_ULTRA_CH[4] = { ULTRA_CH0, ULTRA_CH1, ULTRA_CH2, ULTRA_CH3 };
+// BinType(0=PAPER,1=CAN,2=PET,3=VINYL) 순서와 정확히 일치하는 초음파 채널 매핑
+// (ultrasonic.h 기준: CH0=PC2/3=PAPER, CH1=PC9/PC12=CAN, CH2=PC4/5=PET, CH3=PC10/11=VINYL)
+static const Ultra_Ch BIN_ULTRA_CH[BIN_COUNT] = { ULTRA_CH0, ULTRA_CH1, ULTRA_CH2, ULTRA_CH3 };
 
-// 초음파-바닥 거리 기준 캘리브레이션 값(빈 통/꽉 찬 통) - 통 내부 실측으로 잡은 값
-#define BIN_EMPTY_CM 30.0f
-#define BIN_FULL_CM   5.0f
-
-// 센서 raw 거리(cm)를 Jetson/로그가 바로 쓸 수 있는 적재율(%)로 변환
-static int Distance_To_Fill_Percent(float dist_cm)
-{
-    if (dist_cm < 0)
-    {
-        return 0;
-    }
-
-    float pct = (BIN_EMPTY_CM - dist_cm) / (BIN_EMPTY_CM - BIN_FULL_CM) * 100.0f;
-    if (pct < 0.0f)   pct = 0.0f;
-    if (pct > 100.0f) pct = 100.0f;
-    return (int)(pct + 0.5f);
-}
-
-// 상태 변화 시점 + 주기적 호출 양쪽에서 다 쓰여서 Jetson이 놓치는 전이가 없게 함
 static void Report_Door_State(void)
 {
     printf("$DOOR_STATE:%s\n", (Recycle_Get_Gate_State() == GATE_OPEN) ? "OPEN" : "CLOSED");
 }
 
-// 4개 통 적재율을 한 줄 고정 포맷으로 묶어 보고 - Jetson 쪽 파싱을 단순하게 유지
+// 4개 통 raw 거리를 읽어 bin_filter로 3단계 필터링한 뒤, 최종 적재율(%)만 Jetson에 보고
 static void Report_Bin_Fill(void)
 {
-    int fill[4];
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < BIN_COUNT; i++)
     {
-        float dist = Ultra_Read_cm(BIN_ULTRA_CH[i]);
-        fill[i] = Distance_To_Fill_Percent(dist);
+        float raw_dist = Ultra_Read_cm(BIN_ULTRA_CH[i]); // 실패 시 -1.0f (bin_filter가 내부에서 무시하고 이전값 유지)
+        BinFilter_Update((BinType)i, raw_dist, g_sys_tick);
     }
-    printf("$BIN:%d/%d/%d/%d\n", fill[0], fill[1], fill[2], fill[3]);
+
+    int p_paper = BinFilter_Get_Percent(BIN_PAPER);
+    int p_can   = BinFilter_Get_Percent(BIN_CAN);
+    int p_pet   = BinFilter_Get_Percent(BIN_PET);
+    int p_vinyl = BinFilter_Get_Percent(BIN_VINYL);
+
+    printf("$BIN:%d/%d/%d/%d\n", p_paper, p_can, p_pet, p_vinyl);
 }
 
 // Jetson 쪽에서 보내는 '$'로 시작하는 프로토콜 명령 처리 (분류 결과에 따른 도어 제어)
@@ -121,6 +110,14 @@ static void Handle_Jetson_Command(const char *line)
         }
 
         Recycle_Door_Open(type);
+
+        // 투입 시작 알림 -> 해당 통은 앞으로 2초간 초음파 계측을 무시(낙하 중 튐 방지, 1단계 블랭킹)
+        int bin_idx = Recycle_Type_To_Bin_Index(type);
+        if (bin_idx >= 0)
+        {
+            BinFilter_Notify_Drop((BinType)bin_idx, g_sys_tick);
+        }
+
         printf("Door open -> %s\n", type_str);
     }
     else if (strcmp(line, "$DOOR_CLOSE") == 0)
@@ -135,24 +132,33 @@ static void Handle_Jetson_Command(const char *line)
     }
 }
 
-// 진입점: 초기화 순서 고정(클럭/UART -> 타이머/센서 -> 인터럽트 활성화) 후 super loop 진입
+// 진입점: 초기화 순서 고정(클럭/UART -> 타이머/센서/필터 -> 인터럽트 활성화) 후 super loop 진입
 void Main(void)
 {
     unsigned long last_tick = 0L;
 
     Sys_Init(115200);
-    printf("\n=== Ultrasonic + Servo Control ===\n");
+    printf("\n=== Recycling Sorter (Servo + Ultrasonic + Jetson UART) ===\n");
     printf("Command format: <servo 1~3> <angle 0~180> [speed deg/s]  (e.g. \"1 90\" or \"1 90 30\")\n");
+    printf("Jetson protocol: $DOOR_OPEN:<PET|CAN|PAPER|VINYL>  /  $DOOR_CLOSE\n");
 
     Timer_Init();
     Ultra_Init();
     Recycle_Init();
+    BinFilter_Init(); // 필터 모듈 초기화 (Recycle_Init 이후 아무 때나 무방)
+
+    // 캘리브레이션: 센서가 통 입구 위 10cm에 장착, 통 깊이는 30cm
+    // -> 빈 통(0%) = 10+30 = 40cm, 가득 참(100%) = 10cm
+    // (for 루프로 돌리면 -O3에서 멈추는 이슈가 있어 4번 풀어서 직접 호출함)
+    BinFilter_Config_Distance(BIN_PAPER, 40.0f, 10.0f);
+    BinFilter_Config_Distance(BIN_CAN,   40.0f, 10.0f);
+    BinFilter_Config_Distance(BIN_PET,   40.0f, 10.0f);
+    BinFilter_Config_Distance(BIN_VINYL, 40.0f, 10.0f);
 
     Uart2_RX_Interrupt_Enable(1);
 
     for (;;)
     {
-
         if (g_rx_line_ready)
         {
             // '$' 접두사로 Jetson 프로토콜과 사람의 서보 테스트 명령을 구분
@@ -180,12 +186,11 @@ void Main(void)
                 printf("Door close: max open timeout (10s)\n");
         }
 
-        if ((g_sys_tick - last_tick) >= 1000)
+        if ((g_sys_tick - last_tick) >= 2000)
         {
             last_tick = g_sys_tick;
 
-            Report_Door_State();
-            //Report_Bin_Fill();
+            Report_Bin_Fill();
         }
     }
 }

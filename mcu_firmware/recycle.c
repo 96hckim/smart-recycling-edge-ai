@@ -2,19 +2,28 @@
 #include "recycle.h"
 #include "servo.h"
 #include <string.h>
-
+#include <stdio.h>
 // Jetson이 판별한 재질(PET/CAN/PAPER/VINYL)을 받아 3단 분류 트리(모터 3개)를 구동하는 상위 로직.
-// TOP(투입구)이 먼저 PET/CAN 그룹 vs PAPER/VINYL 그룹으로 가르고,
-// 그 아래 LEFT/RIGHT 모터가 각자 맡은 그룹을 다시 2개로 갈라 최종 4분류를 완성한다.
+// TOP(투입구)이 먼저 (종이,캔) 그룹 vs (페트,비닐) 그룹으로 가르고,
+// 그 아래 PETVINYL_CH/PAPERCAN_CH 모터가 각자 맡은 그룹을 다시 2개로 갈라 최종 4분류를 완성한다.
 extern volatile unsigned long g_sys_tick;
 
-#define TOP_CH   SERVO_CH0  // 투입구: LEFT->PET/CAN 그룹, RIGHT->PAPER/VINYL 그룹
-#define LEFT_CH  SERVO_CH1  // PET/CAN 그룹 세부분류: LEFT->PET, RIGHT->CAN
-#define RIGHT_CH SERVO_CH2  // PAPER/VINYL 그룹 세부분류: LEFT->PAPER, RIGHT->VINYL
+#define TOP_CH       SERVO_CH0  // PC6 - 투입구: 종이/캔 그룹 vs 페트/비닐 그룹 분기
+#define PETVINYL_CH  SERVO_CH1  // PC7 - 페트/비닐 그룹 세부분류: 기본(=PET) / 비닐
+#define PAPERCAN_CH  SERVO_CH2  // PC8 - 종이/캔 그룹 세부분류: 기본(=종이) / 캔
 
-#define ANGLE_LEFT  0
-#define ANGLE_MID   90   // 중립/대기 각도 - 어느 쪽으로도 열려있지 않은 상태
-#define ANGLE_RIGHT 180
+// TOP(PC6): 기본 90도(닫힘), 30도->종이/캔 그룹, 150도->페트/비닐 그룹
+#define TOP_ANGLE_NEUTRAL      90
+#define TOP_ANGLE_PAPER_CAN    30
+#define TOP_ANGLE_PET_VINYL    150
+
+// PETVINYL(PC7): 기본 130도(=PET 낙하 위치), 30도->비닐 낙하
+#define PETVINYL_ANGLE_DEFAULT_PET  130
+#define PETVINYL_ANGLE_VINYL        30
+
+// PAPERCAN(PC8): 기본 150도(=종이 낙하 위치), 50도->캔 낙하
+#define PAPERCAN_ANGLE_DEFAULT_PAPER  150
+#define PAPERCAN_ANGLE_CAN             50
 
 static volatile GateState s_gate_state = GATE_CLOSED;
 static volatile GateState s_gate_state_prev = GATE_CLOSED;
@@ -28,30 +37,34 @@ static RecycleType s_open_type = RECYCLE_NONE;
 static unsigned long s_gate_open_tick = 0;
 static volatile unsigned char s_close_requested = 0;
 
-// 품목별 3모터 목표각 - 해당 없는 쪽 모터는 중립을 유지해 경로를 막아둔다
+// 품목별 3모터 목표각 - 해당 없는 그룹의 세부모터는 그 그룹의 기본(default) 각도를 유지
 static void Set_Route(RecycleType type)
 {
     switch (type)
     {
-    case RECYCLE_PET:
-        Servo_Set_Angle(TOP_CH, ANGLE_LEFT);
-        Servo_Set_Angle(LEFT_CH, ANGLE_LEFT);
-        Servo_Set_Angle(RIGHT_CH, ANGLE_MID);
+    case RECYCLE_PAPER:
+        Servo_Set_Angle(TOP_CH, TOP_ANGLE_PAPER_CAN);
+        Servo_Set_Angle(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER);
+        Servo_Set_Angle(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET);
+        printf("paper\n");
         break;
     case RECYCLE_CAN:
-        Servo_Set_Angle(TOP_CH, ANGLE_LEFT);
-        Servo_Set_Angle(LEFT_CH, ANGLE_RIGHT);
-        Servo_Set_Angle(RIGHT_CH, ANGLE_MID);
+        Servo_Set_Angle(TOP_CH, TOP_ANGLE_PAPER_CAN);
+        Servo_Set_Angle(PAPERCAN_CH, PAPERCAN_ANGLE_CAN);
+        Servo_Set_Angle(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET);
+        printf("can\n");
         break;
-    case RECYCLE_PAPER:
-        Servo_Set_Angle(TOP_CH, ANGLE_RIGHT);
-        Servo_Set_Angle(RIGHT_CH, ANGLE_LEFT);
-        Servo_Set_Angle(LEFT_CH, ANGLE_MID);
+    case RECYCLE_PET:
+        Servo_Set_Angle(TOP_CH, TOP_ANGLE_PET_VINYL);
+        Servo_Set_Angle(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET);
+        Servo_Set_Angle(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER);
+        printf("pet\n");
         break;
     case RECYCLE_VINYL:
-        Servo_Set_Angle(TOP_CH, ANGLE_RIGHT);
-        Servo_Set_Angle(RIGHT_CH, ANGLE_RIGHT);
-        Servo_Set_Angle(LEFT_CH, ANGLE_MID);
+        Servo_Set_Angle(TOP_CH, TOP_ANGLE_PET_VINYL);
+        Servo_Set_Angle(PETVINYL_CH, PETVINYL_ANGLE_VINYL);
+        Servo_Set_Angle(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER);
+        printf("vinyl\n");
         break;
     default:
         break;
@@ -60,12 +73,12 @@ static void Set_Route(RecycleType type)
 
 static void Set_Neutral(void)
 {
-    Servo_Set_Angle(TOP_CH, ANGLE_MID);
-    Servo_Set_Angle(LEFT_CH, ANGLE_MID);
-    Servo_Set_Angle(RIGHT_CH, ANGLE_MID);
+    Servo_Set_Angle(TOP_CH, TOP_ANGLE_NEUTRAL);
+    Servo_Set_Angle(PETVINYL_CH, PETVINYL_ANGLE_DEFAULT_PET);
+    Servo_Set_Angle(PAPERCAN_CH, PAPERCAN_ANGLE_DEFAULT_PAPER);
 }
 
-// 전원 인가 직후 3모터를 중립 위치로 맞춰 상태 불일치를 방지
+// 전원 인가 직후 3모터를 기본 위치로 맞춰 상태 불일치를 방지
 void Recycle_Init(void)
 {
     Servo_Init();
@@ -160,4 +173,18 @@ int Recycle_Auto_Close_Update(void)
 RecycleType Recycle_Get_Open_Type(void)
 {
     return s_open_type;
+}
+
+// bin_filter.h의 BinType과 값이 호환되게 맞춤: 0=PAPER, 1=CAN, 2=PET, 3=VINYL
+// (recycle.c가 bin_filter.h를 include하지 않도록 int로만 반환 - main.c에서 BinType으로 캐스팅해 사용)
+int Recycle_Type_To_Bin_Index(RecycleType type)
+{
+    switch (type)
+    {
+    case RECYCLE_PAPER: return 0; // BIN_PAPER
+    case RECYCLE_CAN:   return 1; // BIN_CAN
+    case RECYCLE_PET:   return 2; // BIN_PET
+    case RECYCLE_VINYL: return 3; // BIN_VINYL
+    default:            return -1;
+    }
 }

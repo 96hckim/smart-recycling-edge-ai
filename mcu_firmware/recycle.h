@@ -36,4 +36,8 @@ int Recycle_Auto_Close_Update(void);
 
 RecycleType Recycle_Get_Open_Type(void);
 
+// RecycleType(PET/CAN/PAPER/VINYL) -> BinType(bin_filter.h) 인덱스 매핑
+// bin_filter.h를 recycle.h가 직접 include하지 않도록 int로 반환 (BinType과 값은 호환됨: 0=PAPER,1=CAN,2=PET,3=VINYL)
+int Recycle_Type_To_Bin_Index(RecycleType type);
+
 #endif

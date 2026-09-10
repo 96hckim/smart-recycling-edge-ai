@@ -4,8 +4,9 @@
 
 // 4채널이 TIM4 프리런 카운터 하나를 공유 - 완전 동시측정은 아니고 순차 측정
 // (동시측정 필요하면 4개 EXTI 인터럽트로 재설계해야 함)
-static const unsigned char TRIG_PIN[ULTRA_COUNT] = {2, 0, 4, 10};
-static const unsigned char ECHO_PIN[ULTRA_COUNT] = {3, 1, 5, 11};
+// CH1은 PC0/PC1에서 값이 튀는 문제가 있어 PC9/PC12로 이전함
+static const unsigned char TRIG_PIN[ULTRA_COUNT] = {2, 9, 4, 10};
+static const unsigned char ECHO_PIN[ULTRA_COUNT] = {3, 12, 5, 11};
 
 // TIM4는 16비트라 unsigned short 뺄셈으로 계산해야 롤오버(0xFFFF->0) 구간도 정확함
 static inline unsigned short Tim4_Elapsed_us(unsigned short start)
