@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 연속 인식 디바운스 및 하드웨어 투입 연동 비전 카운팅 FSM 구현부.
  */
 #include "recycle_session_controller.h"
@@ -21,6 +21,7 @@ void RecycleSessionController::startSession(bool isMember, const QString& userNa
     m_consecutiveDetections = 0;
     m_lastCategory = RecycleCategory::UNKNOWN;
     m_itemCounted = false;
+    m_doorWasOpen = false;
 
     emit sigSessionUpdated(m_summary);
     emit sigGuideBannerRequested(static_cast<int>(UITheme::Recycle::BannerType::READY), QString());
@@ -32,6 +33,7 @@ void RecycleSessionController::finishSession()
     m_isActive = false;
     m_consecutiveDetections = 0;
     m_itemCounted = false;
+    m_doorWasOpen = false;
     m_userId = -1;
 }
 
@@ -41,6 +43,7 @@ void RecycleSessionController::cancelSession()
     m_summary.reset();
     m_consecutiveDetections = 0;
     m_itemCounted = false;
+    m_doorWasOpen = false;
     m_userId = -1;
 }
 
@@ -53,7 +56,30 @@ void RecycleSessionController::processFrameMetadata(const FrameMetadata& meta)
     const bool hasDetection = !meta.detections.isEmpty();
     const Detection top = hasDetection ? meta.detections.first() : Detection();
 
-    // 1. 하드웨어 도어 개방 중: 투입 진행 중인 물체의 중복 카운트 방지를 위해 비전 카운팅 중단 (Interlock)
+    // 1. 하드웨어 도어 개폐 상태 엣지(Rising Edge) 추적
+    const bool doorJustOpened = (!m_doorWasOpen && meta.door.isOpen);
+    const bool doorJustClosed = (m_doorWasOpen && !meta.door.isOpen);
+    m_doorWasOpen = meta.door.isOpen;
+
+    // [핵심] MCU로부터 도어가 '실제로 열렸다'는 물리 센서 신호 수신 시 -> 비로소 투입 카운트(+1) 및 포인트 확정!
+    if (doorJustOpened) {
+        RecycleCategory targetCat = Config::parseCategory(meta.door.item);
+        if (targetCat == RecycleCategory::UNKNOWN) {
+            targetCat = m_lastCategory;
+        }
+
+        if (targetCat != RecycleCategory::UNKNOWN) {
+            m_summary.addItem(targetCat, 1);
+            emit sigSessionUpdated(m_summary);
+            emit sigItemCounted(targetCat, m_summary);
+
+            qDebug() << "[Session] 하드웨어 도어 개방 확인 -> 투입 품목 카운트 가산:"
+                     << Config::getCategoryNameKo(targetCat)
+                     << "(누적 포인트:" << m_summary.totalPoints << "P)";
+        }
+    }
+
+    // 2. 도어가 열려 있는 동안: 투입 진행 중인 물체의 중복 카운트 방지 및 개방 안내 배너 유지 (Interlock)
     if (meta.door.isOpen) {
         m_consecutiveDetections = 0;
         emit sigDetectionBoxUpdated(top.className, top.confidence, 0, top.box);
@@ -72,38 +98,34 @@ void RecycleSessionController::processFrameMetadata(const FrameMetadata& meta)
         return;
     }
 
-    // 2. 검출 객체 부재 또는 미분류: 대기 상태 복귀
-    if (!hasDetection || top.category == RecycleCategory::UNKNOWN) {
+    // 3. 도어가 방금 닫혔을 때: 다음 물체 인식을 위해 상태 리셋
+    if (doorJustClosed) {
         m_consecutiveDetections = 0;
         m_lastCategory = RecycleCategory::UNKNOWN;
         m_itemCounted = false;
+    }
+
+    // 4. 검출 객체 부재 또는 미분류: 대기 상태 복귀
+    if (!hasDetection || top.category == RecycleCategory::UNKNOWN) {
+        m_consecutiveDetections = 0;
+        m_lastCategory = RecycleCategory::UNKNOWN;
 
         emit sigDetectionBoxUpdated("", 0.0, 0, QRect());
         emit sigGuideBannerRequested(static_cast<int>(UITheme::Recycle::BannerType::READY), QString());
         return;
     }
 
-    // 3. 검출 품목 변경 감지: 이전 디바운스 카운트 초기화
+    // 5. 검출 품목 변경 감지: 이전 디바운스 카운트 초기화
     if (top.category != m_lastCategory) {
         m_lastCategory = top.category;
         m_consecutiveDetections = 0;
-        m_itemCounted = false;
     }
 
     m_consecutiveDetections++;
     emit sigDetectionBoxUpdated(top.className, top.confidence, m_consecutiveDetections, top.box);
 
-    // 4. 안정 프레임(18회) 연속 감지 시 단일 객체 투입으로 확정 처리 (중복 가산 방지 플래그 적용)
+    // 6. 비전 인식 단계 배너 안내: 1.5초(45프레임) 유지 시 확인 완료 배너, 진행 중일 시 인식 중 배너
     if (m_consecutiveDetections >= Config::STABLE_FRAME_THRESHOLD) {
-        if (!m_itemCounted) {
-            m_itemCounted = true;
-            m_summary.addItem(top.category, 1);
-            emit sigSessionUpdated(m_summary);
-            emit sigItemCounted(top.category, m_summary);
-
-            qDebug() << "[Session] 품목 인식 확정 ->" << Config::getCategoryNameKo(top.category)
-                     << "(총" << m_summary.totalPoints << "P)";
-        }
         emit sigGuideBannerRequested(static_cast<int>(UITheme::Recycle::BannerType::CONFIRMED),
             Config::getCategoryNameKo(top.category));
     } else {

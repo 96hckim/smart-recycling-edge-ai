@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 키오스크 사용자 투입 세션 수명주기, 비전 추론 디바운스 및 보상 누적 제어기 헤더.
  */
 #pragma once
@@ -45,6 +45,7 @@ private:
     int m_consecutiveDetections { 0 };
     RecycleCategory m_lastCategory { RecycleCategory::UNKNOWN };
     bool m_itemCounted { false };
+    bool m_doorWasOpen { false }; // MCU 하드웨어 도어 이전 프레임 상태 (Rising Edge 검출용)
 };
 
 #endif // RECYCLE_SESSION_CONTROLLER_H

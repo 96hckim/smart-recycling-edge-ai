@@ -52,7 +52,7 @@ constexpr quint16 DEFAULT_BACKEND_PORT = 8000;
 constexpr int DEFAULT_BIN_ID = 1;
 
 // 비전 객체 인식 확정 판정 임계치
-constexpr int STABLE_FRAME_THRESHOLD = 18; // 30 FPS 기준 약 0.6초간 동일 클래스 유지 시 바운스 필터링 통과
+constexpr int STABLE_FRAME_THRESHOLD = 45; // 30 FPS 기준 1.5초간 동일 클래스 유지 시 바운스 필터링 통과
 constexpr double MIN_CONFIDENCE_THRESHOLD = 0.65;
 
 // 하드웨어 수거함 임계치 및 세션 타임아웃

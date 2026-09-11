@@ -105,11 +105,10 @@ class SerialConfig:
 class DoorConfig:
     """수거함 도어 FSM 디바운스 및 타임아웃 파라미터."""
 
-    auto_open: bool = (
-        False  # False: Qt 사용자 확인 후 개방, True: AI 감지 즉시 자동 개방
-    )
-    stable_frames: int = 15  # 오검출 방지용 연속 인식 프레임 수 (약 0.5초)
-    min_hold_sec: float = 2.0  # 투입 안전을 위한 최소 개방 유지 시간 (초)
+    auto_open: bool = True  # True: AI 감지 안정 유지 시 자동 개방 (원복 완료)
+    stable_sec: float = 1.5  # 오검출 방지용 안정 인식 유지 시간 (1.5초 텀)
+    stable_frames: int = 25  # 약 20~30 FPS 기준 최소 요구 프레임 수
+    min_hold_sec: float = 3.0  # 투입 안전을 위한 최소 개방 유지 시간 (초)
     lost_tolerance: int = 15  # 깜빡임/가림 허용 부재 프레임 수 (약 0.5초)
     max_open_sec: float = 10.0  # 모터 보호 및 방치 방지용 최대 개방 제한 시간 (초)
 
