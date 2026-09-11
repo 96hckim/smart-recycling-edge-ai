@@ -1,7 +1,7 @@
 /**
  * @file    bin_filter.c
  * @brief   초음파 센서 수거함 적재율 필터 구현부
- *          (블랭킹 -> 10-샘플 이상치 제거 평균 -> 데드밴드: 5% 이상 변화 시에만 즉시 갱신, 그 외엔 고정)
+ *          (블랭킹 -> 5-샘플 이상치 제거 평균 -> 데드밴드: 5% 이상 변화 시에만 즉시 갱신, 그 외엔 고정)
  */
 
 #include "bin_filter.h"
@@ -180,7 +180,7 @@ float BinFilter_Update(BinType bin_idx, float raw_dist_cm, uint32_t current_tick
         return bin->filtered_percent;
     }
 
-    /* 10개 샘플 링버퍼에 저장 */
+    /* 5개 샘플 링버퍼에 저장 */
     bin->sample_buf[bin->buf_idx] = raw_dist_cm;
     bin->buf_idx = (bin->buf_idx + 1U) % SAMPLE_WINDOW_SIZE;
     if (bin->sample_count < SAMPLE_WINDOW_SIZE)
