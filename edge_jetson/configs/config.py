@@ -73,10 +73,9 @@ MODEL_CLASS_MAP: tuple[ModelClassMeta, ...] = (
 class ModelConfig:
     """YOLOv11 TensorRT 엔진 경로 및 추론 임계값 설정."""
 
-    # "rps_yolo11n_custom_640.engine"
-    engine_path: Path = JETSON_ROOT_DIR / "models" / "recycle_yolo11_final.engine"
+    engine_path: Path = JETSON_ROOT_DIR / "models" / "recycle_yolo11n_best.engine"
     input_shape: tuple[int, int] = (640, 640)
-    conf_threshold: float = 0.20
+    conf_threshold: float = 0.50
     iou_threshold: float = 0.45
     # YOLO 모델 학습 클래스 순서 (0: 종이, 1: 캔, 2: 페트, 3: 비닐)
     class_names: tuple[str, ...] = tuple(meta.name_en for meta in MODEL_CLASS_MAP)
