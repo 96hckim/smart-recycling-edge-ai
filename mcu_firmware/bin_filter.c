@@ -1,7 +1,7 @@
 /**
  * @file    bin_filter.c
- * @brief   초음파 센서 수거함 적재율 3단계 필터 구현부
- *          (블랭킹 -> 10-샘플 이상치 제거 평균 -> 비대칭 EMA)
+ * @brief   초음파 센서 수거함 적재율 필터 구현부
+ *          (블랭킹 -> 10-샘플 이상치 제거 평균 -> 데드밴드: 5% 이상 변화 시에만 즉시 갱신, 그 외엔 고정)
  */
 
 #include "bin_filter.h"
@@ -33,13 +33,16 @@ static void Sort_Samples(float *arr, uint8_t size)
 
 /**
  * @brief  거리를 백분율(0.0 ~ 100.0%)로 선형 변환 및 클램핑
+ *         센서 오차 감안, empty_cm 기준 EMPTY_MARGIN_CM 이내로 가까워도 0%로 취급 (effective_empty 사용)
  */
 static float Convert_Distance_To_Percent(const BinFilter *bin, float dist_cm)
 {
-    if (dist_cm >= bin->empty_cm) return 0.0f;
-    if (dist_cm <= bin->full_cm)  return 100.0f;
+    float effective_empty = bin->empty_cm - EMPTY_MARGIN_CM;
 
-    float pct = (bin->empty_cm - dist_cm) / (bin->empty_cm - bin->full_cm) * 100.0f;
+    if (dist_cm >= effective_empty) return 0.0f;
+    if (dist_cm <= bin->full_cm)     return 100.0f;
+
+    float pct = (effective_empty - dist_cm) / (effective_empty - bin->full_cm) * 100.0f;
     if (pct < 0.0f)   pct = 0.0f;
     if (pct > 100.0f) pct = 100.0f;
     return pct;
@@ -189,32 +192,20 @@ float BinFilter_Update(BinType bin_idx, float raw_dist_cm, uint32_t current_tick
     float avg_dist = Average_Excluding_Outliers(bin->sample_buf, bin->sample_count);
     float current_raw_pct = Convert_Distance_To_Percent(bin, avg_dist);
 
-    /* 비대칭 지수 이동 평균 (EMA) 필터
-     * - filtered_percent는 BinFilter_Init()에서 0.0f로 시작하므로,
-     *   첫 유효 측정치도 예외 없이 이 EMA를 거쳐서 "0%에서부터 서서히" 올라간다.
-     *   (예전 코드는 첫 측정치를 즉시 반영해서 0%를 안 거치고 바로 뛰었음 -> 제거)
+    /* 데드밴드(dead-band) 방식: 이전 고정값과의 차이가 CHANGE_THRESHOLD_PERCENT 이상일 때만
+     * 그 즉시 새 값으로 갱신. 그 미만의 자잘한 흔들림은 무시하고 이전 값 그대로 유지.
+     * 상승/하강 구분 없이 완전히 동일한 기준 적용.
      */
-    bin->is_initialized = true; // 참고용 플래그로만 남김 (동작에는 영향 없음)
+    float diff = current_raw_pct - bin->filtered_percent;
+    if (diff < 0.0f) diff = -diff;
 
+    if (!bin->is_initialized || diff >= CHANGE_THRESHOLD_PERCENT)
     {
-        float alpha;
-
-        /*
-         * 적재율이 상승할 때: 쓰레기가 쌓이는 정상 동작이므로 빠르게 추종 (alpha = 0.25)
-         * 적재율이 하강할 때: 센서 난반사나 쓰레기 틈새 투과 가능성이 크므로 극도로 보수적으로 반응 (alpha = 0.02)
-         */
-        if (current_raw_pct >= bin->filtered_percent)
-        {
-            alpha = EMA_ALPHA_RISING;
-        }
-        else
-        {
-            alpha = EMA_ALPHA_FALLING;
-        }
-
-        bin->filtered_percent = (alpha * current_raw_pct) + ((1.0f - alpha) * bin->filtered_percent);
-        bin->filtered_dist_cm = (alpha * avg_dist)        + ((1.0f - alpha) * bin->filtered_dist_cm);
+        bin->filtered_dist_cm = avg_dist;
+        bin->filtered_percent = current_raw_pct;
+        bin->is_initialized = true;
     }
+    /* diff가 threshold 미만이면 아무것도 안 하고 이전 값 그대로 유지 (고정) */
 
     return bin->filtered_percent;
 }

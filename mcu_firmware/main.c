@@ -99,8 +99,7 @@ static void Report_Bin_Fill(void)
     int p_pet   = BinFilter_Get_Percent(BIN_PET);
     int p_vinyl = BinFilter_Get_Percent(BIN_VINYL);
 
-    printf("$BIN:%d/%d/%d/%d  (raw cm: %.1f/%.1f/%.1f/%.1f)\n",
-           p_paper, p_can, p_pet, p_vinyl, raw_paper, raw_can, raw_pet, raw_vinyl);
+    printf("$BIN:%d/%d/%d/%d\n", p_paper, p_can, p_pet, p_vinyl);
 }
 
 // Jetson 쪽에서 보내는 '$'로 시작하는 프로토콜 명령 처리 (분류 결과에 따른 도어 제어)

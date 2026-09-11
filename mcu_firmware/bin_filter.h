@@ -2,7 +2,7 @@
  * @file    bin_filter.h
  * @brief   초음파 센서 수거함 적재율 필터링 모듈 (Cortex-M4 / STM32 최적화)
  * @details 동적 할당(malloc) 없이 정적 구조체만 사용하며,
- *          투입 블랭킹 -> 10-샘플 이상치 제거 평균 -> 비대칭 EMA 3단계 필터를 적용합니다.
+ *          투입 블랭킹 -> 10-샘플 이상치 제거 평균 -> 데드밴드(5% 이상 변화 시에만 갱신) 필터를 적용합니다.
  */
 #ifndef BIN_FILTER_H
 #define BIN_FILTER_H
@@ -14,7 +14,9 @@
 extern "C" {
 #endif
 
-
+/* ---------------------------------------------------- */
+/* 전역 설정 및 파라미터                                */
+/* ---------------------------------------------------- */
 #define BIN_COUNT                 4       /* 수거함 개수 (0:종이, 1:캔, 2:페트, 3:비닐) */
 #define SAMPLE_WINDOW_SIZE        10      /* 평균 낼 최근 샘플 개수 */
 #define OUTLIER_THRESHOLD_CM      3.0f    /* 중앙값 기준 이 값(cm) 넘게 벗어나면 평균에서 제외 */
@@ -24,10 +26,12 @@ extern "C" {
 
 #define BLANKING_DURATION_MS      2000U   /* 투입 직후 계측 무시 시간 (2.0초) */
 
-/* 비대칭 EMA 가중치 (Alpha) */
-#define EMA_ALPHA_RISING          0.25f   /* 적재율 상승 시 (빠른 추종) */
-#define EMA_ALPHA_FALLING         0.02f   /* 적재율 하강 시 (노이즈/틈새 튐 방지, 매우 느린 반영) */
+#define CHANGE_THRESHOLD_PERCENT  5.0f    /* 이 값(%) 이상 차이 날 때만 갱신 - 그 미만의 흔들림은 무시하고 고정 유지 */
+#define EMPTY_MARGIN_CM           5.0f    /* 센서 오차 감안: empty_cm보다 이 값(cm)만큼 가까워도 0%로 취급 */
 
+/* ---------------------------------------------------- */
+/* 열거형 및 데이터 구조체                              */
+/* ---------------------------------------------------- */
 typedef enum
 {
     BIN_PAPER = 0,
@@ -49,10 +53,10 @@ typedef struct
     uint8_t sample_count;                 /* 초기 버퍼 채움 카운터 */
     uint8_t buf_idx;                      /* 링 버퍼 삽입 인덱스 */
 
-    /* 3단계: 비대칭 EMA 필터 상태 */
-    float filtered_dist_cm;               /* 필터링된 최종 거리 (cm) */
-    float filtered_percent;               /* 최종 필터링된 적재율 (0.0% ~ 100.0%) */
-    bool is_initialized;                  /* 첫 유효 샘플 수신 여부 */
+    /* 최종 결과값 (EMA 없이 매번 계산값 그대로 저장) */
+    float filtered_dist_cm;               /* 최근 계산된 거리 (cm) */
+    float filtered_percent;               /* 최근 계산된 적재율 (0.0% ~ 100.0%) */
+    bool is_initialized;                  /* 첫 유효 샘플 수신 여부 (참고용) */
 } BinFilter;
 
 /* ---------------------------------------------------- */
