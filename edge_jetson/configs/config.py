@@ -87,7 +87,7 @@ class NetworkConfig:
 
     host: str = "0.0.0.0"
     port: int = 9000
-    jpeg_quality: int = 100  # 전송 대역폭 절감과 화질 간 최적 균형값
+    jpeg_quality: int = 75  # 전송 대역폭 절감과 화질 간 최적 균형값
     socket_timeout: float = 1.0
 
 
@@ -95,7 +95,7 @@ class NetworkConfig:
 class SerialConfig:
     """STM32 MCU UART 시리얼 통신 설정."""
 
-    port: str = "/dev/ttyTHS1"  # Jetson 40핀 헤더 UART (Pin 8:TX, Pin 10:RX)
+    port: str = "/dev/ttyACM0"
     baudrate: int = 115200
     timeout: float = 0.1
     enabled: bool = True
