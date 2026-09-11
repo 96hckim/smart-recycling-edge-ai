@@ -1,6 +1,6 @@
 // RTOS 없이 super loop 구조: 매 반복마다 (1) UART 명령 처리 (2) 서보 램프 진행
 // (3) 주기적 도어/적재량 보고를 블로킹 없이 번갈아 확인
-// 적재율 계산은 bin_filter.c(블랭킹->중앙값->비대칭EMA 3단계 필터)에 위임한다.
+// 적재율 계산은 bin_filter.c(블랭킹->10샘플 이상치제거평균->비대칭EMA)에 위임한다.
 #include "device_driver.h"
 #include "timer.h"
 #include "ultrasonic.h"
@@ -23,8 +23,18 @@ static void Sys_Init(int baud)
     setvbuf(stdout, NULL, _IONBF, 0);
 }
 
+// 사람이 ComPortMaster 등으로 직접 테스트할 때 쓰는 디버그 명령 경로
+// (Jetson 프로토콜인 $DOOR_OPEN 등과는 별개 - Main()에서 '$' 여부로 갈라짐)
 static void Handle_Servo_Command(const char *line)
 {
+    // "reset" 한 줄 입력하면 4개 통 적재율 전부 0%로 수동 리셋
+    if (strcmp(line, "reset") == 0)
+    {
+        BinFilter_Reset_All();
+        printf("Bin filter reset: all 4 bins -> 0%%\n");
+        return;
+    }
+
     int servo_num = 0;
     int angle = 0;
     int speed = 0;
@@ -32,7 +42,7 @@ static void Handle_Servo_Command(const char *line)
     int n = sscanf(line, "%d %d %d", &servo_num, &angle, &speed);
     if (n != 3 && n != 2)
     {
-        printf("Invalid command: \"%s\" (format: <servo 1~3> <angle 0~180> [speed deg/s])\n", line);
+        printf("Invalid command: \"%s\" (format: <servo 1~3> <angle 0~180> [speed deg/s], or \"reset\")\n", line);
         return;
     }
 
@@ -71,7 +81,7 @@ static void Report_Door_State(void)
     printf("$DOOR_STATE:%s\n", (Recycle_Get_Gate_State() == GATE_OPEN) ? "OPEN" : "CLOSED");
 }
 
-// 4개 통 raw 거리를 읽어 bin_filter로 3단계 필터링한 뒤, 최종 적재율(%)만 Jetson에 보고
+// 4개 통 raw 거리를 읽어 bin_filter로 필터링한 뒤, 최종 적재율(%)만 Jetson에 보고
 static void Report_Bin_Fill(void)
 {
     float raw_paper = Ultra_Read_cm(BIN_ULTRA_CH[0]);
@@ -122,6 +132,12 @@ static void Handle_Jetson_Command(const char *line)
         Recycle_Door_Close_Request();
         printf("$DOOR_CLOSE received\n");
     }
+    else if (strcmp(line, "$BIN_RESET") == 0)
+    {
+        // 젯슨 쪽에서도 필요하면 언제든 4개 통 적재율 전부 0%로 리셋 가능
+        BinFilter_Reset_All();
+        printf("$BIN_RESET done\n");
+    }
     else
     {
         printf("Unknown command from Jetson: \"%s\"\n", line);
@@ -134,8 +150,8 @@ void Main(void)
 
     Sys_Init(115200);
     printf("\n=== Recycling Sorter (Servo + Ultrasonic + Jetson UART) ===\n");
-    printf("Command format: <servo 1~3> <angle 0~180> [speed deg/s]  (e.g. \"1 90\" or \"1 90 30\")\n");
-    printf("Jetson protocol: $DOOR_OPEN:<PET|CAN|PAPER|VINYL>  /  $DOOR_CLOSE\n");
+    printf("Command format: <servo 1~3> <angle 0~180> [speed deg/s]  or \"reset\"\n");
+    printf("Jetson protocol: $DOOR_OPEN:<PET|CAN|PAPER|VINYL> / $DOOR_CLOSE / $BIN_RESET\n");
 
     Timer_Init();
     Ultra_Init();
@@ -144,7 +160,6 @@ void Main(void)
 
     // 캘리브레이션: 센서가 통 입구 위 10cm에 장착, 통 깊이는 30cm
     // -> 빈 통(0%) = 10+30 = 40cm, 가득 참(100%) = 10cm
-    // *** 이 4줄이 빠지면 기본값(30cm/5cm)으로 계산돼서 값이 이상하게 나옵니다 ***
     BinFilter_Config_Distance(BIN_PAPER, 40.0f, 10.0f);
     BinFilter_Config_Distance(BIN_CAN,   40.0f, 10.0f);
     BinFilter_Config_Distance(BIN_PET,   40.0f, 10.0f);

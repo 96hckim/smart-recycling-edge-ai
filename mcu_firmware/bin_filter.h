@@ -2,7 +2,7 @@
  * @file    bin_filter.h
  * @brief   초음파 센서 수거함 적재율 필터링 모듈 (Cortex-M4 / STM32 최적화)
  * @details 동적 할당(malloc) 없이 정적 구조체만 사용하며,
- *          투입 블랭킹 -> 5-샘플 중앙값(Median) -> 비대칭 EMA 3단계 필터를 적용합니다.
+ *          투입 블랭킹 -> 10-샘플 이상치 제거 평균 -> 비대칭 EMA 3단계 필터를 적용합니다.
  */
 #ifndef BIN_FILTER_H
 #define BIN_FILTER_H
@@ -14,11 +14,10 @@
 extern "C" {
 #endif
 
-/* ---------------------------------------------------- */
-/* 전역 설정 및 파라미터                                */
-/* ---------------------------------------------------- */
+
 #define BIN_COUNT                 4       /* 수거함 개수 (0:종이, 1:캔, 2:페트, 3:비닐) */
-#define MEDIAN_WINDOW_SIZE        5       /* 중앙값 필터 샘플 개수 (홀수 고정) */
+#define SAMPLE_WINDOW_SIZE        10      /* 평균 낼 최근 샘플 개수 */
+#define OUTLIER_THRESHOLD_CM      3.0f    /* 중앙값 기준 이 값(cm) 넘게 벗어나면 평균에서 제외 */
 
 #define DEFAULT_BIN_EMPTY_CM      30.0f   /* 빈 통 바닥까지의 실측 거리 (적재율 0%) */
 #define DEFAULT_BIN_FULL_CM       5.0f    /* 만석 센서 앞 실측 거리 (적재율 100%) */
@@ -29,9 +28,6 @@ extern "C" {
 #define EMA_ALPHA_RISING          0.25f   /* 적재율 상승 시 (빠른 추종) */
 #define EMA_ALPHA_FALLING         0.02f   /* 적재율 하강 시 (노이즈/틈새 튐 방지, 매우 느린 반영) */
 
-/* ---------------------------------------------------- */
-/* 열거형 및 데이터 구조체                              */
-/* ---------------------------------------------------- */
 typedef enum
 {
     BIN_PAPER = 0,
@@ -48,8 +44,8 @@ typedef struct
     /* 1단계: 투입 블랭킹(낙하 시 튐 방지) 타이머 */
     uint32_t blanking_until_tick;
 
-    /* 2단계: 5-샘플 중앙값 필터 링 버퍼 */
-    float median_buf[MEDIAN_WINDOW_SIZE];
+    /* 2단계: 10-샘플 이상치 제거 평균용 링 버퍼 */
+    float sample_buf[SAMPLE_WINDOW_SIZE];
     uint8_t sample_count;                 /* 초기 버퍼 채움 카운터 */
     uint8_t buf_idx;                      /* 링 버퍼 삽입 인덱스 */
 
@@ -67,6 +63,16 @@ typedef struct
  * @brief  전체 4개 수거함 필터 상태 초기화 (부팅 시 1회 호출)
  */
 void BinFilter_Init(void);
+
+/**
+ * @brief  특정 통 하나만 0%/초기 상태로 리셋 (샘플버퍼/EMA 상태 전부 초기화)
+ */
+void BinFilter_Reset(BinType bin);
+
+/**
+ * @brief  4개 통 전부 0%/초기 상태로 리셋 (캘리브레이션 값은 유지됨)
+ */
+void BinFilter_Reset_All(void);
 
 /**
  * @brief  수거함별 빈 통/만석 물리 실측 거리 개별 보정 (선택 사항)
