@@ -1,10 +1,39 @@
-"""Jetson-STM32 간 UART 통신 ASCII 프로토콜 인코딩/디코딩 모듈."""
+"""Jetson-STM32 UART 및 관제 PC TCP 프로토콜 인코딩/디코딩 모듈."""
+
+from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from enum import Enum
+from typing import Any
 
 # 기본 도어 제어 품목명 상수 (전체 공통 사용)
 DEFAULT_DOOR_ITEM = "ALL"
+
+
+class ClientAction(str, Enum):
+    """관제 PC(Qt) -> Jetson 제어 명령 액션 규격."""
+
+    OPEN = "OPEN"
+    CLOSE = "CLOSE"
+
+
+@dataclass(frozen=True)
+class ClientCommand:
+    """관제 PC(Qt) -> Jetson 수신 명령 데이터 모델."""
+
+    action: ClientAction
+    item: str = DEFAULT_DOOR_ITEM
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ClientCommand | None:
+        """JSON 딕셔너리를 검증하여 ClientCommand 인스턴스로 변환."""
+        try:
+            raw_action = str(data.get("action", "")).strip().upper()
+            action = ClientAction(raw_action)
+            item = str(data.get("item", DEFAULT_DOOR_ITEM)).strip().upper()
+            return cls(action=action, item=item)
+        except (ValueError, KeyError, AttributeError):
+            return None
 
 
 class DoorAction(str, Enum):

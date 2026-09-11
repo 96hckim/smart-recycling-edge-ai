@@ -31,6 +31,7 @@ class StreamSocketServer:
         self.server_socket: socket.socket | None = None
         self.client_socket: socket.socket | None = None
         self.client_addr: tuple | None = None
+        self._rx_buffer: bytearray = bytearray()
 
         self._init_server_socket()
 
@@ -104,8 +105,55 @@ class StreamSocketServer:
             self.close_client()
             return False
 
+    def receive_commands(self) -> list[dict[str, Any]]:
+        """관제 PC(Qt)로부터 전송된 JSON 개별 명령(\\n 구분자)을 비차단(Non-blocking)으로 수신."""
+        if not self.is_connected or self.client_socket is None:
+            return []
+
+        commands: list[dict[str, Any]] = []
+
+        try:
+            # 0초 타임아웃 select로 수신 버퍼 가용 여부 즉각 확인 (0ms 대기, 메인 루프 블로킹 없음)
+            readable, _, _ = select.select([self.client_socket], [], [], 0)
+            if readable:
+                chunk = self.client_socket.recv(4096)
+                if not chunk:
+                    # 빈 바이트 수신은 상대방의 정상 소켓 close()를 의미
+                    print(f"[NET] 관제 PC({self.client_addr}) 정상 연결 종료 감지")
+                    self.close_client()
+                    return []
+                self._rx_buffer.extend(chunk)
+
+            # 수신 버퍼에서 개행 문자(\n) 단위로 완전한 JSON 패킷 추출
+            while b"\n" in self._rx_buffer:
+                line, rest = self._rx_buffer.split(b"\n", 1)
+                self._rx_buffer = bytearray(rest)
+                clean_line = line.strip()
+                if not clean_line:
+                    continue
+                try:
+                    cmd_dict = json.loads(clean_line.decode("utf-8", errors="ignore"))
+                    if isinstance(cmd_dict, dict):
+                        commands.append(cmd_dict)
+                except json.JSONDecodeError as err:
+                    print(
+                        f"[NET WARN] 수신 JSON 파싱 오류: {err} -> 원문: {clean_line[:50]}"
+                    )
+
+        except (TimeoutError, BrokenPipeError, ConnectionResetError):
+            print(f"[NET] 관제 PC({self.client_addr}) 소켓 연결 끊김 감지")
+            self.close_client()
+            return []
+        except OSError as e:
+            print(f"[NET ERROR] 제어 명령 수신 오류: {e}")
+            self.close_client()
+            return []
+
+        return commands
+
     def close_client(self):
         """클라이언트 소켓의 양방향 셧다운 및 파일 디스크립터 누수 방지."""
+        self._rx_buffer = bytearray()
         if self.client_socket is not None:
             try:
                 self.client_socket.shutdown(socket.SHUT_RDWR)

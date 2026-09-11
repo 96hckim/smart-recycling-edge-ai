@@ -9,6 +9,7 @@ from core.camera import CameraStream
 from core.detector import YOLOv11Detector
 from core.door_controller import AutoDoorController
 from core.trt_engine import TensorRTEngine
+from stream.protocol import ClientAction, ClientCommand
 from stream.serial_controller import SerialController
 from stream.socket_server import StreamSocketServer
 from utils.keyboard import NonBlockingKeyReader
@@ -79,9 +80,18 @@ def main():
             if key and key.lower() == "q":
                 break
 
-            # 비차단 클라이언트 접속 폴링
+            # 비차단 클라이언트 접속 폴링 및 관제 PC(Qt) 제어 명령 수신
             if not socket_server.is_connected:
                 socket_server.accept_client()
+            else:
+                for raw_cmd in socket_server.receive_commands():
+                    cmd = ClientCommand.from_dict(raw_cmd)
+                    if cmd is None:
+                        continue
+                    if cmd.action == ClientAction.OPEN:
+                        door_ctrl.request_open(cmd.item)
+                    elif cmd.action == ClientAction.CLOSE:
+                        door_ctrl.request_close()
 
             ret, frame = camera.read()
             if not ret or frame is None:

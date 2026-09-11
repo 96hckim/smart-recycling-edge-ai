@@ -24,13 +24,41 @@ class AutoDoorController:
         self.consecutive_count: int = 0
         self.lost_count: int = 0
 
+    def request_open(self, item: str | None = None) -> bool:
+        """관제 PC(Qt) 또는 사용자 확인 버튼 입력에 따른 명시적 도어 개방 처리."""
+        curr_time = time.time()
+        target_item = (item or self.candidate_item or "ALL").upper()
+        if self.serial_ctrl.send_command(DoorAction.OPEN, target_item):
+            self.current_state = DoorState.OPEN
+            self.active_item = target_item
+            self.door_open_timestamp = curr_time
+            self.lost_count = 0
+            print(f"[DOOR] 수동/확인 명령 도어 개방: {target_item}")
+            return True
+        return False
+
+    def request_close(self) -> bool:
+        """관제 PC(Qt) 또는 긴급 정지/세션 종료에 따른 명시적 도어 폐쇄 처리."""
+        if self.serial_ctrl.send_command(DoorAction.CLOSE):
+            self.current_state = DoorState.CLOSED
+            self.active_item = None
+            self.candidate_item = None
+            self.consecutive_count = 0
+            self.lost_count = 0
+            print("[DOOR] 수동/확인 명령 도어 폐쇄")
+            return True
+        return False
+
     def process_detections(self, detections: list[dict[str, Any]]) -> None:
-        """프레임별 검출 결과를 FSM에 투입하여 도어 개폐 상태 전이 및 시리얼 명령 송신."""
+        """프레임별 검출 결과를 FSM에 투입하여 도어 상태 추적 및 자동 개폐(설정 시) 처리."""
         curr_time = time.time()
         top_item = self._extract_top_item(detections)
 
         if self.current_state == DoorState.CLOSED:
-            self._handle_closed_state(top_item, curr_time)
+            if self.config.auto_open:
+                self._handle_closed_state(top_item, curr_time)
+            else:
+                self._update_candidate(top_item)
         elif self.current_state == DoorState.OPEN:
             self._handle_open_state(top_item, curr_time)
 
@@ -44,8 +72,21 @@ class AutoDoorController:
         )
         return item.upper() or None
 
+    def _update_candidate(self, top_item: str | None) -> None:
+        """확인 모드(수동 개방)에서 카메라 앞 후보 품목 및 안정 감지 카운트 추적."""
+        if top_item is None:
+            self.candidate_item = None
+            self.consecutive_count = 0
+            return
+
+        if top_item == self.candidate_item:
+            self.consecutive_count += 1
+        else:
+            self.candidate_item = top_item
+            self.consecutive_count = 1
+
     def _handle_closed_state(self, top_item: str | None, curr_time: float) -> None:
-        """닫힘 상태: 연속 인식 카운트(안정 감지) 충족 시 OPEN 명령 송신 및 상태 전이."""
+        """닫힘 상태(자동 모드 전용): 연속 인식 카운트 충족 시 자동 OPEN 명령 송신."""
         if top_item is None:
             self.candidate_item = None
             self.consecutive_count = 0
