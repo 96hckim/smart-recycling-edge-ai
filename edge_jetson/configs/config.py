@@ -76,7 +76,7 @@ class ModelConfig:
     # "rps_yolo11n_custom_640.engine"
     engine_path: Path = JETSON_ROOT_DIR / "models" / "recycle_yolo11_final.engine"
     input_shape: tuple[int, int] = (640, 640)
-    conf_threshold: float = 0.20
+    conf_threshold: float = 0.70
     iou_threshold: float = 0.45
     # YOLO 모델 학습 클래스 순서 (0: 종이, 1: 캔, 2: 페트, 3: 비닐)
     class_names: tuple[str, ...] = tuple(meta.name_en for meta in MODEL_CLASS_MAP)
@@ -88,7 +88,7 @@ class NetworkConfig:
 
     host: str = "0.0.0.0"
     port: int = 9000
-    jpeg_quality: int = 100  # 전송 대역폭 절감과 화질 간 최적 균형값
+    jpeg_quality: int = 75  # 전송 대역폭 절감과 화질 간 최적 균형값
     socket_timeout: float = 1.0
 
 
@@ -96,7 +96,7 @@ class NetworkConfig:
 class SerialConfig:
     """STM32 MCU UART 시리얼 통신 설정."""
 
-    port: str = "/dev/ttyTHS1"  # Jetson 40핀 헤더 UART (Pin 8:TX, Pin 10:RX)
+    port: str = "/dev/ttyACM0"  # Jetson 40핀 헤더 UART (Pin 8:TX, Pin 10:RX)
     baudrate: int = 115200
     timeout: float = 0.1
     enabled: bool = True
